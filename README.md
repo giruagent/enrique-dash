@@ -1,6 +1,6 @@
 # Enrique Dash
 
-**Current test version: 0.3.0** — a touch-first Three.js rhythm platformer. Eleven courses are playable, and the game expands to fullscreen from the in-game control. The version shown in the header and footer is read from `package.json`.
+**Current test version: 0.3.1** — a touch-first Three.js rhythm platformer. Eleven courses are playable, and the game expands to fullscreen from the in-game control. The exact package version stays visible in the page header/footer and in the game HUD while fullscreen.
 
 ## Play locally
 
@@ -35,6 +35,10 @@ Each level has its own speed, obstacle sequence, color palette, tempo, scale, ch
 - Added a mute toggle and start audio only following a user gesture.
 - Deferred loading Three.js and the 2.6 MB character atlas until the first play action, retaining a static preview and cube fallback.
 - Added Node's built-in test runner for level validation, collision/progress rules, and music theory helpers.
+
+### v0.3.1
+
+- Keep the exact app version visible inside the game HUD, including fullscreen mode.
 
 ## Versioning and branch workflow
 
