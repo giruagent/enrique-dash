@@ -38,7 +38,7 @@ Tap/click the playfield or press Space, Arrow Up, or W to jump. Tap/click again 
 
 ## GitHub Pages
 
-The target GitHub Pages project URL is `https://giruagent.github.io/enrique-dash/`, but it is **not live yet**. Creating Pages through GitHub's API returned HTTP 422: the current GitHub plan does not support Pages for this private repository. The source and character assets remain private; they were not made public as a workaround. To publish, choose whether to make the repository public (which also discloses the code and supplied character assets), enable a GitHub plan that supports Pages for a private repository, or use another host. After that decision, the Pages source can be set to **GitHub Actions** and the existing workflow will deploy `dist/` with the correct `/enrique-dash/` base path.
+The live GitHub Pages project URL is [`https://giruagent.github.io/enrique-dash/`](https://giruagent.github.io/enrique-dash/). Pages is enabled with **GitHub Actions** as its source. The deployment workflow builds for the `/enrique-dash/` project path and deploys the `dist/` artifact after changes merge to `main`. The current release candidate is `v0.2.1`; verify its deployment run and live version marker before treating it as published.
 
 ## Project notes
 
