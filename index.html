@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#090d1b" />
+    <meta name="description" content="Enrique Dash — a fast, touch-friendly rhythm platformer." />
+    <title>Enrique Dash</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar"><a class="brand" href="#" aria-label="Enrique Dash home"><span class="brand-mark">E</span><span>ENRIQUE<span class="brand-dash">DASH</span></span></a><div class="top-meta"><span class="status-dot"></span> FIRST BUILD <span class="divider">/</span> WEB DEMO</div></header>
+      <section class="intro"><div class="intro-copy"><p class="eyebrow">THE RUN STARTS HERE</p><h1>One more<br><span>try.</span></h1><p class="lede">A rhythm platformer about momentum, precision, and the next impossible-looking jump.</p><div class="intro-actions"><button id="play-button" class="play-button"><span class="play-icon">▶</span> PLAY THE DEMO</button><span class="microcopy">No install. Just tap and go.</span></div></div>
+        <div class="game-wrap" id="game-wrap"><div class="game-hud"><div><span class="hud-label">LEVEL</span><span class="hud-value" id="level-name">01 / Neon Run</span></div><div class="progress-wrap"><span class="hud-label">PROGRESS</span><div class="progress-track"><i id="progress-fill"></i></div></div><div class="attempt"><span class="hud-label">ATTEMPT</span><span class="hud-value" id="attempt">01</span></div></div><div id="game-canvas" aria-label="Three-dimensional platform game area" role="application"></div><div class="game-overlay" id="game-overlay"><div class="overlay-glyph">✦</div><h2>Ready when you are.</h2><p>Tap anywhere or press space to jump.</p></div><div class="game-bottom"><span id="game-message">TAP / CLICK / SPACE TO JUMP</span><button id="sound-toggle" aria-label="Toggle sound" title="Toggle sound">SOUND OFF</button></div></div>
+      </section>
+      <section class="lower"><div class="level-heading"><div><p class="eyebrow">BUILT FOR THE LONG RUN</p><h2>Every run gets you further.</h2></div><p class="level-note">A first glimpse of the worlds ahead.<br>More levels are part of the plan.</p></div><div class="level-list" id="level-list"></div></section>
+      <footer><span>ENRIQUE DASH <span class="footer-dot">•</span> EARLY BUILD 0.1</span><span>MADE TO PLAY ON TOUCHSCREENS</span></footer>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
