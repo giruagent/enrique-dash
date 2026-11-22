@@ -21,14 +21,14 @@ Build a polished, touch-first browser rhythm platformer for iPad, phones, and de
 - A native Fullscreen API button expands the stage; a CSS viewport fallback covers browsers without usable native fullscreen.
 - Music is opt-in by user gesture: original procedural Web Audio, per-level BPM, scale, chord movement, lead motif, bass, and synthesized percussion. Mute is always available; gameplay does not rely on audio cues.
 
-## Current build — v0.3.0
+## Current build — v0.3.1
 
 - Vite + JavaScript + Three.js; static client-side app.
 - Eleven playable courses: Neon Run, Skyline Rush, Solar Flare, Gravity Garden, Pixel Pier, Midnight Circuit, Candy Comet, Aqua Pulse, Crystal Cavern, Stormbreaker, and Final Orbit.
 - Each course has distinct authored hazard groups, speed, palette, and music parameters. Course data is validated in Node tests.
 - The supplied 81-frame atlas drives idle, run, jump ascent/apex/fall, hurt, and victory states. A cube fallback remains if the atlas fails to load.
 - Three.js and the character atlas are deferred until the first play action. A lightweight CSS track preview remains before that interaction.
-- Fullscreen, Escape-to-exit, touch/keyboard jump, music toggle, course select, local completed-course markers, and visible version.
+- Fullscreen, Escape-to-exit, touch/keyboard jump, music toggle, course select, local completed-course markers, and package version visible in the fullscreen HUD.
 - GitHub Actions CI runs tests and the production build on branches/PRs; Pages deploys main after merge.
 
 ## Next phases

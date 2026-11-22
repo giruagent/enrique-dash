@@ -486,6 +486,7 @@ document.addEventListener('visibilitychange', () => {
 });
 document.querySelector('#version-label').textContent = `v${packageInfo.version}`;
 document.querySelector('#footer-version').textContent = `VERSION ${packageInfo.version}`;
+document.querySelector('#game-version').textContent = `v${packageInfo.version}`;
 musicButton.setAttribute('aria-pressed', String(musicEnabled));
 renderLevelCards();
 window.addEventListener('pagehide', () => {
