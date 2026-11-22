@@ -27,7 +27,7 @@ Build a high-quality, touch-first browser rhythm platformer for iPad, phones, an
 - The supplied 81-frame character atlas drives idle, run, rising, apex, falling, hurt, and victory states. The placeholder cube remains a graceful fallback.
 - Keyboard and pointer controls; optional generated sound, off by default.
 - Skyline Rush, Solar Flare, and Gravity Garden are menu previews only; no gameplay has been implemented for them.
-- GitHub Actions CI builds branches and pull requests. The Pages deploy workflow deploys main after merge, subject to Pages being enabled for the repository.
+- GitHub Actions CI builds branches and pull requests; the Pages deployment workflow is ready for main after merge, but GitHub rejected Pages creation with HTTP 422 because the repository is private under a plan that does not support Pages. Keep the repository private until Enrique chooses a publishing option.
 
 ## Delivery roadmap
 
