@@ -2,97 +2,95 @@
 
 ## Vision
 
-Build a high-quality, touch-first browser rhythm platformer for iPad, phones, and desktop. Players learn readable obstacle patterns, jump in time, retry quickly, and progress through authored themed levels. The first course is **Neon Run**; this project intentionally does not promise a large level count until those levels have been built and playtested.
+Build a polished, touch-first browser rhythm platformer for iPad, phones, and desktop. Players learn readable obstacle patterns, jump in time, retry quickly, and progress through themed levels. The first expansion now has eleven selectable courses; future growth should follow playtest feedback rather than a level-count target.
 
 ## Product principles
 
 - **Instant play:** no account or install required for the core game.
 - **Fair challenge:** clear hazard silhouettes, consistent collision rules, quick retries, and optional practice/checkpoints where appropriate.
 - **Touch first:** no hover-only controls; test safe-area behavior and input on real devices.
-- **Original identity:** use original or properly licensed level art, music, and effects. Do not copy Geometry Dash branding/content.
+- **Original identity:** use original or properly licensed art, music, and effects. Do not copy Geometry Dash branding or content.
 - **Earn complexity:** keep the project a static client app until cloud saves, authoring, or community features justify services.
 
 ## Visual and interaction direction
 
 - Deep indigo night (#090D1B), twilight navy (#10162A), luminous chartreuse (#C8FF52), and coral hazards.
 - Barlow Condensed for kinetic headings; DM Sans for readable UI copy.
-- A side-on 3D scene with a low-key geometric skyline. Enrique's supplied character sprite is animated as a 2D plane in the Three.js world.
-- The HUD shows course, progress, attempts, mute state, and software version. Jump is available through pointer/touch or keyboard.
-- Sound is opt-in; do not depend on sound alone to communicate hazards.
+- A side-on 3D stage with a low-key geometric skyline. Enrique's supplied character sprite is animated as a 2D plane in the Three.js world.
+- The HUD shows course, progress, attempts, music state, and software version. Pointer/touch and keyboard are supported.
+- A native Fullscreen API button expands the stage; a CSS viewport fallback covers browsers without usable native fullscreen.
+- Music is opt-in by user gesture: original procedural Web Audio, per-level BPM, scale, chord movement, lead motif, bass, and synthesized percussion. Mute is always available; gameplay does not rely on audio cues.
 
-## Current build — v0.2.0
+## Current build — v0.3.0
 
 - Vite + JavaScript + Three.js; static client-side app.
-- Neon Run: full short course from start to finish, with six obstacle groups, jump physics, collision, death/retry, completion, and progress display.
-- The supplied 81-frame character atlas drives idle, run, rising, apex, falling, hurt, and victory states. The placeholder cube remains a graceful fallback.
-- Keyboard and pointer controls; optional generated sound, off by default.
-- Skyline Rush, Solar Flare, and Gravity Garden are menu previews only; no gameplay has been implemented for them.
-- GitHub Actions CI builds branches and pull requests; GitHub Pages is enabled for the now-public repository and the deployment workflow will publish after merge to `main`. The release candidate is v0.2.1; verify the run and live page/version after merge.
+- Eleven playable courses: Neon Run, Skyline Rush, Solar Flare, Gravity Garden, Pixel Pier, Midnight Circuit, Candy Comet, Aqua Pulse, Crystal Cavern, Stormbreaker, and Final Orbit.
+- Each course has distinct authored hazard groups, speed, palette, and music parameters. Course data is validated in Node tests.
+- The supplied 81-frame atlas drives idle, run, jump ascent/apex/fall, hurt, and victory states. A cube fallback remains if the atlas fails to load.
+- Three.js and the character atlas are deferred until the first play action. A lightweight CSS track preview remains before that interaction.
+- Fullscreen, Escape-to-exit, touch/keyboard jump, music toggle, course select, local completed-course markers, and visible version.
+- GitHub Actions CI runs tests and the production build on branches/PRs; Pages deploys main after merge.
 
-## Delivery roadmap
+## Next phases
 
-### Phase 0 — Foundation and first level (implemented)
+### Phase 1 — Tune gameplay and verify devices
 
-- Responsive Three.js scene, landing UI, jump/collision loop, HUD, character animation, first course, and version label.
-- Build and browser-test start, play, collision/retry, completion, mobile-width layout, and asset loading before calling v0.2.0 ready.
-
-### Phase 1 — Tune feel and device support
-
-- Tune jump arc, timing windows, obstacle hitboxes, camera framing, input buffering/coyote time, and restart latency through playtests.
-- Add a proper pause action and accessible interaction labels without obstructing play.
-- Verify current iPadOS Safari, iOS Safari, Android Chrome, desktop Chrome/Firefox/Safari on physical devices.
+- Playtest all eleven courses, tune jump windows and difficulty progression, and add practice checkpoints where they materially improve fairness.
+- Test native fullscreen and CSS fallback on real iPadOS Safari, iOS Safari, Android Chrome, and desktop browsers; verify orientation and safe areas.
+- Listen to the soundtrack on device speakers and headphones; adjust gain, transients, and tonal balance based on actual listening.
 - Inspect sprite edges at full resolution and confirm redistribution/commercial rights.
 
-### Phase 2 — Reusable content pipeline
+### Phase 2 — Deeper level system
 
-- Move course geometry, timing, hazards, checkpoints, and metadata into validated, versioned data files.
-- Build and playtest 10–20 authored levels with gradual difficulty across several worlds.
-- Add level select, completion/best-progress state, and local persistence.
-- Replace generated beeps with original or properly licensed level music/effects and document licenses.
+- Move hazards and course timing to versioned data files with deterministic simulation and validated IDs.
+- Add best-time/progress records and a practice mode, while keeping local play private and account-free.
+- Expand level art and environmental motion only where they improve readability and rhythm.
+- Add new tracks/worlds when their art, patterns, and audio have been playtested end-to-end.
 
 ### Phase 3 — Release quality
 
-- Add automated unit tests for movement, collision, and progression; browser tests for start, jump, death, retry, completion, touch layouts, and keyboard use.
-- Profile frame time and memory on target devices; handle WebGL loss and cap pixel ratio.
+- Add browser automation for all level selection, fullscreen enter/exit/fallback, mute/music start, restart, and course completion.
+- Profile frame time, memory, and loading on target devices; handle WebGL loss and cap pixel ratio.
 - Add telemetry only with privacy review, a clear notice, and consent as appropriate.
-- Deploy immutable static assets over HTTPS with verified version marker and rollback procedure.
+- Deploy immutable static assets over HTTPS with a verified version marker and rollback procedure.
 
 ### Phase 4 — Expand from player feedback
 
-- Grow to 30+ levels only if authored content and playtesting sustain quality.
-- Consider a level editor/share codes only after validating demand and the associated moderation/safety costs.
+- Consider an editor/share codes only after validating demand and moderation/safety costs.
 - Consider accounts/cloud sync only when cross-device progression is a demonstrated need; keep local play available.
 
 ## Architecture
 
 ```text
 Browser (static web app)
-  ├── DOM UI: landing, HUD, level previews, accessible controls
-  ├── Game loop: input → movement/collision → level state
-  ├── Three.js: camera, 3D environment/hazards, sprite character plane
-  ├── Content: level definitions and original/licensed assets
-  └── Local storage: settings/progress (future)
+  ├── DOM UI: landing, course selector, HUD, fullscreen/audio controls
+  ├── Game loop: input → deterministic movement/collision → level state
+  ├── Three.js (loaded on play): 3D environment, hazards, animated sprite plane
+  ├── Content: validated level/music data + user-supplied licensed art
+  ├── Web Audio: scheduled per-level synthesized music after user gesture
+  └── Local storage: completed-level markers only
 
-GitHub Actions → locked install → Vite build → Pages artifact → GitHub Pages
+GitHub Actions → locked install → tests → Vite build → Pages artifact → GitHub Pages
 ```
 
-Keep simulation deterministic and decouple level data from rendering as content grows. No backend, multiplayer, or accounts without a product need.
+Keep simulation and level data separate from rendering as content grows. No backend, multiplayer, or accounts without a product need.
 
 ## Quality, security, and release checklist
 
-- **Gameplay fairness:** test collision timing and hitbox size; keep hazards visible and retry rapid.
-- **Mobile performance:** cap pixel ratio, keep effects restrained, and profile target hardware.
-- **Input reliability:** constrain browser gesture suppression to the active playfield; test touch, stylus, and keyboard.
-- **Asset rights:** supplied sprite pack has no explicit license noted in its README. Confirm rights before commercial use or broad redistribution.
-- **Accessibility:** keyboard support, visible focus, readable contrast, reduced-motion preference, and no sound-only cues.
-- **Privacy:** no analytics, accounts, or personal data collection in this build.
-- **Scope:** a level count is not a feature until levels are authored, tested, and playable.
-- **Release identification:** bump `package.json` for each test release, keep lockfile aligned, and display the package version in the UI.
-- **Change control:** branch-based development; CI validates pull requests; merge to main only after checks, and deploy through Actions.
+- **Gameplay fairness:** test collision timing and hitbox size; keep hazards visible and retries rapid.
+- **Mobile performance:** cap pixel ratio, defer WebGL/atlas until play, and profile target devices.
+- **Input reliability:** restrict browser gesture suppression to the game surface; test touch, stylus, and keyboard.
+- **Fullscreen reliability:** observe `fullscreenchange`, support Escape, safe-area insets, and a CSS fallback.
+- **Audio:** start/resume the AudioContext only in response to a user gesture, fade/suspend when muted or paused, keep a visible mute control, and listen on actual devices.
+- **Asset rights:** the supplied sprite pack has no explicit commercial license in its README; confirm rights before monetization.
+- **Accessibility:** keyboard support, visible focus, touch targets, readable contrast, reduced-motion preference, and no sound-only cues.
+- **Privacy:** no analytics, accounts, or personal data collection.
+- **Release identification:** bump `package.json`, align the lockfile, and display the exact version in the UI.
+- **Change control:** branch-based development, CI on PRs, merge only after checks, deploy through Actions.
 
 ## Decisions to revisit
 
-- Difficulty curve/checkpoint policy after playtests.
-- Music approach and properly licensed audio assets.
-- Target launch level count after measuring content-production pace.
-- Whether static GitHub Pages remains adequate as the feature set grows.
+- Course completion/best-time persistence and optional checkpoints.
+- Whether mobile fullscreen fallback should also offer an installable PWA mode.
+- Music mix and per-level arrangements after live listening tests.
+- Further content additions based on player feedback.

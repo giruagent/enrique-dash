@@ -1,30 +1,49 @@
-import * as THREE from 'three';
+let THREE;
 import packageInfo from '../package.json';
+import { getLevel, levels } from './levels.js';
+import { isObstacleCollision, levelProgressPercent } from './game-logic.js';
+import { MusicEngine } from './music.js';
 import './style.css';
 
-const levels = [
-  { name: 'Neon Run', zone: 'THE FIRST STEP', color: 0xc8ff52, speed: 8.2, length: 78, obstacles: [[13, 1], [23, 2], [35, 1], [46, 2], [58, 1], [69, 2]] },
-  { name: 'Skyline Rush', zone: 'CITY AFTER DARK', color: 0x56d9ff },
-  { name: 'Solar Flare', zone: 'HEAT OF THE MOMENT', color: 0xff9d52 },
-  { name: 'Gravity Garden', zone: 'A DIFFERENT RHYTHM', color: 0xc18aff },
-];
 const stage = document.querySelector('#game-canvas');
+const gameWrap = document.querySelector('#game-wrap');
 const overlay = document.querySelector('#game-overlay');
 const playButton = document.querySelector('#play-button');
+const nextLevelButton = document.querySelector('#next-level-button');
 const progressFill = document.querySelector('#progress-fill');
+const progressTrack = document.querySelector('#progress-track');
 const attemptDisplay = document.querySelector('#attempt');
 const message = document.querySelector('#game-message');
+const levelName = document.querySelector('#level-name');
+const fullscreenButton = document.querySelector('#fullscreen-toggle');
+const musicButton = document.querySelector('#music-toggle');
 const laneY = -1.7;
-const level = levels[0];
+const musicEngine = new MusicEngine();
+let selectedLevelIndex = 0;
+let level = levels[selectedLevelIndex];
 let renderer, scene, camera, player, playerSprite, spriteMaterial, atlasTexture, spriteMap, clock, raf, resizeObserver;
-let running = false, started = false, dead = false, completed = false, distance = 0, attempt = 1, soundOn = false;
-let audioContext, activeAnimation = '', animationTime = 0;
+let sceneStarted = false;
+let scenePromise = null;
+let floor, floorMaterial, trackEdgeMaterial;
+let running = false, started = false, dead = false, completed = false, distance = 0, attempt = 1;
+let musicEnabled = true, pseudoFullscreen = false, activeAnimation = '', animationTime = 0;
 const obstacles = [];
+const completionKey = 'enrique-dash.completed-levels.v1';
+let completedLevelIds = readCompletedLevels();
+
+function readCompletedLevels() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(completionKey) || '[]');
+    return new Set(Array.isArray(saved) ? saved.filter((id) => levels.some((item) => item.id === id)) : []);
+  } catch {
+    return new Set();
+  }
+}
 
 function initScene() {
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x10162a);
-  scene.fog = new THREE.Fog(0x10162a, 15, 47);
+  scene.background = new THREE.Color(level.background);
+  scene.fog = new THREE.Fog(level.background, 15, 47);
   camera = new THREE.PerspectiveCamera(48, 1, 0.1, 100);
   camera.position.set(0, 5.6, 15);
   camera.lookAt(0, 0, 0);
@@ -32,7 +51,7 @@ function initScene() {
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
   } catch {
     stage.innerHTML = '<div class="webgl-fallback">WebGL could not start. Try a recent Safari or Chrome browser.</div>';
-    return;
+    return false;
   }
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -42,7 +61,8 @@ function initScene() {
   const light = new THREE.DirectionalLight(0xffffff, 2.2);
   light.position.set(-3, 8, 7);
   scene.add(light);
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(130, 18), new THREE.MeshStandardMaterial({ color: 0x141c32, roughness: .86 }));
+  floorMaterial = new THREE.MeshStandardMaterial({ color: level.floor, roughness: .86 });
+  floor = new THREE.Mesh(new THREE.PlaneGeometry(130, 18), floorMaterial);
   floor.rotation.x = -Math.PI / 2;
   floor.position.set(22, laneY, 0);
   scene.add(floor);
@@ -51,25 +71,27 @@ function initScene() {
   grid.material.transparent = true;
   grid.material.opacity = .35;
   scene.add(grid);
-  for (let i = 0; i < 14; i++) {
-    const height = 1.5 + ((i * 37) % 7) * .5;
-    const building = new THREE.Mesh(new THREE.BoxGeometry(1.5, height, .45), new THREE.MeshBasicMaterial({ color: i % 2 ? 0x263451 : 0x202d49 }));
-    building.position.set(-12 + i * 2.7, laneY + height / 2, -5.2);
+  for (let index = 0; index < 14; index++) {
+    const height = 1.5 + ((index * 37) % 7) * .5;
+    const building = new THREE.Mesh(new THREE.BoxGeometry(1.5, height, .45), new THREE.MeshBasicMaterial({ color: index % 2 ? 0x263451 : 0x202d49 }));
+    building.position.set(-12 + index * 2.7, laneY + height / 2, -5.2);
     scene.add(building);
-    for (let j = 0; j < 3; j++) {
-      const windowLight = new THREE.Mesh(new THREE.BoxGeometry(.06, .17, .04), new THREE.MeshBasicMaterial({ color: i % 3 ? 0x526289 : 0xb7ef73 }));
-      windowLight.position.set(building.position.x - .35 + j * .35, laneY + height / 2 + .2, -4.94);
+    for (let windowIndex = 0; windowIndex < 3; windowIndex++) {
+      const windowLight = new THREE.Mesh(new THREE.BoxGeometry(.06, .17, .04), new THREE.MeshBasicMaterial({ color: index % 3 ? 0x526289 : 0xb7ef73 }));
+      windowLight.position.set(building.position.x - .35 + windowIndex * .35, laneY + height / 2 + .2, -4.94);
       scene.add(windowLight);
     }
   }
-  const edge = new THREE.Mesh(new THREE.BoxGeometry(120, .06, .12), new THREE.MeshBasicMaterial({ color: level.color }));
+  trackEdgeMaterial = new THREE.MeshBasicMaterial({ color: level.color });
+  const edge = new THREE.Mesh(new THREE.BoxGeometry(120, .06, .12), trackEdgeMaterial);
   edge.position.set(22, laneY + .04, .15);
   scene.add(edge);
   player = new THREE.Group();
   player.position.set(-3, laneY, 0);
   player.userData.vy = 0;
   player.userData.grounded = true;
-  const fallback = new THREE.Mesh(new THREE.BoxGeometry(.78, .78, .78), new THREE.MeshStandardMaterial({ color: level.color, emissive: level.color, emissiveIntensity: .55 }));
+  const fallbackMaterial = new THREE.MeshStandardMaterial({ color: level.color, emissive: level.color, emissiveIntensity: .55 });
+  const fallback = new THREE.Mesh(new THREE.BoxGeometry(.78, .78, .78), fallbackMaterial);
   fallback.position.y = .4;
   player.add(fallback);
   player.userData.fallback = fallback;
@@ -80,10 +102,37 @@ function initScene() {
   renderer.domElement.addEventListener('webglcontextlost', (event) => {
     event.preventDefault();
     running = false;
+    void musicEngine.stop();
     showOverlay('Graphics paused.', 'Reload the page to restart this demo.');
   });
   loadCharacter();
+  updateTheme();
+  gameWrap.classList.add('scene-ready');
   draw();
+  return true;
+}
+
+async function ensureScene() {
+  if (sceneStarted) return true;
+  if (scenePromise) return scenePromise;
+  showOverlay('Loading your level…', 'Getting the 3D world ready.');
+  scenePromise = (async () => {
+    try {
+      THREE = await import('three');
+      sceneStarted = initScene();
+      if (!sceneStarted) {
+        showOverlay('WebGL is unavailable.', 'Try a browser with WebGL enabled.');
+        scenePromise = null;
+      }
+      return sceneStarted;
+    } catch (error) {
+      console.error('The game engine could not load.', error);
+      showOverlay('The game could not load.', 'Check your connection and try again.');
+      scenePromise = null;
+      return false;
+    }
+  })();
+  return scenePromise;
 }
 
 async function loadCharacter() {
@@ -102,7 +151,7 @@ async function loadCharacter() {
     atlasTexture.generateMipmaps = true;
     spriteMaterial = new THREE.MeshBasicMaterial({ map: atlasTexture, transparent: true, alphaTest: .03, side: THREE.DoubleSide, toneMapped: false });
     playerSprite = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 3.6), spriteMaterial);
-    // Keep the supplied sprite-map foot anchor aligned with the track surface.
+    // The supplied sprite-map foot anchor stays aligned with the track surface.
     playerSprite.position.set(0, 3.6 * (232 / 256 - .5), .12);
     player.add(playerSprite);
     player.userData.fallback.visible = false;
@@ -133,20 +182,20 @@ function setSpriteFrame(frameId) {
 
 function updateAnimation(dt) {
   if (!spriteMap || !playerSprite) return;
-  const vy = player.userData.vy;
-  const name = dead ? 'hurt' : completed ? 'victory' : !started ? 'idle' : player.userData.grounded ? 'run' : vy > 2 ? 'jump_rise' : vy > -1.5 ? 'jump_apex' : 'fall';
-  playAnimation(name);
-  const animation = spriteMap.animations[name];
+  const velocityY = player.userData.vy;
+  const animationName = dead ? 'hurt' : completed ? 'victory' : !started ? 'idle' : player.userData.grounded ? 'run' : velocityY > 2 ? 'jump_rise' : velocityY > -1.5 ? 'jump_apex' : 'fall';
+  playAnimation(animationName);
+  const animation = spriteMap.animations[animationName];
   animationTime += dt;
   if (animationTime >= 1 / animation.fps) {
     animationTime = 0;
-    const frameIndex = animation.loop ? Math.floor(clock.elapsedTime * animation.fps) % animation.frames.length : Math.min(animation.frames.length - 1, Math.floor(clock.elapsedTime * animation.fps) % animation.frames.length);
+    const frameIndex = Math.floor(clock.elapsedTime * animation.fps) % animation.frames.length;
     setSpriteFrame(animation.frames[frameIndex]);
   }
 }
 
 function resize() {
-  if (!renderer) return;
+  if (!renderer || !stage.clientWidth || !stage.clientHeight) return;
   camera.aspect = stage.clientWidth / stage.clientHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(stage.clientWidth, stage.clientHeight);
@@ -170,25 +219,29 @@ function update(dt) {
     player.userData.vy = 0;
     player.userData.grounded = true;
   }
-  for (const obstacle of obstacles) {
+  for (let index = obstacles.length - 1; index >= 0; index--) {
+    const obstacle = obstacles[index];
     obstacle.position.x -= level.speed * dt;
-    if (obstacle.position.x < -5 && !obstacle.userData.passed) {
-      obstacle.userData.passed = true;
-      progressFill.style.width = `${Math.min(100, distance / level.length * 100)}%`;
-    }
     if (obstacle.position.x < -8) {
       scene.remove(obstacle);
-      obstacles.splice(obstacles.indexOf(obstacle), 1);
-      break;
+      obstacle.geometry.dispose();
+      obstacle.material.dispose();
+      obstacles.splice(index, 1);
+      continue;
     }
-    const isInCollisionRange = Math.abs(obstacle.position.x - player.position.x) < .72;
-    const jumpHeight = player.position.y - laneY;
-    if (isInCollisionRange && jumpHeight < .95) {
+    if (isObstacleCollision(player.position.x, obstacle.position.x, player.position.y - laneY)) {
       crash();
       break;
     }
   }
+  updateProgress(levelProgressPercent(distance, level.length));
   if (distance >= level.length) finish();
+}
+
+function updateProgress(percent) {
+  const rounded = Math.round(percent);
+  progressFill.style.width = `${percent}%`;
+  progressTrack.setAttribute('aria-valuenow', String(rounded));
 }
 
 function spawnObstacles() {
@@ -196,47 +249,83 @@ function spawnObstacles() {
     for (let index = 0; index < count; index++) {
       const geometry = new THREE.ConeGeometry(.57, .95, 4);
       geometry.rotateY(Math.PI / 4);
-      const obstacle = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0xff557d, emissive: 0x761c45, emissiveIntensity: .55, metalness: .15 }));
+      const material = new THREE.MeshStandardMaterial({ color: 0xff557d, emissive: 0x761c45, emissiveIntensity: .55, metalness: .15 });
+      const obstacle = new THREE.Mesh(geometry, material);
       obstacle.position.set(distanceAlongTrack - 3 + index * 1.28, laneY + .475, 0);
-      obstacle.userData.passed = false;
       scene.add(obstacle);
       obstacles.push(obstacle);
     }
   }
 }
 
-function showOverlay(title, instructions) {
+function updateTheme() {
+  if (!scene || !floorMaterial || !trackEdgeMaterial) return;
+  scene.background.setHex(level.background);
+  scene.fog.color.setHex(level.background);
+  floorMaterial.color.setHex(level.floor);
+  trackEdgeMaterial.color.setHex(level.color);
+  document.documentElement.style.setProperty('--level-accent', `#${level.color.toString(16).padStart(6, '0')}`);
+  const fallbackMaterial = player?.userData.fallback?.material;
+  fallbackMaterial?.color.setHex(level.color);
+  fallbackMaterial?.emissive.setHex(level.color);
+}
+
+function showOverlay(title, instructions, showNext = false) {
   overlay.hidden = false;
   overlay.querySelector('h2').textContent = title;
   overlay.querySelector('p').textContent = instructions;
+  nextLevelButton.hidden = !showNext;
 }
 
-function start() {
+function selectLevel(index) {
+  if (!Number.isInteger(index) || index < 0 || index >= levels.length) return;
+  reset();
+  selectedLevelIndex = index;
+  level = getLevel(levels[index].id);
+  levelName.textContent = `${String(index + 1).padStart(2, '0')} / ${level.name}`;
+  attempt = 1;
+  attemptDisplay.textContent = '01';
+  updateProgress(0);
+  updateTheme();
+  showOverlay(`${level.name} is ready.`, 'Tap anywhere or press Space to jump.');
+  document.querySelectorAll('.level-card').forEach((card, cardIndex) => {
+    const selected = cardIndex === selectedLevelIndex;
+    card.classList.toggle('selected', selected);
+    card.setAttribute('aria-pressed', String(selected));
+  });
+}
+
+async function start({ jumpAfterLoad = false } = {}) {
+  if (running) return true;
   if (dead || completed) reset();
-  if (running) return;
+  if (musicEnabled) musicEngine.start(level.music).catch((error) => console.warn('Music could not start.', error));
+  if (!await ensureScene()) {
+    void musicEngine.stop();
+    return false;
+  }
+  if (running) return true;
   started = true;
   running = true;
   overlay.hidden = true;
   message.textContent = 'TAP / CLICK / SPACE TO JUMP';
-  playButton.innerHTML = '<span class="play-icon">↻</span> RESTART RUN';
+  playButton.innerHTML = '<span class="play-icon" aria-hidden="true">↻</span> RESTART LEVEL';
   spawnObstacles();
+  if (jumpAfterLoad && player.userData.grounded) {
+    player.userData.vy = 8.3;
+    player.userData.grounded = false;
+  }
+  return true;
 }
 
 function jump() {
-  if (!started) {
-    start();
+  if (dead || completed) reset();
+  if (!sceneStarted || !running) {
+    void start({ jumpAfterLoad: true });
     return;
   }
-  if (!running) {
-    if (dead || completed) reset();
-    start();
-    return;
-  }
-  if (player.userData.grounded) {
-    player.userData.vy = 8.3;
-    player.userData.grounded = false;
-    tone(520, .07);
-  }
+  if (!player.userData.grounded) return;
+  player.userData.vy = 8.3;
+  player.userData.grounded = false;
 }
 
 function crash() {
@@ -244,18 +333,22 @@ function crash() {
   dead = true;
   attempt++;
   attemptDisplay.textContent = String(attempt).padStart(2, '0');
-  showOverlay('One more try.', 'Tap or press space to jump back in.');
+  showOverlay('One more try.', 'Tap or press Space to try this level again.');
   message.textContent = 'RUN ENDED — TRY AGAIN';
-  tone(150, .16);
+  void musicEngine.stop();
 }
 
 function finish() {
   running = false;
   completed = true;
   distance = level.length;
-  progressFill.style.width = '100%';
-  showOverlay('Level complete!', 'Neon Run cleared. The next world is coming soon.');
+  updateProgress(100);
+  completedLevelIds.add(level.id);
+  try { localStorage.setItem(completionKey, JSON.stringify([...completedLevelIds])); } catch { /* Completion remains available for this session. */ }
+  renderLevelCards();
+  showOverlay(`${level.name} cleared!`, `Course ${selectedLevelIndex + 1} of ${levels.length} complete.`, selectedLevelIndex < levels.length - 1);
   message.textContent = 'LEVEL COMPLETE';
+  void musicEngine.stop();
 }
 
 function reset() {
@@ -264,63 +357,141 @@ function reset() {
   started = false;
   running = false;
   distance = 0;
-  player.position.set(-3, laneY, 0);
-  player.userData.vy = 0;
-  player.userData.grounded = true;
-  obstacles.splice(0).forEach((obstacle) => scene.remove(obstacle));
-  progressFill.style.width = '0%';
-  showOverlay('Ready when you are.', 'Tap anywhere or press space to jump.');
+  attempt = 1;
+  if (player) {
+    player.position.set(-3, laneY, 0);
+    player.userData.vy = 0;
+    player.userData.grounded = true;
+  }
+  for (const obstacle of obstacles) {
+    scene?.remove(obstacle);
+    obstacle.geometry.dispose();
+    obstacle.material.dispose();
+  }
+  obstacles.length = 0;
+  attemptDisplay.textContent = '01';
+  updateProgress(0);
+  message.textContent = 'TAP / CLICK / SPACE TO JUMP';
+  playButton.innerHTML = '<span class="play-icon" aria-hidden="true">▶</span> PLAY LEVEL';
+  showOverlay(`${level.name} is ready.`, 'Tap anywhere or press Space to jump.');
+  void musicEngine.stop();
 }
 
-function tone(frequency, duration) {
-  if (!soundOn) return;
-  try {
-    audioContext ??= new AudioContext();
-    if (audioContext.state === 'suspended') audioContext.resume();
-    const oscillator = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    oscillator.frequency.value = frequency;
-    gain.gain.setValueAtTime(.04, audioContext.currentTime);
-    gain.gain.exponentialRampToValueAtTime(.001, audioContext.currentTime + duration);
-    oscillator.connect(gain).connect(audioContext.destination);
-    oscillator.start();
-    oscillator.stop(audioContext.currentTime + duration);
-  } catch {
-    // Sound is optional; gameplay remains available.
+function renderLevelCards() {
+  const list = document.querySelector('#level-list');
+  list.replaceChildren();
+  levels.forEach((item, index) => {
+    const button = document.createElement('button');
+    button.className = `level-card${index === selectedLevelIndex ? ' selected' : ''}${completedLevelIds.has(item.id) ? ' completed' : ''}`;
+    button.type = 'button';
+    button.setAttribute('aria-pressed', String(index === selectedLevelIndex));
+    button.setAttribute('aria-label', `Play level ${index + 1}: ${item.name}${completedLevelIds.has(item.id) ? ', completed' : ''}`);
+    const number = document.createElement('span');
+    number.className = 'level-number';
+    number.textContent = `LEVEL ${String(index + 1).padStart(2, '0')}`;
+    const title = document.createElement('span');
+    title.className = 'level-card-title';
+    title.textContent = item.name;
+    const zone = document.createElement('span');
+    zone.className = 'level-card-zone';
+    zone.textContent = item.zone;
+    button.append(number, title, zone);
+    button.addEventListener('click', () => selectLevel(index));
+    list.appendChild(button);
+  });
+}
+
+function syncFullscreenUI() {
+  const nativeFullscreen = document.fullscreenElement === gameWrap || document.webkitFullscreenElement === gameWrap;
+  const isFullscreen = nativeFullscreen || pseudoFullscreen;
+  gameWrap.classList.toggle('fullscreen-mode', isFullscreen);
+  document.body.classList.toggle('fullscreen-active', isFullscreen);
+  fullscreenButton.textContent = isFullscreen ? 'EXIT FULLSCREEN' : 'FULLSCREEN';
+  fullscreenButton.setAttribute('aria-label', isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen');
+  fullscreenButton.setAttribute('aria-pressed', String(isFullscreen));
+  requestAnimationFrame(resize);
+}
+
+async function toggleFullscreen() {
+  const nativeFullscreen = document.fullscreenElement === gameWrap || document.webkitFullscreenElement === gameWrap;
+  if (nativeFullscreen) {
+    const exitFullscreen = document.exitFullscreen || document.webkitExitFullscreen;
+    if (exitFullscreen) {
+      try { await exitFullscreen.call(document); } catch { /* Browser already exited fullscreen. */ }
+    }
+    return;
   }
+  if (pseudoFullscreen) {
+    pseudoFullscreen = false;
+    syncFullscreenUI();
+    return;
+  }
+  try {
+    const requestFullscreen = gameWrap.requestFullscreen || gameWrap.webkitRequestFullscreen;
+    if (!requestFullscreen) throw new Error('Fullscreen API unavailable');
+    await requestFullscreen.call(gameWrap, { navigationUI: 'hide' });
+  } catch {
+    pseudoFullscreen = true;
+    syncFullscreenUI();
+  }
+}
+
+function toggleMusic() {
+  musicEnabled = !musicEnabled;
+  musicButton.textContent = musicEnabled ? 'MUSIC ON' : 'MUSIC OFF';
+  musicButton.setAttribute('aria-label', musicEnabled ? 'Mute music' : 'Enable music');
+  musicButton.setAttribute('aria-pressed', String(musicEnabled));
+  if (musicEnabled && running) musicEngine.start(level.music).catch((error) => console.warn('Music could not start.', error));
+  else if (!musicEnabled) void musicEngine.stop();
 }
 
 playButton.addEventListener('click', () => {
-  if (dead || completed || started) reset();
-  else start();
+  if (running) reset();
+  void start();
 });
 stage.addEventListener('pointerdown', (event) => { event.preventDefault(); jump(); });
-overlay.addEventListener('pointerdown', (event) => { event.preventDefault(); jump(); });
+overlay.addEventListener('pointerdown', (event) => { if (event.target === overlay) jump(); });
 document.addEventListener('keydown', (event) => {
-  if (['Space', 'ArrowUp', 'KeyW'].includes(event.code)) {
-    event.preventDefault();
-    jump();
+  if (event.key === 'Escape' && pseudoFullscreen) {
+    pseudoFullscreen = false;
+    syncFullscreenUI();
+    return;
+  }
+  if (!['Space', 'ArrowUp', 'KeyW'].includes(event.code)) return;
+  if (event.target instanceof Element && event.target.closest('button, a, input, select, textarea')) return;
+  event.preventDefault();
+  jump();
+});
+fullscreenButton.addEventListener('click', () => { void toggleFullscreen(); });
+musicButton.addEventListener('click', toggleMusic);
+nextLevelButton.addEventListener('click', () => {
+  if (selectedLevelIndex < levels.length - 1) {
+    selectLevel(selectedLevelIndex + 1);
+    void start();
   }
 });
-document.querySelector('#sound-toggle').addEventListener('click', (event) => {
-  soundOn = !soundOn;
-  event.currentTarget.textContent = soundOn ? 'SOUND ON' : 'SOUND OFF';
-  event.currentTarget.setAttribute('aria-label', soundOn ? 'Mute sound' : 'Enable sound');
-  if (soundOn) tone(660, .08);
+document.addEventListener('fullscreenchange', syncFullscreenUI);
+document.addEventListener('webkitfullscreenchange', syncFullscreenUI);
+gameWrap.addEventListener('fullscreenerror', () => {
+  pseudoFullscreen = true;
+  syncFullscreenUI();
 });
-const list = document.querySelector('#level-list');
-levels.forEach((item, index) => {
-  const card = document.createElement('article');
-  card.className = `level-card${index === 0 ? ' active' : ' coming'}`;
-  card.innerHTML = `<span class="level-number">LEVEL ${String(index + 1).padStart(2, '0')}</span><h3>${item.name}</h3><p>${item.zone}</p>`;
-  list.appendChild(card);
+window.addEventListener('resize', resize);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && running) {
+    running = false;
+    showOverlay('Paused.', 'Tap anywhere or press Space to resume.');
+    void musicEngine.stop();
+  }
 });
 document.querySelector('#version-label').textContent = `v${packageInfo.version}`;
 document.querySelector('#footer-version').textContent = `VERSION ${packageInfo.version}`;
-initScene();
+musicButton.setAttribute('aria-pressed', String(musicEnabled));
+renderLevelCards();
 window.addEventListener('pagehide', () => {
   cancelAnimationFrame(raf);
   resizeObserver?.disconnect();
   renderer?.dispose();
   atlasTexture?.dispose();
+  void musicEngine.stop();
 });
