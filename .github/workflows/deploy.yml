@@ -27,6 +27,8 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci
+      - name: Run unit tests
+        run: npm test
       - name: Build for the GitHub Pages project URL
         run: npm run build
         env:
