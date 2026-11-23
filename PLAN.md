@@ -21,12 +21,13 @@ Build a polished, touch-first browser rhythm platformer for iPad, phones, and de
 - A native Fullscreen API button expands the stage; a CSS viewport fallback covers browsers without usable native fullscreen.
 - Music is opt-in by user gesture: original procedural Web Audio, per-level BPM, scale, chord movement, lead motif, bass, and synthesized percussion. Mute is always available; gameplay does not rely on audio cues.
 
-## Current build — v0.4.1 (test build)
+## Current build — v0.4.2 (test build)
 
 - Vite + JavaScript + Three.js; static client-side app.
 - Twenty selectable courses, with unique environment/hazard themes, authored layouts, and length progression from 78 to a 150-unit maximum.
 - Course data includes gaps, raised/hover platforms, spring/dash/float/shield/phase portals, crawlers, drones, and optional shards; validation runs in Node tests.
 - Touch selection and iOS callouts are disabled only inside the game surface; jump input has 140 ms buffering and 120 ms coyote time, with small obstacle/stomp forgiveness margins.
+- Thirteen project-local game-development skills are pinned in `skills-lock.json` for future gameplay, UI, Three.js, audio, and asset work; they are not included in the static site.
 - Detailed course beats and coordinates are documented in [LEVEL_DESIGN_PLAN.md](LEVEL_DESIGN_PLAN.md).
 - Browser-assisted completion checks have passed for a subset of courses; full end-to-end playtesting across all twenty and physical iPad/iPhone validation remain open.
 - The supplied 81-frame atlas drives idle, run, jump ascent/apex/fall, hurt, and victory states. A cube fallback remains if the atlas fails to load.
