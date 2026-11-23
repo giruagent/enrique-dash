@@ -2,7 +2,7 @@
 
 ## Vision
 
-Build a polished, touch-first browser rhythm platformer for iPad, phones, and desktop. Players learn readable obstacle patterns, jump in time, retry quickly, and progress through themed levels. The first expansion now has eleven selectable courses; future growth should follow playtest feedback rather than a level-count target.
+Build a polished, touch-first browser rhythm platformer for iPad, phones, and desktop. Players learn readable obstacle patterns, jump in time, retry quickly, and progress through themed levels. The current test campaign has twenty selectable courses and stops growing at a modest 150-unit cap until playtesting supports further expansion.
 
 ## Product principles
 
@@ -21,11 +21,13 @@ Build a polished, touch-first browser rhythm platformer for iPad, phones, and de
 - A native Fullscreen API button expands the stage; a CSS viewport fallback covers browsers without usable native fullscreen.
 - Music is opt-in by user gesture: original procedural Web Audio, per-level BPM, scale, chord movement, lead motif, bass, and synthesized percussion. Mute is always available; gameplay does not rely on audio cues.
 
-## Current build — v0.3.1
+## Current build — v0.4.0 (test build)
 
 - Vite + JavaScript + Three.js; static client-side app.
-- Eleven playable courses: Neon Run, Skyline Rush, Solar Flare, Gravity Garden, Pixel Pier, Midnight Circuit, Candy Comet, Aqua Pulse, Crystal Cavern, Stormbreaker, and Final Orbit.
-- Each course has distinct authored hazard groups, speed, palette, and music parameters. Course data is validated in Node tests.
+- Twenty selectable courses, with unique environment/hazard themes, authored layouts, and length progression from 78 to a 150-unit maximum.
+- Course data includes gaps, raised/hover platforms, spring/dash/float/shield/phase portals, crawlers, drones, and optional shards; validation runs in Node tests.
+- Detailed course beats and coordinates are documented in [LEVEL_DESIGN_PLAN.md](LEVEL_DESIGN_PLAN.md).
+- Browser-assisted completion checks have passed for a subset of courses; full end-to-end playtesting across all twenty and physical iPad/iPhone validation remain open.
 - The supplied 81-frame atlas drives idle, run, jump ascent/apex/fall, hurt, and victory states. A cube fallback remains if the atlas fails to load.
 - Three.js and the character atlas are deferred until the first play action. A lightweight CSS track preview remains before that interaction.
 - Fullscreen, Escape-to-exit, touch/keyboard jump, music toggle, course select, local completed-course markers, and package version visible in the fullscreen HUD.
@@ -35,21 +37,21 @@ Build a polished, touch-first browser rhythm platformer for iPad, phones, and de
 
 ### Phase 1 — Tune gameplay and verify devices
 
-- Playtest all eleven courses, tune jump windows and difficulty progression, and add practice checkpoints where they materially improve fairness.
+- Playtest all twenty courses, tune jump windows and difficulty progression, and add practice checkpoints where they materially improve fairness.
 - Test native fullscreen and CSS fallback on real iPadOS Safari, iOS Safari, Android Chrome, and desktop browsers; verify orientation and safe areas.
 - Listen to the soundtrack on device speakers and headphones; adjust gain, transients, and tonal balance based on actual listening.
 - Inspect sprite edges at full resolution and confirm redistribution/commercial rights.
 
 ### Phase 2 — Deeper level system
 
-- Move hazards and course timing to versioned data files with deterministic simulation and validated IDs.
+- Build a deterministic course simulator and course preview so layouts can be balanced before running the 3D game.
 - Add best-time/progress records and a practice mode, while keeping local play private and account-free.
 - Expand level art and environmental motion only where they improve readability and rhythm.
-- Add new tracks/worlds when their art, patterns, and audio have been playtested end-to-end.
+- Consider additional courses beyond twenty only after the campaign has been playtested and player feedback supports them.
 
 ### Phase 3 — Release quality
 
-- Add browser automation for all level selection, fullscreen enter/exit/fallback, mute/music start, restart, and course completion.
+- Add browser automation for all twenty course layouts, portal effects, enemy collisions, collectible collection, fullscreen, mute/music start, restart, and course completion.
 - Profile frame time, memory, and loading on target devices; handle WebGL loss and cap pixel ratio.
 - Add telemetry only with privacy review, a clear notice, and consent as appropriate.
 - Deploy immutable static assets over HTTPS with a verified version marker and rollback procedure.

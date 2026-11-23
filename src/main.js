@@ -1,7 +1,7 @@
 let THREE;
 import packageInfo from '../package.json';
 import { getLevel, levels } from './levels.js';
-import { isObstacleCollision, levelProgressPercent } from './game-logic.js';
+import { getHazardProfile, getTrackSupportHeight, isCollectibleContact, isObstacleCollision, levelProgressPercent, portalEffects, shouldStompEnemy } from './game-logic.js';
 import { MusicEngine } from './music.js';
 import './style.css';
 
@@ -13,6 +13,8 @@ const nextLevelButton = document.querySelector('#next-level-button');
 const progressFill = document.querySelector('#progress-fill');
 const progressTrack = document.querySelector('#progress-track');
 const attemptDisplay = document.querySelector('#attempt');
+const collectibleHud = document.querySelector('#collectible-hud');
+const collectibleCountDisplay = document.querySelector('#collectible-count');
 const message = document.querySelector('#game-message');
 const levelName = document.querySelector('#level-name');
 const fullscreenButton = document.querySelector('#fullscreen-toggle');
@@ -24,10 +26,16 @@ let level = levels[selectedLevelIndex];
 let renderer, scene, camera, player, playerSprite, spriteMaterial, atlasTexture, spriteMap, clock, raf, resizeObserver;
 let sceneStarted = false;
 let scenePromise = null;
-let floor, floorMaterial, trackEdgeMaterial;
+let floor, floorMaterial, trackEdgeMaterial, sceneryGroup;
 let running = false, started = false, dead = false, completed = false, distance = 0, attempt = 1;
 let musicEnabled = true, pseudoFullscreen = false, activeAnimation = '', animationTime = 0;
 const obstacles = [];
+const gaps = [];
+const platforms = [];
+const portals = [];
+const enemies = [];
+const collectibles = [];
+let collectedCount = 0;
 const completionKey = 'enrique-dash.completed-levels.v1';
 let completedLevelIds = readCompletedLevels();
 
@@ -71,17 +79,8 @@ function initScene() {
   grid.material.transparent = true;
   grid.material.opacity = .35;
   scene.add(grid);
-  for (let index = 0; index < 14; index++) {
-    const height = 1.5 + ((index * 37) % 7) * .5;
-    const building = new THREE.Mesh(new THREE.BoxGeometry(1.5, height, .45), new THREE.MeshBasicMaterial({ color: index % 2 ? 0x263451 : 0x202d49 }));
-    building.position.set(-12 + index * 2.7, laneY + height / 2, -5.2);
-    scene.add(building);
-    for (let windowIndex = 0; windowIndex < 3; windowIndex++) {
-      const windowLight = new THREE.Mesh(new THREE.BoxGeometry(.06, .17, .04), new THREE.MeshBasicMaterial({ color: index % 3 ? 0x526289 : 0xb7ef73 }));
-      windowLight.position.set(building.position.x - .35 + windowIndex * .35, laneY + height / 2 + .2, -4.94);
-      scene.add(windowLight);
-    }
-  }
+  sceneryGroup = new THREE.Group();
+  scene.add(sceneryGroup);
   trackEdgeMaterial = new THREE.MeshBasicMaterial({ color: level.color });
   const edge = new THREE.Mesh(new THREE.BoxGeometry(120, .06, .12), trackEdgeMaterial);
   edge.position.set(22, laneY + .04, .15);
@@ -90,6 +89,8 @@ function initScene() {
   player.position.set(-3, laneY, 0);
   player.userData.vy = 0;
   player.userData.grounded = true;
+  player.userData.supportY = laneY;
+  player.userData.effects = { dashTimer: 0, gravityTimer: 0, shieldCharges: 0, phaseTimer: 0 };
   const fallbackMaterial = new THREE.MeshStandardMaterial({ color: level.color, emissive: level.color, emissiveIntensity: .55 });
   const fallback = new THREE.Mesh(new THREE.BoxGeometry(.78, .78, .78), fallbackMaterial);
   fallback.position.y = .4;
@@ -211,31 +212,211 @@ function draw() {
 }
 
 function update(dt) {
-  distance += dt * level.speed;
-  player.position.y += player.userData.vy * dt;
-  player.userData.vy -= 19 * dt;
-  if (player.position.y <= laneY) {
-    player.position.y = laneY;
+  const effects = player.userData.effects;
+  effects.dashTimer = Math.max(0, effects.dashTimer - dt);
+  effects.gravityTimer = Math.max(0, effects.gravityTimer - dt);
+  effects.phaseTimer = Math.max(0, effects.phaseTimer - dt);
+  const speed = level.speed * (effects.dashTimer > 0 ? portalEffects.dash.speedMultiplier : 1);
+  distance += dt * speed;
+
+  moveFeatureGroup(obstacles, dt, speed, removeObstacle);
+  moveFeatureGroup(gaps, dt, speed, removeGap);
+  moveFeatureGroup(platforms, dt, speed, removeMeshFeature);
+  moveFeatureGroup(portals, dt, speed, removeMeshFeature);
+  moveFeatureGroup(enemies, dt, speed, removeMeshFeature);
+  moveFeatureGroup(collectibles, dt, speed, removeMeshFeature);
+  triggerPortals();
+
+  const supportHeight = getTrackSupportHeight(
+    player.position.x,
+    laneY,
+    gaps.map(({ center, width }) => ({ center, width })),
+    platforms.map(({ center, width, height, currentHeight }) => ({ center, width, height: currentHeight ?? height })),
+  );
+  player.userData.supportY = supportHeight ?? laneY;
+  const previousY = player.position.y;
+  const raisedPlatform = platforms.find(({ center, width, height, currentHeight }) => (currentHeight ?? height) > .05 && Math.abs(player.position.x - center) <= width / 2);
+  const raisedHeight = raisedPlatform ? raisedPlatform.currentHeight ?? raisedPlatform.height : null;
+  if (player.userData.grounded && raisedPlatform && player.position.y < laneY + raisedHeight - .04) {
+    crash('Missed the platform.');
+    return;
+  }
+
+  if (player.userData.grounded && supportHeight !== null && player.position.y <= supportHeight + .05) {
+    player.position.y = supportHeight;
     player.userData.vy = 0;
-    player.userData.grounded = true;
-  }
-  for (let index = obstacles.length - 1; index >= 0; index--) {
-    const obstacle = obstacles[index];
-    obstacle.position.x -= level.speed * dt;
-    if (obstacle.position.x < -8) {
-      scene.remove(obstacle);
-      obstacle.geometry.dispose();
-      obstacle.material.dispose();
-      obstacles.splice(index, 1);
-      continue;
+  } else {
+    if (player.userData.grounded && (supportHeight === null || supportHeight < player.position.y - .05)) player.userData.grounded = false;
+    const gravity = 19 * (effects.gravityTimer > 0 ? portalEffects.float.gravityMultiplier : 1);
+    player.userData.vy -= gravity * dt;
+    player.position.y += player.userData.vy * dt;
+    if (supportHeight !== null && player.userData.vy <= 0 && player.position.y <= supportHeight && previousY >= supportHeight - .08) {
+      player.position.y = supportHeight;
+      player.userData.vy = 0;
+      player.userData.grounded = true;
     }
-    if (isObstacleCollision(player.position.x, obstacle.position.x, player.position.y - laneY)) {
+  }
+  if (supportHeight === null) player.userData.grounded = false;
+  if (player.position.y < laneY - 1.65) {
+    crash('Missed the jump.');
+    return;
+  }
+
+  if (effects.phaseTimer <= 0) {
+    for (let index = obstacles.length - 1; index >= 0; index--) {
+      const obstacle = obstacles[index];
+      const jumpHeight = player.position.y - player.userData.supportY;
+      if (!isObstacleCollision(player.position.x, obstacle.mesh.position.x, jumpHeight, {
+        horizontalRadius: obstacle.width / 2 + .2,
+        clearanceHeight: obstacle.clearanceHeight,
+      })) continue;
+      if (effects.shieldCharges > 0) {
+        effects.shieldCharges--;
+        removeObstacle(obstacle, index);
+        message.textContent = 'SHIELD SAVED YOU';
+        continue;
+      }
       crash();
-      break;
+      return;
     }
+    if (handleEnemyCollisions()) return;
   }
+  handleCollectibleCollisions();
+
   updateProgress(levelProgressPercent(distance, level.length));
   if (distance >= level.length) finish();
+}
+
+function moveFeatureGroup(group, dt, speed, removeFeature) {
+  for (let index = group.length - 1; index >= 0; index--) {
+    const feature = group[index];
+    feature.mesh.position.x -= speed * dt;
+    feature.center = feature.mesh.position.x;
+    if (feature.decorations) {
+      for (const decoration of feature.decorations) decoration.position.x = feature.center;
+    }
+    if (group === platforms && feature.bob > 0) {
+      feature.currentHeight = feature.height + Math.sin(clock.elapsedTime * 2 + feature.phase) * feature.bob;
+      feature.mesh.position.y = laneY + feature.currentHeight - .14;
+    }
+    if (group === enemies) {
+      feature.mesh.rotation.y += dt * (feature.type === 'drone' ? 1.7 : .8);
+      if (feature.type === 'drone') feature.mesh.position.y = feature.baseY + Math.sin(clock.elapsedTime * 2.2 + feature.phase) * .16;
+    }
+    if (group === portals) feature.mesh.rotation.z += dt * 1.2;
+    if (group === collectibles) {
+      feature.mesh.rotation.x += dt * 1.8;
+      feature.mesh.rotation.y += dt * 2.2;
+    }
+    if (feature.center + (feature.width ?? 0) / 2 < -9) {
+      if (removeFeature === removeMeshFeature) removeFeature(feature, index, group);
+      else removeFeature(feature, index);
+    }
+  }
+}
+
+function removeObstacle(feature, index = obstacles.indexOf(feature)) {
+  disposeMesh(feature.mesh);
+  obstacles.splice(index, 1);
+}
+
+function removeGap(feature, index = gaps.indexOf(feature)) {
+  disposeMesh(feature.mesh);
+  feature.decorations?.forEach(disposeMesh);
+  gaps.splice(index, 1);
+}
+
+function removeMeshFeature(feature, index, group) {
+  disposeMesh(feature.mesh);
+  group.splice(index, 1);
+}
+
+function disposeMesh(mesh) {
+  if (!mesh || !scene) return;
+  scene.remove(mesh);
+  mesh.geometry?.dispose();
+  if (Array.isArray(mesh.material)) mesh.material.forEach((material) => material.dispose());
+  else mesh.material?.dispose();
+}
+
+function triggerPortals() {
+  for (const portal of portals) {
+    if (portal.triggered || Math.abs(portal.center - player.position.x) > .62) continue;
+    portal.triggered = true;
+    portal.mesh.visible = false;
+    const effects = player.userData.effects;
+    switch (portal.type) {
+      case 'spring':
+        player.userData.vy = Math.max(player.userData.vy, portalEffects.spring.jumpVelocity);
+        player.userData.grounded = false;
+        message.textContent = 'SPRING PORTAL';
+        break;
+      case 'dash':
+        effects.dashTimer = portalEffects.dash.duration;
+        message.textContent = 'DASH BOOST';
+        break;
+      case 'float':
+        effects.gravityTimer = portalEffects.float.duration;
+        message.textContent = 'LOW GRAVITY';
+        break;
+      case 'shield':
+        effects.shieldCharges = portalEffects.shield.shieldCharges;
+        message.textContent = 'SHIELD READY';
+        break;
+      case 'phase':
+        effects.phaseTimer = portalEffects.phase.duration;
+        message.textContent = 'PHASE ON';
+        break;
+      default:
+        console.warn(`Unknown portal type: ${portal.type}`);
+    }
+  }
+}
+
+function handleEnemyCollisions() {
+  const effects = player.userData.effects;
+  for (let index = enemies.length - 1; index >= 0; index--) {
+    const enemy = enemies[index];
+    if (Math.abs(enemy.center - player.position.x) >= .8) continue;
+    const playerHeight = player.position.y - player.userData.supportY;
+    if (enemy.type === 'crawler' && shouldStompEnemy(playerHeight, player.userData.vy)) {
+      removeMeshFeature(enemy, index, enemies);
+      message.textContent = 'ENEMY STOMPED';
+      continue;
+    }
+    const enemyBottom = enemy.mesh.position.y - enemy.height / 2;
+    const enemyTop = enemy.mesh.position.y + enemy.height / 2;
+    const playerBottom = player.position.y;
+    const playerTop = player.position.y + 1.35;
+    const verticalOverlap = playerBottom < enemyTop && playerTop > enemyBottom;
+    if (!verticalOverlap) continue;
+    if (effects.shieldCharges > 0) {
+      effects.shieldCharges--;
+      removeMeshFeature(enemy, index, enemies);
+      message.textContent = 'SHIELD SAVED YOU';
+      continue;
+    }
+    crash('Enemy hit!');
+    return true;
+  }
+  return false;
+}
+
+function handleCollectibleCollisions() {
+  for (let index = collectibles.length - 1; index >= 0; index--) {
+    const shard = collectibles[index];
+    if (!isCollectibleContact(player.position.x, shard.center, player.position.y - laneY, shard.height)) continue;
+    removeMeshFeature(shard, index, collectibles);
+    collectedCount++;
+    updateCollectibleHud();
+    message.textContent = `SHARD ${collectedCount} / ${level.collectibles.length}`;
+  }
+}
+
+function updateCollectibleHud() {
+  const total = level.collectibles?.length ?? 0;
+  collectibleHud.hidden = total === 0;
+  collectibleCountDisplay.textContent = `${String(collectedCount).padStart(2, '0')} / ${String(total).padStart(2, '0')}`;
 }
 
 function updateProgress(percent) {
@@ -245,17 +426,216 @@ function updateProgress(percent) {
 }
 
 function spawnObstacles() {
+  const profile = getHazardProfile(level.hazardStyle);
   for (const [distanceAlongTrack, count] of level.obstacles) {
     for (let index = 0; index < count; index++) {
-      const geometry = new THREE.ConeGeometry(.57, .95, 4);
-      geometry.rotateY(Math.PI / 4);
-      const material = new THREE.MeshStandardMaterial({ color: 0xff557d, emissive: 0x761c45, emissiveIntensity: .55, metalness: .15 });
-      const obstacle = new THREE.Mesh(geometry, material);
-      obstacle.position.set(distanceAlongTrack - 3 + index * 1.28, laneY + .475, 0);
-      scene.add(obstacle);
-      obstacles.push(obstacle);
+      let geometry;
+      switch (profile.shape) {
+        case 'cylinder':
+        case 'stump':
+        case 'pipe':
+          geometry = new THREE.CylinderGeometry(profile.width * .38, profile.width * .48, profile.height, 7);
+          break;
+        case 'panel':
+        case 'block':
+        case 'beam':
+        case 'banner':
+          geometry = new THREE.BoxGeometry(profile.width, profile.height, profile.shape === 'beam' ? .14 : .72);
+          break;
+        case 'debris':
+        case 'asteroid':
+          geometry = new THREE.DodecahedronGeometry(profile.width * .47, 0);
+          break;
+        case 'gear':
+        case 'corona':
+          geometry = new THREE.TorusGeometry(profile.width * .35, profile.width * .12, 6, 12);
+          break;
+        case 'shard':
+          geometry = new THREE.OctahedronGeometry(profile.width * .48, 0);
+          break;
+        case 'cane':
+          geometry = new THREE.CylinderGeometry(profile.width * .2, profile.width * .35, profile.height, 7);
+          break;
+        default:
+          geometry = new THREE.ConeGeometry(profile.width * .5, profile.height, profile.shape === 'coral' ? 5 : 4);
+          geometry.rotateY(Math.PI / 4);
+      }
+      const color = level.hazardColor ?? level.color;
+      const material = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: .35, metalness: .16, roughness: .4 });
+      const center = distanceAlongTrack - 3 + index * 1.28;
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(center, laneY + (profile.offsetY ?? profile.height / 2), 0);
+      if (profile.shape === 'gear' || profile.shape === 'corona') mesh.rotation.x = Math.PI / 2;
+      if (profile.shape === 'shard') mesh.scale.y = 1.45;
+      scene.add(mesh);
+      obstacles.push({ mesh, center, width: profile.width, clearanceHeight: profile.clearanceHeight });
     }
   }
+}
+
+function spawnCourseFeatures() {
+  for (const definition of level.gaps ?? []) {
+    const center = definition.at - 3 + definition.width / 2;
+    const hole = new THREE.Mesh(
+      new THREE.BoxGeometry(definition.width, .06, 2.7),
+      new THREE.MeshBasicMaterial({ color: 0x02040b }),
+    );
+    hole.position.set(center, laneY + .035, 0);
+    scene.add(hole);
+    const railMaterial = new THREE.MeshBasicMaterial({ color: level.color });
+    const rails = [-1.32, 1.32].map((z) => {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(definition.width, .055, .07), railMaterial.clone());
+      rail.position.set(center, laneY + .06, z);
+      scene.add(rail);
+      return rail;
+    });
+    gaps.push({ center, width: definition.width, mesh: hole, decorations: rails });
+  }
+
+  for (const definition of level.platforms ?? []) {
+    const center = definition.at - 3 + definition.width / 2;
+    const height = definition.height ?? 0;
+    const material = new THREE.MeshStandardMaterial({ color: definition.color ?? level.color, emissive: definition.color ?? level.color, emissiveIntensity: .25, metalness: .22, roughness: .42 });
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(definition.width, .28, 1.95), material);
+    mesh.position.set(center, laneY + height - .14, -.12);
+    scene.add(mesh);
+    platforms.push({ center, width: definition.width, height, currentHeight: height, kind: definition.kind ?? 'bridge', bob: definition.kind === 'hover' ? .1 : 0, phase: center * .17, mesh });
+  }
+
+  const portalColors = { spring: 0xffb54f, dash: 0x52eaff, float: 0xb884ff, shield: 0x6c9dff, phase: 0xff6fe0 };
+  for (const definition of level.portals ?? []) {
+    const center = definition.at - 3;
+    const color = portalColors[definition.type] ?? level.color;
+    const mesh = new THREE.Mesh(
+      new THREE.TorusGeometry(.57, .12, 8, 24),
+      new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: .7, metalness: .2, roughness: .28 }),
+    );
+    mesh.position.set(center, laneY + 1.15, .08);
+    scene.add(mesh);
+    portals.push({ center, type: definition.type, triggered: false, mesh });
+  }
+
+  for (const definition of level.enemies ?? []) {
+    const type = definition.type ?? 'crawler';
+    const width = type === 'drone' ? .72 : .9;
+    const height = type === 'drone' ? .68 : .58;
+    const color = type === 'drone' ? 0xff6ce5 : 0xff5274;
+    const geometry = type === 'drone' ? new THREE.OctahedronGeometry(.43, 0) : new THREE.DodecahedronGeometry(.42, 0);
+    const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: .46, metalness: .18, roughness: .35 }));
+    const center = definition.at - 3;
+    const altitude = type === 'drone' ? definition.height ?? 1.12 : .29;
+    mesh.position.set(center, laneY + altitude, -.05);
+    scene.add(mesh);
+    enemies.push({ center, type, width, height, baseY: mesh.position.y, phase: center * .11, mesh });
+  }
+
+  for (const definition of level.collectibles ?? []) {
+    const center = definition.at - 3;
+    const height = definition.height ?? 1.7;
+    const mesh = new THREE.Mesh(
+      new THREE.OctahedronGeometry(.3, 0),
+      new THREE.MeshStandardMaterial({ color: level.color, emissive: level.color, emissiveIntensity: .8, metalness: .35, roughness: .2 }),
+    );
+    mesh.position.set(center, laneY + height, -.02);
+    scene.add(mesh);
+    collectibles.push({ center, height, mesh });
+  }
+  updateCollectibleHud();
+}
+
+
+function renderScenery() {
+  if (!sceneryGroup) return;
+  for (const part of [...sceneryGroup.children]) {
+    sceneryGroup.remove(part);
+    part.geometry?.dispose();
+    if (Array.isArray(part.material)) part.material.forEach((material) => material.dispose());
+    else part.material?.dispose();
+  }
+  const environment = level.environment ?? 'skyline';
+  const accent = new THREE.MeshBasicMaterial({ color: level.color });
+  const muted = new THREE.MeshBasicMaterial({ color: level.floor });
+  const addPart = (geometry, material, x, y, z = -5.2) => {
+    const mesh = new THREE.Mesh(geometry, material.clone());
+    mesh.position.set(x, y, z);
+    sceneryGroup.add(mesh);
+    return mesh;
+  };
+  for (let index = 0; index < 13; index++) {
+    const x = -15 + index * 3.2;
+    const height = 1.8 + ((index * 37) % 6) * .48;
+    const isFar = index % 2 === 0;
+    const groundY = laneY;
+    const groveEnvironments = ['gravity-garden', 'mosslight-hollow', 'clockwork-orchard', 'verdant-greenhouse'];
+    const crystalEnvironments = ['crystal-cavern', 'shatterglass'];
+    const foundryEnvironments = ['tidal-foundry', 'magnetar-forge'];
+    if (groveEnvironments.includes(environment)) {
+      addPart(new THREE.CylinderGeometry(.12, .25, height * .55, 5), muted, x, groundY + height * .275);
+      addPart(new THREE.SphereGeometry(.68 + (index % 3) * .12, 7, 6), accent, x, groundY + height * .72);
+      if (environment === 'clockwork-orchard' && index % 3 === 0) {
+        const gear = addPart(new THREE.TorusGeometry(.3, .055, 5, 10), accent, x + .4, groundY + height * .5);
+        gear.rotation.y = .55;
+      }
+    } else if (environment === 'solar-desert') {
+      addPart(new THREE.ConeGeometry(.9 + (index % 3) * .2, height * .45, 5), muted, x, groundY + height * .22);
+      const panel = addPart(new THREE.BoxGeometry(1.55, .12, .72), index % 2 ? accent : muted, x, groundY + height * .68);
+      panel.rotation.z = index % 2 ? -.18 : .18;
+      if (index % 4 === 0) addPart(new THREE.SphereGeometry(.42, 8, 6), accent, x + .7, groundY + height * .95);
+    } else if (['storm-coast'].includes(environment)) {
+      addPart(new THREE.ConeGeometry(.82 + (index % 3) * .2, height, 5), muted, x, groundY + height / 2);
+      if (index % 2 === 0) addPart(new THREE.BoxGeometry(.08, height * .42, .08), accent, x + .2, groundY + height * .68, -4.85);
+    } else if (crystalEnvironments.includes(environment)) {
+      const crystal = addPart(new THREE.OctahedronGeometry(.55 + (index % 3) * .12, 0), index % 2 ? accent : muted, x, groundY + height * .48);
+      crystal.scale.y = 1.5 + (index % 2) * .5;
+      crystal.rotation.z = index % 2 ? .25 : -.18;
+      if (environment === 'shatterglass' && index % 2 === 0) addPart(new THREE.OctahedronGeometry(.28, 0), accent, x + .55, groundY + height * .62);
+    } else if (environment === 'aqua-reef') {
+      addPart(new THREE.DodecahedronGeometry(.55 + (index % 3) * .13, 0), index % 2 ? accent : muted, x, groundY + height * .38);
+      if (index % 2 === 0) addPart(new THREE.ConeGeometry(.32, .9, 5), accent, x + .45, groundY + height * .7);
+      addPart(new THREE.SphereGeometry(.12, 6, 5), accent, x - .25, groundY + height * .98, -4.8);
+    } else if (['orbital-shipyard', 'eclipse-observatory'].includes(environment)) {
+      const orb = addPart(new THREE.SphereGeometry(.48 + (index % 3) * .18, 10, 8), muted, x, groundY + height * .62);
+      orb.scale.y = .7;
+      if (index % 3 === 0 || environment === 'eclipse-observatory') {
+        const ring = addPart(new THREE.TorusGeometry(.78, .035, 4, 18), accent, x, orb.position.y, -5.05);
+        ring.rotation.x = .8;
+        ring.rotation.y = .3;
+      }
+    } else if (environment === 'candy-comet') {
+      addPart(new THREE.CylinderGeometry(.1, .12, height * .7, 7), muted, x, groundY + height * .35);
+      addPart(new THREE.SphereGeometry(.45 + (index % 2) * .16, 9, 7), accent, x, groundY + height * .77);
+      if (index % 2 === 0) addPart(new THREE.TorusGeometry(.45, .06, 4, 12), muted, x, groundY + height * .77);
+    } else if (environment === 'cloudbreaker') {
+      const cloud = addPart(new THREE.SphereGeometry(.8 + (index % 2) * .2, 8, 6), index % 2 ? accent : muted, x, groundY + height * .7);
+      cloud.scale.set(1.45, .7, .65);
+    } else if (foundryEnvironments.includes(environment)) {
+      addPart(new THREE.CylinderGeometry(.42, .62, height, 6), muted, x, groundY + height / 2);
+      addPart(new THREE.TorusGeometry(.44, .08, 5, 12), accent, x, groundY + height * .78);
+      if (environment === 'magnetar-forge') {
+        const ring = addPart(new THREE.TorusGeometry(.72, .04, 4, 16), accent, x, groundY + height * .56);
+        ring.rotation.y = .75;
+      }
+    } else if (environment === 'paper-moon') {
+      const folded = addPart(new THREE.ConeGeometry(.72, height * .75, 4), index % 2 ? accent : muted, x, groundY + height * .38);
+      folded.rotation.z = index % 2 ? .22 : -.22;
+      addPart(new THREE.OctahedronGeometry(.22, 0), accent, x + .48, groundY + height * .78);
+    } else if (environment === 'pixel-pier') {
+      addPart(new THREE.BoxGeometry(1.2, height * .65, .65), muted, x, groundY + height * .325);
+      addPart(new THREE.BoxGeometry(.7, .38, .68), accent, x, groundY + height * .72);
+    } else if (environment === 'midnight-circuit') {
+      const tower = addPart(new THREE.BoxGeometry(1.35, height, .5), muted, x, groundY + height / 2);
+      tower.rotation.y = index % 2 ? .08 : -.08;
+      for (let band = 0; band < 3; band++) addPart(new THREE.BoxGeometry(1.38, .035, .56), accent, x, groundY + .45 + band * .52, -4.92);
+    } else {
+      const tower = addPart(new THREE.BoxGeometry(1.35, height, .5), isFar ? muted : accent, x, groundY + height / 2);
+      for (let windowIndex = 0; windowIndex < 3; windowIndex++) {
+        addPart(new THREE.BoxGeometry(.07, .16, .04), index % 3 ? accent : muted, x - .32 + windowIndex * .32, groundY + height / 2 + .18, -4.93);
+      }
+      tower.rotation.y = (index % 2 ? .08 : -.08);
+    }
+  }
+  accent.dispose();
+  muted.dispose();
 }
 
 function updateTheme() {
@@ -268,6 +648,7 @@ function updateTheme() {
   const fallbackMaterial = player?.userData.fallback?.material;
   fallbackMaterial?.color.setHex(level.color);
   fallbackMaterial?.emissive.setHex(level.color);
+  renderScenery();
 }
 
 function showOverlay(title, instructions, showNext = false) {
@@ -285,6 +666,8 @@ function selectLevel(index) {
   levelName.textContent = `${String(index + 1).padStart(2, '0')} / ${level.name}`;
   attempt = 1;
   attemptDisplay.textContent = '01';
+  collectedCount = 0;
+  updateCollectibleHud();
   updateProgress(0);
   updateTheme();
   showOverlay(`${level.name} is ready.`, 'Tap anywhere or press Space to jump.');
@@ -310,6 +693,7 @@ async function start({ jumpAfterLoad = false } = {}) {
   message.textContent = 'TAP / CLICK / SPACE TO JUMP';
   playButton.innerHTML = '<span class="play-icon" aria-hidden="true">↻</span> RESTART LEVEL';
   spawnObstacles();
+  spawnCourseFeatures();
   if (jumpAfterLoad && player.userData.grounded) {
     player.userData.vy = 8.3;
     player.userData.grounded = false;
@@ -328,12 +712,12 @@ function jump() {
   player.userData.grounded = false;
 }
 
-function crash() {
+function crash(reason = 'Tap or press Space to try this level again.') {
   running = false;
   dead = true;
   attempt++;
   attemptDisplay.textContent = String(attempt).padStart(2, '0');
-  showOverlay('One more try.', 'Tap or press Space to try this level again.');
+  showOverlay('One more try.', reason);
   message.textContent = 'RUN ENDED — TRY AGAIN';
   void musicEngine.stop();
 }
@@ -346,8 +730,10 @@ function finish() {
   completedLevelIds.add(level.id);
   try { localStorage.setItem(completionKey, JSON.stringify([...completedLevelIds])); } catch { /* Completion remains available for this session. */ }
   renderLevelCards();
-  showOverlay(`${level.name} cleared!`, `Course ${selectedLevelIndex + 1} of ${levels.length} complete.`, selectedLevelIndex < levels.length - 1);
-  message.textContent = 'LEVEL COMPLETE';
+  const totalShards = level.collectibles.length;
+  const shardSummary = totalShards ? ` You found ${collectedCount} of ${totalShards} shards.` : '';
+  showOverlay(`${level.name} cleared!`, `Course ${selectedLevelIndex + 1} of ${levels.length} complete.${shardSummary}`, selectedLevelIndex < levels.length - 1);
+  message.textContent = totalShards ? `LEVEL COMPLETE · SHARDS ${collectedCount}/${totalShards}` : 'LEVEL COMPLETE';
   void musicEngine.stop();
 }
 
@@ -362,13 +748,17 @@ function reset() {
     player.position.set(-3, laneY, 0);
     player.userData.vy = 0;
     player.userData.grounded = true;
+    player.userData.supportY = laneY;
+    player.userData.effects = { dashTimer: 0, gravityTimer: 0, shieldCharges: 0, phaseTimer: 0 };
   }
-  for (const obstacle of obstacles) {
-    scene?.remove(obstacle);
-    obstacle.geometry.dispose();
-    obstacle.material.dispose();
-  }
-  obstacles.length = 0;
+  while (obstacles.length) removeObstacle(obstacles[obstacles.length - 1]);
+  while (gaps.length) removeGap(gaps[gaps.length - 1]);
+  while (platforms.length) removeMeshFeature(platforms[platforms.length - 1], platforms.length - 1, platforms);
+  while (portals.length) removeMeshFeature(portals[portals.length - 1], portals.length - 1, portals);
+  while (enemies.length) removeMeshFeature(enemies[enemies.length - 1], enemies.length - 1, enemies);
+  while (collectibles.length) removeMeshFeature(collectibles[collectibles.length - 1], collectibles.length - 1, collectibles);
+  collectedCount = 0;
+  updateCollectibleHud();
   attemptDisplay.textContent = '01';
   updateProgress(0);
   message.textContent = 'TAP / CLICK / SPACE TO JUMP';
@@ -477,6 +867,18 @@ gameWrap.addEventListener('fullscreenerror', () => {
   syncFullscreenUI();
 });
 window.addEventListener('resize', resize);
+if (import.meta.env.DEV) {
+  window.__enriqueDashDebug = () => ({
+    levelId: level.id,
+    distance,
+    running,
+    dead,
+    playerY: player?.position.y ?? null,
+    verticalVelocity: player?.userData.vy ?? null,
+    grounded: player?.userData.grounded ?? false,
+    supportY: player?.userData.supportY ?? null,
+  });
+}
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && running) {
     running = false;

@@ -1,9 +1,18 @@
 {
   "name": "enrique-dash",
   "private": true,
-  "version": "0.3.1",
+  "version": "0.4.0",
   "type": "module",
-  "scripts": {"dev": "vite --host 0.0.0.0", "build": "vite build", "preview": "vite preview --host 0.0.0.0", "test": "node --test src/*.test.js"},
-  "dependencies": {"three": "^0.180.0"},
-  "devDependencies": {"vite": "^7.1.7"}
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --test src/*.test.js"
+  },
+  "dependencies": {
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "vite": "^7.1.7"
+  }
 }
