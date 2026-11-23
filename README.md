@@ -1,6 +1,6 @@
 # Enrique Dash
 
-**Current test version: 0.3.1** — a touch-first Three.js rhythm platformer. Eleven courses are playable, and the game expands to fullscreen from the in-game control. The exact package version stays visible in the page header/footer and in the game HUD while fullscreen.
+**Current test version: 0.4.0** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
 
 ## Play locally
 
@@ -23,7 +23,7 @@ Tap/click the playfield, or press Space, Arrow Up, or W to jump. The first user 
 
 ## Playable courses
 
-01 Neon Run · 02 Skyline Rush · 03 Solar Flare · 04 Gravity Garden · 05 Pixel Pier · 06 Midnight Circuit · 07 Candy Comet · 08 Aqua Pulse · 09 Crystal Cavern · 10 Stormbreaker · 11 Final Orbit.
+01 Neon Run · 02 Skyline Rush · 03 Solar Flare · 04 Gravity Garden · 05 Pixel Pier · 06 Midnight Circuit · 07 Candy Comet · 08 Aqua Pulse · 09 Crystal Cavern · 10 Stormbreaker · 11 Final Orbit · 12 Mosslight Hollow · 13 Clockwork Orchard · 14 Tidal Foundry · 15 Paper Moon Parade · 16 Verdant Relay · 17 Shatterglass Express · 18 Cloudbreaker Causeway · 19 Magnetar Foundry · 20 Eclipse Crown.
 
 Each level has its own speed, obstacle sequence, color palette, tempo, scale, chord progression, and lead motif. Level clears are saved locally in the browser; no account is needed.
 
@@ -39,6 +39,15 @@ Each level has its own speed, obstacle sequence, color palette, tempo, scale, ch
 ### v0.3.1
 
 - Keep the exact app version visible inside the game HUD, including fullscreen mode.
+
+### v0.4.0
+
+- Expanded the course catalog to twenty distinct themes with a capped progression from 78 to 150 course units.
+- Added authored gaps, raised/hover platforms, spring/dash/float/shield/phase portals, crawlers, drones, and optional collectible shards.
+- Added per-level environment silhouettes and hazard profiles, plus a shard counter and clear summary.
+- Added automated validation for level count, unique course identity, feature bounds, music data, and course-length progression.
+- See [LEVEL_DESIGN_PLAN.md](LEVEL_DESIGN_PLAN.md) for the detailed course-by-course design and playtest checklist.
+- This test release has not yet had complete browser playtesting across all twenty levels or physical iPad/iPhone validation.
 
 ## Versioning and branch workflow
 
