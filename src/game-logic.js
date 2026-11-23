@@ -1,6 +1,7 @@
 export function isObstacleCollision(playerX, obstacleX, jumpHeight, options = {}) {
-  const { horizontalRadius = .72, clearanceHeight = .95 } = options;
-  return Math.abs(obstacleX - playerX) < horizontalRadius && jumpHeight < clearanceHeight;
+  const { horizontalRadius = .72, clearanceHeight = .95, verticalForgiveness = 0 } = options;
+  const effectiveClearance = Math.max(0, clearanceHeight - verticalForgiveness);
+  return Math.abs(obstacleX - playerX) < horizontalRadius && jumpHeight < effectiveClearance;
 }
 
 export function levelProgressPercent(distance, length) {
@@ -22,6 +23,19 @@ export const portalEffects = Object.freeze({
   shield: Object.freeze({ shieldCharges: 1 }),
   phase: Object.freeze({ duration: 2.4 }),
 });
+
+export const jumpTuning = Object.freeze({
+  initialVelocity: 8.5,
+  inputBufferSeconds: .14,
+  coyoteSeconds: .12,
+  obstacleVerticalForgiveness: .08,
+  stompMinimumHeight: .82,
+  stompUpwardVelocityLimit: .65,
+});
+
+export function canConsumeJumpBuffer(grounded, coyoteTime, jumpBufferTime) {
+  return jumpBufferTime > 0 && (grounded || coyoteTime > 0);
+}
 
 const hazardProfiles = Object.freeze({
   spike: Object.freeze({ shape: 'spike', width: 1.14, height: .95, clearanceHeight: .95 }),
@@ -50,8 +64,13 @@ export function getHazardProfile(style = 'spike') {
   return hazardProfiles[style] ?? hazardProfiles.spike;
 }
 
-export function shouldStompEnemy(playerHeight, velocityY, minimumHeight = .9) {
-  return velocityY < 0 && playerHeight >= minimumHeight;
+export function shouldStompEnemy(
+  playerHeight,
+  velocityY,
+  minimumHeight = jumpTuning.stompMinimumHeight,
+  upwardVelocityLimit = jumpTuning.stompUpwardVelocityLimit,
+) {
+  return velocityY <= upwardVelocityLimit && playerHeight >= minimumHeight;
 }
 
 export function isCollectibleContact(playerX, collectibleX, playerHeight, collectibleHeight, options = {}) {
