@@ -1,7 +1,7 @@
 let THREE;
 import packageInfo from '../package.json';
 import { getLevel, levels } from './levels.js';
-import { getHazardProfile, getTrackSupportHeight, isCollectibleContact, isObstacleCollision, levelProgressPercent, portalEffects, shouldStompEnemy } from './game-logic.js';
+import { canConsumeJumpBuffer, getHazardProfile, getTrackSupportHeight, isCollectibleContact, isObstacleCollision, jumpTuning, levelProgressPercent, portalEffects, shouldStompEnemy } from './game-logic.js';
 import { MusicEngine } from './music.js';
 import './style.css';
 
@@ -89,6 +89,8 @@ function initScene() {
   player.position.set(-3, laneY, 0);
   player.userData.vy = 0;
   player.userData.grounded = true;
+  player.userData.coyoteTimer = 0;
+  player.userData.jumpBufferTimer = 0;
   player.userData.supportY = laneY;
   player.userData.effects = { dashTimer: 0, gravityTimer: 0, shieldCharges: 0, phaseTimer: 0 };
   const fallbackMaterial = new THREE.MeshStandardMaterial({ color: level.color, emissive: level.color, emissiveIntensity: .55 });
@@ -213,6 +215,8 @@ function draw() {
 
 function update(dt) {
   const effects = player.userData.effects;
+  player.userData.jumpBufferTimer = Math.max(0, player.userData.jumpBufferTimer - dt);
+  player.userData.coyoteTimer = Math.max(0, player.userData.coyoteTimer - dt);
   effects.dashTimer = Math.max(0, effects.dashTimer - dt);
   effects.gravityTimer = Math.max(0, effects.gravityTimer - dt);
   effects.phaseTimer = Math.max(0, effects.phaseTimer - dt);
@@ -226,6 +230,7 @@ function update(dt) {
   moveFeatureGroup(enemies, dt, speed, removeMeshFeature);
   moveFeatureGroup(collectibles, dt, speed, removeMeshFeature);
   triggerPortals();
+  const wasGrounded = player.userData.grounded;
 
   const supportHeight = getTrackSupportHeight(
     player.position.x,
@@ -245,7 +250,11 @@ function update(dt) {
   if (player.userData.grounded && supportHeight !== null && player.position.y <= supportHeight + .05) {
     player.position.y = supportHeight;
     player.userData.vy = 0;
+    player.userData.coyoteTimer = jumpTuning.coyoteSeconds;
   } else {
+    if (wasGrounded && (supportHeight === null || supportHeight < player.position.y - .05)) {
+      player.userData.coyoteTimer = jumpTuning.coyoteSeconds;
+    }
     if (player.userData.grounded && (supportHeight === null || supportHeight < player.position.y - .05)) player.userData.grounded = false;
     const gravity = 19 * (effects.gravityTimer > 0 ? portalEffects.float.gravityMultiplier : 1);
     player.userData.vy -= gravity * dt;
@@ -254,9 +263,11 @@ function update(dt) {
       player.position.y = supportHeight;
       player.userData.vy = 0;
       player.userData.grounded = true;
+      player.userData.coyoteTimer = jumpTuning.coyoteSeconds;
     }
   }
   if (supportHeight === null) player.userData.grounded = false;
+  consumeBufferedJump();
   if (player.position.y < laneY - 1.65) {
     crash('Missed the jump.');
     return;
@@ -267,8 +278,9 @@ function update(dt) {
       const obstacle = obstacles[index];
       const jumpHeight = player.position.y - player.userData.supportY;
       if (!isObstacleCollision(player.position.x, obstacle.mesh.position.x, jumpHeight, {
-        horizontalRadius: obstacle.width / 2 + .2,
+        horizontalRadius: obstacle.width / 2 + .15,
         clearanceHeight: obstacle.clearanceHeight,
+        verticalForgiveness: jumpTuning.obstacleVerticalForgiveness,
       })) continue;
       if (effects.shieldCharges > 0) {
         effects.shieldCharges--;
@@ -349,6 +361,8 @@ function triggerPortals() {
       case 'spring':
         player.userData.vy = Math.max(player.userData.vy, portalEffects.spring.jumpVelocity);
         player.userData.grounded = false;
+        player.userData.coyoteTimer = 0;
+        player.userData.jumpBufferTimer = 0;
         message.textContent = 'SPRING PORTAL';
         break;
       case 'dash':
@@ -695,9 +709,21 @@ async function start({ jumpAfterLoad = false } = {}) {
   spawnObstacles();
   spawnCourseFeatures();
   if (jumpAfterLoad && player.userData.grounded) {
-    player.userData.vy = 8.3;
+    player.userData.vy = jumpTuning.initialVelocity;
     player.userData.grounded = false;
+    player.userData.coyoteTimer = 0;
+    player.userData.jumpBufferTimer = 0;
   }
+  return true;
+}
+
+function consumeBufferedJump() {
+  const { grounded, coyoteTimer, jumpBufferTimer } = player.userData;
+  if (!canConsumeJumpBuffer(grounded, coyoteTimer, jumpBufferTimer)) return false;
+  player.userData.vy = jumpTuning.initialVelocity;
+  player.userData.grounded = false;
+  player.userData.coyoteTimer = 0;
+  player.userData.jumpBufferTimer = 0;
   return true;
 }
 
@@ -707,9 +733,8 @@ function jump() {
     void start({ jumpAfterLoad: true });
     return;
   }
-  if (!player.userData.grounded) return;
-  player.userData.vy = 8.3;
-  player.userData.grounded = false;
+  player.userData.jumpBufferTimer = jumpTuning.inputBufferSeconds;
+  consumeBufferedJump();
 }
 
 function crash(reason = 'Tap or press Space to try this level again.') {
@@ -748,6 +773,8 @@ function reset() {
     player.position.set(-3, laneY, 0);
     player.userData.vy = 0;
     player.userData.grounded = true;
+    player.userData.coyoteTimer = 0;
+    player.userData.jumpBufferTimer = 0;
     player.userData.supportY = laneY;
     player.userData.effects = { dashTimer: 0, gravityTimer: 0, shieldCharges: 0, phaseTimer: 0 };
   }
