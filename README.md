@@ -1,6 +1,6 @@
 # Enrique Dash
 
-**Current test version: 0.4.2** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
+**Current test version: 0.4.3** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
 
 ## Play locally
 
@@ -19,7 +19,7 @@ npm run build
 npm run preview
 ```
 
-Tap/click the playfield, or press Space, Arrow Up, or W to jump. The first user interaction loads the 3D engine and character atlas; until then a lightweight static preview is shown. Use **Fullscreen** to expand the game and **Exit fullscreen** or Escape to return. Browsers that do not allow the Fullscreen API use a fixed-viewport fallback. Music starts with play after a user gesture and can be muted at any time.
+Tap/click the playfield, or press Space, Arrow Up, or W to jump; press P or the Pause button to pause. While paused, tap/click the playfield or press P, Space, or Resume to continue the same run without forcing a jump. The first user interaction loads the 3D engine and character atlas; until then a lightweight static preview is shown. Use **Fullscreen** to expand the game and **Exit fullscreen** or Escape to return. Browsers that do not allow the Fullscreen API use a fixed-viewport fallback. Music starts with play after a user gesture and can be muted at any time.
 
 ## Playable courses
 
@@ -39,6 +39,15 @@ Each level has its own speed, obstacle sequence, color palette, tempo, scale, ch
 ### v0.3.1
 
 - Keep the exact app version visible inside the game HUD, including fullscreen mode.
+
+### v0.4.3
+
+- Added a dedicated Pause/Resume control plus the `P` shortcut; backgrounding pauses the run, stops its animation loop and audio, and resumes without duplicating course features or triggering a surprise jump.
+- Paused gameplay now has a contrast-backed message panel, with system colors preserved in forced-colors mode.
+- Retained a jump pressed during deferred 3D-scene initialization, preventing the first input from being lost while the engine loads.
+- Ignore repeated keyboard events and use a constant-acceleration vertical step to keep jump height consistent across common render rates.
+- Made the playfield keyboard-focusable and tied it to visible instructions; improved mobile controls with 44 px touch targets and a clearer stacked control row.
+- Added regression and UI-contract tests for pause state, feature initialization, repeated input, vertical motion, and keyboard access.
 
 ### v0.4.2
 
@@ -83,7 +92,7 @@ GitHub Pages uses the `/enrique-dash/` project base path. Local Vite uses `/`.
 ## Project notes
 
 - See [PLAN.md](PLAN.md) for scope and next steps.
-- See [public/character/ASSET_NOTES.md](public/character/ASSET_NOTES.md) for sprite provenance and rights cautions.
-- The supplied sprite ZIP notes that the illustrations were extracted from reference art; confirm commercial redistribution rights before monetizing.
+- See [public/character/ASSET_NOTES.md](public/character/ASSET_NOTES.md) for sprite source details and handling notes.
+- Enrique confirms he created the character assets; the supplied archive and metadata are retained for traceability.
 - No accounts, analytics, cloud saves, or personal data collection are included.
 - No project license has been selected; choose one before accepting contributions.

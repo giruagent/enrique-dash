@@ -21,7 +21,7 @@ Build a polished, touch-first browser rhythm platformer for iPad, phones, and de
 - A native Fullscreen API button expands the stage; a CSS viewport fallback covers browsers without usable native fullscreen.
 - Music is opt-in by user gesture: original procedural Web Audio, per-level BPM, scale, chord movement, lead motif, bass, and synthesized percussion. Mute is always available; gameplay does not rely on audio cues.
 
-## Current build — v0.4.2 (test build)
+## Current build — v0.4.3 (test build)
 
 - Vite + JavaScript + Three.js; static client-side app.
 - Twenty selectable courses, with unique environment/hazard themes, authored layouts, and length progression from 78 to a 150-unit maximum.
@@ -33,6 +33,10 @@ Build a polished, touch-first browser rhythm platformer for iPad, phones, and de
 - The supplied 81-frame atlas drives idle, run, jump ascent/apex/fall, hurt, and victory states. A cube fallback remains if the atlas fails to load.
 - Three.js and the character atlas are deferred until the first play action. A lightweight CSS track preview remains before that interaction.
 - Fullscreen, Escape-to-exit, touch/keyboard jump, music toggle, course select, local completed-course markers, and package version visible in the fullscreen HUD.
+- A visible Pause/Resume button and `P` shortcut pause the run; tab hiding pauses game time, animation, and music. Resume preserves the current course and does not inject a jump.
+- Jump key-repeat events are ignored, the first jump pressed during deferred scene initialization is retained, and constant-acceleration vertical integration keeps the jump arc consistent at 30, 60, and 120 Hz in unit tests.
+- The game surface is keyboard-focusable and linked to control instructions. Mobile game controls use 44 px touch targets and a stacked, readable control row.
+- Enrique confirms he created the character assets; the supplied archive and source metadata are retained for traceability.
 - GitHub Actions CI runs tests and the production build on branches/PRs; Pages deploys main after merge.
 
 ## Next phases
@@ -42,7 +46,7 @@ Build a polished, touch-first browser rhythm platformer for iPad, phones, and de
 - Playtest all twenty courses, tune jump windows and difficulty progression, and add practice checkpoints where they materially improve fairness.
 - Test native fullscreen and CSS fallback on real iPadOS Safari, iOS Safari, Android Chrome, and desktop browsers; verify orientation and safe areas.
 - Listen to the soundtrack on device speakers and headphones; adjust gain, transients, and tonal balance based on actual listening.
-- Inspect sprite edges at full resolution and confirm redistribution/commercial rights.
+- Inspect sprite edges at full resolution and keep the source archive and metadata alongside the atlas for traceability.
 
 ### Phase 2 — Deeper level system
 
@@ -68,9 +72,9 @@ Build a polished, touch-first browser rhythm platformer for iPad, phones, and de
 ```text
 Browser (static web app)
   ├── DOM UI: landing, course selector, HUD, fullscreen/audio controls
-  ├── Game loop: input → deterministic movement/collision → level state
+  ├── Game loop: input → time-scaled movement/collision → level state
   ├── Three.js (loaded on play): 3D environment, hazards, animated sprite plane
-  ├── Content: validated level/music data + user-supplied licensed art
+  ├── Content: validated level/music data + user-created art
   ├── Web Audio: scheduled per-level synthesized music after user gesture
   └── Local storage: completed-level markers only
 

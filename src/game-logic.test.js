@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { canConsumeJumpBuffer, getHazardProfile, getTrackSupportHeight, isCollectibleContact, isObstacleCollision, jumpTuning, levelProgressPercent, portalEffects, shouldStompEnemy } from './game-logic.js';
+import { canConsumeJumpBuffer, getHazardProfile, getTrackSupportHeight, integrateVerticalMotion, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, portalEffects, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldSpawnCourseFeatures, shouldStompEnemy } from './game-logic.js';
 
 test('hazard profiles give each environment collision geometry and a safe fallback', () => {
   assert.equal(getHazardProfile('crystal-beam').shape, 'beam');
@@ -66,4 +66,45 @@ test('collectibles require the player to be close in both course and jump height
   assert.equal(isCollectibleContact(-3, -3.8, 1.6, 1.7), false);
   assert.equal(isCollectibleContact(-3, -3.1, .1, 1.7), false);
   assert.equal(isCollectibleContact(-3, -3.1, 1.6, 1.7), true);
+});
+
+test('pause is distinct from a new, failed, or completed run', () => {
+  assert.equal(isGamePaused({ started: true, running: false, dead: false, completed: false }), true);
+  assert.equal(isGamePaused({ started: false, running: false, dead: false, completed: false }), false);
+  assert.equal(isGamePaused({ started: true, running: false, dead: true, completed: false }), false);
+  assert.equal(isGamePaused({ started: true, running: false, dead: false, completed: true }), false);
+});
+
+test('an initialized course is not spawned again when a run resumes', () => {
+  assert.equal(shouldSpawnCourseFeatures(false), true);
+  assert.equal(shouldSpawnCourseFeatures(true), false);
+});
+
+test('keyboard jump ignores repeated keydown events', () => {
+  assert.equal(shouldAcceptJumpInput(false), true);
+  assert.equal(shouldAcceptJumpInput(true), false);
+});
+
+test('jump intent received during deferred scene initialization is retained', () => {
+  assert.equal(mergeJumpRequest(false, true), true);
+  assert.equal(mergeJumpRequest(true, false), true);
+  assert.equal(mergeJumpRequest(false, false), false);
+  assert.equal(shouldApplyBufferedStartJump(true, true), true);
+  assert.equal(shouldApplyBufferedStartJump(true, false), false);
+});
+
+test('vertical motion stays consistent across common render rates', () => {
+  const outcomes = [30, 60, 120].map((rate) => {
+    let position = 0;
+    let velocity = jumpTuning.initialVelocity;
+    const dt = 1 / rate;
+    for (let step = 0; step < rate * .4; step++) {
+      ({ position, velocity } = integrateVerticalMotion(position, velocity, 19, dt));
+    }
+    return { position, velocity };
+  });
+  for (const outcome of outcomes.slice(1)) {
+    assert.ok(Math.abs(outcome.position - outcomes[0].position) < 1e-10);
+    assert.ok(Math.abs(outcome.velocity - outcomes[0].velocity) < 1e-10);
+  }
 });

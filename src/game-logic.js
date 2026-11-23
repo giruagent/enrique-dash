@@ -37,6 +37,33 @@ export function canConsumeJumpBuffer(grounded, coyoteTime, jumpBufferTime) {
   return jumpBufferTime > 0 && (grounded || coyoteTime > 0);
 }
 
+export function isGamePaused({ started = false, running = false, dead = false, completed = false } = {}) {
+  return started && !running && !dead && !completed;
+}
+
+export function shouldSpawnCourseFeatures(started) {
+  return !started;
+}
+
+export function shouldAcceptJumpInput(repeat) {
+  return !repeat;
+}
+
+export function mergeJumpRequest(pending, requested) {
+  return pending || requested;
+}
+
+export function shouldApplyBufferedStartJump(requested, grounded) {
+  return requested && grounded;
+}
+
+export function integrateVerticalMotion(position, velocity, gravity, deltaSeconds) {
+  return {
+    position: position + velocity * deltaSeconds - .5 * gravity * deltaSeconds ** 2,
+    velocity: velocity - gravity * deltaSeconds,
+  };
+}
+
 const hazardProfiles = Object.freeze({
   spike: Object.freeze({ shape: 'spike', width: 1.14, height: .95, clearanceHeight: .95 }),
   vent: Object.freeze({ shape: 'cylinder', width: .82, height: .82, clearanceHeight: .82 }),

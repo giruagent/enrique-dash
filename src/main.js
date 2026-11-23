@@ -1,7 +1,7 @@
 let THREE;
 import packageInfo from '../package.json';
 import { getLevel, levels } from './levels.js';
-import { canConsumeJumpBuffer, getHazardProfile, getTrackSupportHeight, isCollectibleContact, isObstacleCollision, jumpTuning, levelProgressPercent, portalEffects, shouldStompEnemy } from './game-logic.js';
+import { canConsumeJumpBuffer, getHazardProfile, getTrackSupportHeight, integrateVerticalMotion, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, portalEffects, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldSpawnCourseFeatures, shouldStompEnemy } from './game-logic.js';
 import { MusicEngine } from './music.js';
 import './style.css';
 
@@ -9,6 +9,7 @@ const stage = document.querySelector('#game-canvas');
 const gameWrap = document.querySelector('#game-wrap');
 const overlay = document.querySelector('#game-overlay');
 const playButton = document.querySelector('#play-button');
+const pauseButton = document.querySelector('#pause-toggle');
 const nextLevelButton = document.querySelector('#next-level-button');
 const progressFill = document.querySelector('#progress-fill');
 const progressTrack = document.querySelector('#progress-track');
@@ -28,6 +29,7 @@ let sceneStarted = false;
 let scenePromise = null;
 let floor, floorMaterial, trackEdgeMaterial, sceneryGroup;
 let running = false, started = false, dead = false, completed = false, distance = 0, attempt = 1;
+let simulationTime = 0, graphicsUnavailable = false, pendingStartJump = false;
 let musicEnabled = true, pseudoFullscreen = false, activeAnimation = '', animationTime = 0;
 const obstacles = [];
 const gaps = [];
@@ -104,14 +106,18 @@ function initScene() {
   clock = new THREE.Clock();
   renderer.domElement.addEventListener('webglcontextlost', (event) => {
     event.preventDefault();
+    graphicsUnavailable = true;
     running = false;
+    stopRenderLoop();
+    playButton.disabled = true;
+    syncPauseButton();
     void musicEngine.stop();
     showOverlay('Graphics paused.', 'Reload the page to restart this demo.');
   });
   loadCharacter();
   updateTheme();
   gameWrap.classList.add('scene-ready');
-  draw();
+  renderScene();
   return true;
 }
 
@@ -192,7 +198,7 @@ function updateAnimation(dt) {
   animationTime += dt;
   if (animationTime >= 1 / animation.fps) {
     animationTime = 0;
-    const frameIndex = Math.floor(clock.elapsedTime * animation.fps) % animation.frames.length;
+    const frameIndex = Math.floor(simulationTime * animation.fps) % animation.frames.length;
     setSpriteFrame(animation.frames[frameIndex]);
   }
 }
@@ -202,15 +208,43 @@ function resize() {
   camera.aspect = stage.clientWidth / stage.clientHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(stage.clientWidth, stage.clientHeight);
+  renderScene();
+}
+
+function renderScene() {
+  if (!renderer || !scene || !camera || graphicsUnavailable) return;
+  renderer.render(scene, camera);
+}
+
+function startRenderLoop() {
+  if (!renderer || graphicsUnavailable || raf != null) return;
+  clock.start();
+  raf = requestAnimationFrame(draw);
+}
+
+function stopRenderLoop() {
+  if (raf != null) cancelAnimationFrame(raf);
+  raf = null;
+  clock?.stop();
 }
 
 function draw() {
-  raf = requestAnimationFrame(draw);
-  if (!renderer) return;
+  raf = null;
+  if (!renderer || graphicsUnavailable) return;
   const dt = Math.min(clock.getDelta(), .04);
-  if (running) update(dt);
-  updateAnimation(dt);
-  renderer.render(scene, camera);
+  if (running) {
+    simulationTime += dt;
+    update(dt);
+  } else if (dead || completed) {
+    simulationTime += dt;
+  }
+  if (running || dead || completed) {
+    updateAnimation(dt);
+    renderScene();
+    raf = requestAnimationFrame(draw);
+    return;
+  }
+  renderScene();
 }
 
 function update(dt) {
@@ -257,8 +291,9 @@ function update(dt) {
     }
     if (player.userData.grounded && (supportHeight === null || supportHeight < player.position.y - .05)) player.userData.grounded = false;
     const gravity = 19 * (effects.gravityTimer > 0 ? portalEffects.float.gravityMultiplier : 1);
-    player.userData.vy -= gravity * dt;
-    player.position.y += player.userData.vy * dt;
+    const nextMotion = integrateVerticalMotion(player.position.y, player.userData.vy, gravity, dt);
+    player.position.y = nextMotion.position;
+    player.userData.vy = nextMotion.velocity;
     if (supportHeight !== null && player.userData.vy <= 0 && player.position.y <= supportHeight && previousY >= supportHeight - .08) {
       player.position.y = supportHeight;
       player.userData.vy = 0;
@@ -308,12 +343,12 @@ function moveFeatureGroup(group, dt, speed, removeFeature) {
       for (const decoration of feature.decorations) decoration.position.x = feature.center;
     }
     if (group === platforms && feature.bob > 0) {
-      feature.currentHeight = feature.height + Math.sin(clock.elapsedTime * 2 + feature.phase) * feature.bob;
+      feature.currentHeight = feature.height + Math.sin(simulationTime * 2 + feature.phase) * feature.bob;
       feature.mesh.position.y = laneY + feature.currentHeight - .14;
     }
     if (group === enemies) {
       feature.mesh.rotation.y += dt * (feature.type === 'drone' ? 1.7 : .8);
-      if (feature.type === 'drone') feature.mesh.position.y = feature.baseY + Math.sin(clock.elapsedTime * 2.2 + feature.phase) * .16;
+      if (feature.type === 'drone') feature.mesh.position.y = feature.baseY + Math.sin(simulationTime * 2.2 + feature.phase) * .16;
     }
     if (group === portals) feature.mesh.rotation.z += dt * 1.2;
     if (group === collectibles) {
@@ -663,6 +698,7 @@ function updateTheme() {
   fallbackMaterial?.color.setHex(level.color);
   fallbackMaterial?.emissive.setHex(level.color);
   renderScenery();
+  renderScene();
 }
 
 function showOverlay(title, instructions, showNext = false) {
@@ -684,7 +720,7 @@ function selectLevel(index) {
   updateCollectibleHud();
   updateProgress(0);
   updateTheme();
-  showOverlay(`${level.name} is ready.`, 'Tap anywhere or press Space to jump.');
+  showOverlay(`${level.name} is ready.`, 'Tap/click or press Space, ↑, or W to jump. Press P to pause.');
   document.querySelectorAll('.level-card').forEach((card, cardIndex) => {
     const selected = cardIndex === selectedLevelIndex;
     card.classList.toggle('selected', selected);
@@ -693,28 +729,68 @@ function selectLevel(index) {
 }
 
 async function start({ jumpAfterLoad = false } = {}) {
+  if (graphicsUnavailable) return false;
   if (running) return true;
   if (dead || completed) reset();
+  pendingStartJump = mergeJumpRequest(pendingStartJump, jumpAfterLoad);
   if (musicEnabled) musicEngine.start(level.music).catch((error) => console.warn('Music could not start.', error));
-  if (!await ensureScene()) {
+  const ready = await ensureScene();
+  if (!ready || graphicsUnavailable) {
+    pendingStartJump = false;
     void musicEngine.stop();
     return false;
   }
   if (running) return true;
+  const initializeCourse = shouldSpawnCourseFeatures(started);
   started = true;
   running = true;
+  gameWrap.classList.remove('is-paused');
   overlay.hidden = true;
-  message.textContent = 'TAP / CLICK / SPACE TO JUMP';
+  message.textContent = 'TAP / CLICK / SPACE TO JUMP · P TO PAUSE';
   playButton.innerHTML = '<span class="play-icon" aria-hidden="true">↻</span> RESTART LEVEL';
-  spawnObstacles();
-  spawnCourseFeatures();
-  if (jumpAfterLoad && player.userData.grounded) {
+  if (initializeCourse) {
+    spawnObstacles();
+    spawnCourseFeatures();
+  }
+  if (shouldApplyBufferedStartJump(pendingStartJump, player.userData.grounded)) {
     player.userData.vy = jumpTuning.initialVelocity;
     player.userData.grounded = false;
     player.userData.coyoteTimer = 0;
     player.userData.jumpBufferTimer = 0;
   }
+  pendingStartJump = false;
+  startRenderLoop();
+  syncPauseButton();
   return true;
+}
+
+function syncPauseButton() {
+  const canPause = started && !dead && !completed && !graphicsUnavailable;
+  const resume = canPause && !running;
+  pauseButton.disabled = !canPause;
+  pauseButton.textContent = resume ? 'RESUME' : 'PAUSE';
+  pauseButton.setAttribute('aria-label', resume ? 'Resume game' : 'Pause game');
+}
+
+function pauseGame() {
+  if (!running) return false;
+  running = false;
+  gameWrap.classList.add('is-paused');
+  if (player) player.userData.jumpBufferTimer = 0;
+  stopRenderLoop();
+  showOverlay('Paused.', 'Select Resume, tap the playfield, or press P/Space to continue. Your run is frozen.');
+  message.textContent = 'GAME PAUSED · PRESS P, SPACE OR RESUME';
+  void musicEngine.stop();
+  syncPauseButton();
+  return true;
+}
+
+function togglePause() {
+  if (running) {
+    pauseGame();
+    return;
+  }
+  if (isGamePaused({ started, running, dead, completed })) void start();
 }
 
 function consumeBufferedJump() {
@@ -728,9 +804,10 @@ function consumeBufferedJump() {
 }
 
 function jump() {
+  if (graphicsUnavailable) return;
   if (dead || completed) reset();
   if (!sceneStarted || !running) {
-    void start({ jumpAfterLoad: true });
+    void start({ jumpAfterLoad: !started });
     return;
   }
   player.userData.jumpBufferTimer = jumpTuning.inputBufferSeconds;
@@ -744,6 +821,7 @@ function crash(reason = 'Tap or press Space to try this level again.') {
   attemptDisplay.textContent = String(attempt).padStart(2, '0');
   showOverlay('One more try.', reason);
   message.textContent = 'RUN ENDED — TRY AGAIN';
+  syncPauseButton();
   void musicEngine.stop();
 }
 
@@ -759,14 +837,19 @@ function finish() {
   const shardSummary = totalShards ? ` You found ${collectedCount} of ${totalShards} shards.` : '';
   showOverlay(`${level.name} cleared!`, `Course ${selectedLevelIndex + 1} of ${levels.length} complete.${shardSummary}`, selectedLevelIndex < levels.length - 1);
   message.textContent = totalShards ? `LEVEL COMPLETE · SHARDS ${collectedCount}/${totalShards}` : 'LEVEL COMPLETE';
+  syncPauseButton();
   void musicEngine.stop();
 }
 
 function reset() {
+  stopRenderLoop();
+  gameWrap.classList.remove('is-paused');
   dead = false;
   completed = false;
   started = false;
   running = false;
+  pendingStartJump = false;
+  simulationTime = 0;
   distance = 0;
   attempt = 1;
   if (player) {
@@ -790,7 +873,10 @@ function reset() {
   updateProgress(0);
   message.textContent = 'TAP / CLICK / SPACE TO JUMP';
   playButton.innerHTML = '<span class="play-icon" aria-hidden="true">▶</span> PLAY LEVEL';
-  showOverlay(`${level.name} is ready.`, 'Tap anywhere or press Space to jump.');
+  playButton.disabled = graphicsUnavailable;
+  showOverlay(`${level.name} is ready.`, 'Tap/click or press Space, ↑, or W to jump. Press P to pause.');
+  syncPauseButton();
+  renderScene();
   void musicEngine.stop();
 }
 
@@ -863,20 +949,33 @@ function toggleMusic() {
 }
 
 playButton.addEventListener('click', () => {
-  if (running) reset();
+  if (started || running || dead || completed) reset();
   void start();
 });
+pauseButton.addEventListener('click', togglePause);
 stage.addEventListener('pointerdown', (event) => { event.preventDefault(); jump(); });
 overlay.addEventListener('pointerdown', (event) => { if (event.target === overlay) jump(); });
 document.addEventListener('keydown', (event) => {
+  const interactiveTarget = event.target instanceof Element
+    && event.target.closest('button, a, input, select, textarea, [contenteditable="true"]');
   if (event.key === 'Escape' && pseudoFullscreen) {
     pseudoFullscreen = false;
     syncFullscreenUI();
     return;
   }
-  if (!['Space', 'ArrowUp', 'KeyW'].includes(event.code)) return;
-  if (event.target instanceof Element && event.target.closest('button, a, input, select, textarea')) return;
+  if (event.code === 'KeyP') {
+    if (interactiveTarget) return;
+    event.preventDefault();
+    if (!event.repeat) togglePause();
+    return;
+  }
+  if (!['Space', 'ArrowUp', 'KeyW'].includes(event.code) || interactiveTarget) return;
   event.preventDefault();
+  if (!shouldAcceptJumpInput(event.repeat)) return;
+  if (isGamePaused({ started, running, dead, completed })) {
+    void start();
+    return;
+  }
   jump();
 });
 fullscreenButton.addEventListener('click', () => { void toggleFullscreen(); });
@@ -899,29 +998,48 @@ if (import.meta.env.DEV) {
     levelId: level.id,
     distance,
     running,
+    paused: isGamePaused({ started, running, dead, completed }),
     dead,
+    started,
+    simulationTime,
+    renderLoopActive: raf != null,
+    featureCounts: {
+      obstacles: obstacles.length,
+      gaps: gaps.length,
+      platforms: platforms.length,
+      portals: portals.length,
+      enemies: enemies.length,
+      collectibles: collectibles.length,
+    },
     playerY: player?.position.y ?? null,
     verticalVelocity: player?.userData.vy ?? null,
+    jumpBufferTimer: player?.userData.jumpBufferTimer ?? null,
+    coyoteTimer: player?.userData.coyoteTimer ?? null,
     grounded: player?.userData.grounded ?? false,
     supportY: player?.userData.supportY ?? null,
   });
 }
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && running) {
-    running = false;
-    showOverlay('Paused.', 'Tap anywhere or press Space to resume.');
-    void musicEngine.stop();
+  if (document.hidden) {
+    if (running) pauseGame();
+    else stopRenderLoop();
+    return;
   }
+  if ((dead || completed) && !graphicsUnavailable) startRenderLoop();
 });
 document.querySelector('#version-label').textContent = `v${packageInfo.version}`;
 document.querySelector('#footer-version').textContent = `VERSION ${packageInfo.version}`;
 document.querySelector('#game-version').textContent = `v${packageInfo.version}`;
 musicButton.setAttribute('aria-pressed', String(musicEnabled));
+syncPauseButton();
 renderLevelCards();
-window.addEventListener('pagehide', () => {
-  cancelAnimationFrame(raf);
-  resizeObserver?.disconnect();
-  renderer?.dispose();
-  atlasTexture?.dispose();
+window.addEventListener('pagehide', (event) => {
+  if (running) pauseGame();
+  else stopRenderLoop();
+  if (!event.persisted) {
+    resizeObserver?.disconnect();
+    renderer?.dispose();
+    atlasTexture?.dispose();
+  }
   void musicEngine.stop();
 });
