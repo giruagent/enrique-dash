@@ -1,6 +1,6 @@
 # Enrique Dash
 
-**Current test version: 0.4.1** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
+**Current test version: 0.4.2** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
 
 ## Play locally
 
@@ -40,6 +40,12 @@ Each level has its own speed, obstacle sequence, color palette, tempo, scale, ch
 
 - Keep the exact app version visible inside the game HUD, including fullscreen mode.
 
+### v0.4.2
+
+- Added a curated set of 13 project-local game-development skills for platforming, touch input, physics, level design, Three.js, audio, performance, saves, documentation, and assets.
+- Pinned their upstream source in `skills-lock.json`, retained the Apache-2.0 license, and added `.claude/skills` symlinks to the shared `.agents/skills` files.
+- These are development-time instructions only; no gameplay code changed and the skills are not included in the Pages build.
+
 ### v0.4.1
 
 - Prevents iPhone long-press selection and the system callout inside the game surface, without disabling text selection elsewhere on the page.
@@ -61,6 +67,12 @@ Each level has its own speed, obstacle sequence, color palette, tempo, scale, ch
 - Bump `package.json` for each test release/meaningful game update and keep `package-lock.json` in sync.
 - Open a pull request. CI runs `npm test` and a production build on branches and pull requests.
 - After a checked change merges to `main`, GitHub Actions builds and deploys the Pages artifact. The site shows the exact package version being tested.
+
+## Project-local agent skills
+
+The project vendors 13 applicable skills under `.agents/skills`; `.claude/skills` contains relative symlinks to the same files. This is a curated subset of the 80 skills in [Enrique’s Writing Adventure](https://github.com/giruagent/enriques-writing-adventure); engine-specific Godot, Unity, Roblox, and other unrelated skills were left out. `skills-lock.json` pins the imported set to [awesome-gamedev-agent-skills](https://github.com/gamedev-skills/awesome-gamedev-agent-skills) at commit `c6ca6c41c839b68319ffc08430b99ab768debc32`; its Apache-2.0 license is at `.agents/skills/LICENSE`. These are development-time files and are not included in the Pages build.
+
+Included: `platformer`, `game-feel`, `game-ui-ux`, `input-systems`, `physics-tuning`, `level-design`, `threejs-scene-setup`, `threejs-materials-lighting`, `performance-optimization`, `audio-design`, `save-systems`, `game-docs`, and `create-game-assets`.
 
 ## Live site
 
