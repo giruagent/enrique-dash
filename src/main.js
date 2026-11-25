@@ -1,6 +1,7 @@
 let THREE;
 import packageInfo from '../package.json';
 import { getLevel, levels } from './levels.js';
+import { createLossCue, playOneShot, primeOneShot, stopOneShot } from './audio-cues.js';
 import { canConsumeJumpBuffer, getHazardProfile, getTrackSupportHeight, integrateVerticalMotion, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, portalEffects, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldSpawnCourseFeatures, shouldStompEnemy } from './game-logic.js';
 import { MusicEngine } from './music.js';
 import './style.css';
@@ -22,6 +23,7 @@ const fullscreenButton = document.querySelector('#fullscreen-toggle');
 const musicButton = document.querySelector('#music-toggle');
 const laneY = -1.7;
 const musicEngine = new MusicEngine();
+const lossCue = typeof Audio === 'function' ? createLossCue(import.meta.env.BASE_URL, Audio) : null;
 let selectedLevelIndex = 0;
 let level = levels[selectedLevelIndex];
 let renderer, scene, camera, player, playerSprite, spriteMaterial, atlasTexture, spriteMap, clock, raf, resizeObserver;
@@ -733,6 +735,7 @@ async function start({ jumpAfterLoad = false } = {}) {
   if (running) return true;
   if (dead || completed) reset();
   pendingStartJump = mergeJumpRequest(pendingStartJump, jumpAfterLoad);
+  primeOneShot(lossCue);
   if (musicEnabled) musicEngine.start(level.music).catch((error) => console.warn('Music could not start.', error));
   const ready = await ensureScene();
   if (!ready || graphicsUnavailable) {
@@ -822,6 +825,7 @@ function crash(reason = 'Tap or press Space to try this level again.') {
   showOverlay('One more try.', reason);
   message.textContent = 'RUN ENDED — TRY AGAIN';
   syncPauseButton();
+  void playOneShot(lossCue);
   void musicEngine.stop();
 }
 
@@ -843,6 +847,7 @@ function finish() {
 
 function reset() {
   stopRenderLoop();
+  stopOneShot(lossCue);
   gameWrap.classList.remove('is-paused');
   dead = false;
   completed = false;
@@ -1017,12 +1022,14 @@ if (import.meta.env.DEV) {
     coyoteTimer: player?.userData.coyoteTimer ?? null,
     grounded: player?.userData.grounded ?? false,
     supportY: player?.userData.supportY ?? null,
+    lossCue: lossCue ? { src: lossCue.currentSrc || lossCue.src, paused: lossCue.paused, currentTime: lossCue.currentTime, readyState: lossCue.readyState } : null,
   });
 }
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     if (running) pauseGame();
     else stopRenderLoop();
+    stopOneShot(lossCue);
     return;
   }
   if ((dead || completed) && !graphicsUnavailable) startRenderLoop();
@@ -1036,6 +1043,7 @@ renderLevelCards();
 window.addEventListener('pagehide', (event) => {
   if (running) pauseGame();
   else stopRenderLoop();
+  stopOneShot(lossCue);
   if (!event.persisted) {
     resizeObserver?.disconnect();
     renderer?.dispose();
