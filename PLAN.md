@@ -21,7 +21,7 @@ Build a polished, touch-first browser rhythm platformer for iPad, phones, and de
 - A native Fullscreen API button expands the stage; a CSS viewport fallback covers browsers without usable native fullscreen.
 - Music is opt-in by user gesture: original procedural Web Audio, per-level BPM, scale, chord movement, lead motif, bass, and synthesized percussion. Mute is always available; gameplay does not rely on audio cues.
 
-## Current build — v0.4.3 (test build)
+## Current build — v0.4.4 (test build)
 
 - Vite + JavaScript + Three.js; static client-side app.
 - Twenty selectable courses, with unique environment/hazard themes, authored layouts, and length progression from 78 to a 150-unit maximum.
@@ -36,6 +36,7 @@ Build a polished, touch-first browser rhythm platformer for iPad, phones, and de
 - A visible Pause/Resume button and `P` shortcut pause the run; tab hiding pauses game time, animation, and music. Resume preserves the current course and does not inject a jump.
 - Jump key-repeat events are ignored, the first jump pressed during deferred scene initialization is retained, and constant-acceleration vertical integration keeps the jump arc consistent at 30, 60, and 120 Hz in unit tests.
 - The game surface is keyboard-focusable and linked to control instructions. Mobile game controls use 44 px touch targets and a stacked, readable control row.
+- Play the user-supplied 1.4-second defeat scream on losses, using Ogg Opus with MP3 fallback, normalized near -18 LUFS and loaded after the first user-initiated start.
 - Enrique confirms he created the character assets; the supplied archive and source metadata are retained for traceability.
 - GitHub Actions CI runs tests and the production build on branches/PRs; Pages deploys main after merge.
 

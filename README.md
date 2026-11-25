@@ -1,6 +1,6 @@
 # Enrique Dash
 
-**Current test version: 0.4.3** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
+**Current test version: 0.4.4** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
 
 ## Play locally
 
@@ -19,7 +19,7 @@ npm run build
 npm run preview
 ```
 
-Tap/click the playfield, or press Space, Arrow Up, or W to jump; press P or the Pause button to pause. While paused, tap/click the playfield or press P, Space, or Resume to continue the same run without forcing a jump. The first user interaction loads the 3D engine and character atlas; until then a lightweight static preview is shown. Use **Fullscreen** to expand the game and **Exit fullscreen** or Escape to return. Browsers that do not allow the Fullscreen API use a fixed-viewport fallback. Music starts with play after a user gesture and can be muted at any time.
+Tap/click the playfield, or press Space, Arrow Up, or W to jump; press P or the Pause button to pause. While paused, tap/click the playfield or press P, Space, or Resume to continue the same run without forcing a jump. The first user interaction loads the 3D engine and character atlas; until then a lightweight static preview is shown. Use **Fullscreen** to expand the game and **Exit fullscreen** or Escape to return. Browsers that do not allow the Fullscreen API use a fixed-viewport fallback. Music starts with play after a user gesture and can be muted at any time. The user-supplied scream effect plays when a run ends in a loss.
 
 ## Playable courses
 
@@ -39,6 +39,11 @@ Each level has its own speed, obstacle sequence, color palette, tempo, scale, ch
 ### v0.3.1
 
 - Keep the exact app version visible inside the game HUD, including fullscreen mode.
+
+### v0.4.4
+
+- Play Enrique's supplied scream once whenever a run ends in a loss; serve normalized Ogg Opus or MP3 depending on browser support.
+- Keep the audio off the landing-page network path and load it after the first user-initiated game start.
 
 ### v0.4.3
 
