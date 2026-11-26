@@ -68,6 +68,11 @@ export function analyzeLevel(level, result = playLevel(level)) {
   const used = Object.entries(counts).filter(([, count]) => count > 0);
   const finishTime = result.finishTime;
   const obstacleCount = (level.obstacles ?? []).reduce((sum, [, count]) => sum + count, 0);
+  const archetypes = {};
+  for (const platform of level.platforms ?? []) {
+    const kind = platform.kind ?? 'bridge';
+    archetypes[kind] = (archetypes[kind] ?? 0) + 1;
+  }
 
   return {
     level,
@@ -80,6 +85,7 @@ export function analyzeLevel(level, result = playLevel(level)) {
     gapCount: counts.gaps,
     bridgeCount: bridgeCount(level),
     enemyCount: counts.enemies,
+    archetypes,
     tightestMargin: result.tightestMargin,
     jumps: result.jumps,
     jumpsPerBeat: result.jumps / inputBeats.length,
@@ -112,6 +118,9 @@ export function formatReport(metrics) {
     const dead = metric.deadBandViolations.length;
     const telegraph = metric.telegraphViolations.length;
     const single = metric.variety.singleUse.join(',');
+    const archetypes = Object.entries(metric.archetypes)
+      .map(([kind, count]) => `${kind} x${count}`)
+      .join(' ');
     return [
       metric.level.id,
       fixed(metric.inputsPerSecond),
@@ -119,6 +128,7 @@ export function formatReport(metrics) {
       metric.gapCount,
       metric.bridgeCount,
       metric.enemyCount,
+      archetypes || '—',
       fixed(metric.tightestMargin),
       metric.jumps,
       fixed(metric.jumpsPerBeat),
@@ -131,7 +141,7 @@ export function formatReport(metrics) {
   });
 
   const output = [table(
-    ['LEVEL', 'INPUT/S', 'OBS/S', 'GAPS', 'BRIDGES', 'ENEMIES', 'MARGIN', 'JUMPS', 'JUMP/BEAT', 'COMBO', 'DEAD-BAND: DISTANCES', 'FIRST-BEAT TELEGRAPH <0.6s', 'VARIETY', 'RESULT'],
+    ['LEVEL', 'INPUT/S', 'OBS/S', 'GAPS', 'BRIDGES', 'ENEMIES', 'ARCHETYPES', 'MARGIN', 'JUMPS', 'JUMP/BEAT', 'COMBO', 'DEAD-BAND: DISTANCES', 'FIRST-BEAT TELEGRAPH <0.6s', 'VARIETY', 'RESULT'],
     rows,
   )];
 
@@ -164,6 +174,17 @@ export function formatReport(metrics) {
     `levels that fail ${failures.length}${failures.length ? ` (${failures.map(({ level }) => level.id).join(', ')})` : ''}`,
     `levels with fairness flags ${flagged.length}`,
   ].join(' | '));
+
+  const archetypeTotals = {};
+  for (const metric of metrics) {
+    for (const [kind, count] of Object.entries(metric.archetypes)) {
+      archetypeTotals[kind] = (archetypeTotals[kind] ?? 0) + count;
+    }
+  }
+  const archetypes = Object.entries(archetypeTotals)
+    .map(([kind, count]) => `${kind} x${count}`)
+    .join(', ') || 'none';
+  output.push(`Archetypes: ${archetypes}`);
 
   return output.join('\n');
 }

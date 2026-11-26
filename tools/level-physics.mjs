@@ -11,12 +11,43 @@ export const OBSTACLE_HORIZONTAL_PADDING = .15;
 export const ENEMY_HORIZONTAL_RADIUS = .8;
 export const PORTAL_TRIGGER_RADIUS = .62;
 
+// A jump now rises under motionTuning.gravity and falls under the faster
+// fall gravity. The apex is unchanged in height, so the fall is shorter:
+//   rise = v / g
+//   fall = sqrt(2 * apex / (g * fallGravityMultiplier)) = v / (g * sqrt(m))
+export function jumpRiseTime() {
+  return jumpTuning.initialVelocity / motionTuning.gravity;
+}
+
+export function jumpApexHeight() {
+  return jumpTuning.initialVelocity ** 2 / (2 * motionTuning.gravity);
+}
+
+export function jumpFallTime() {
+  return Math.sqrt(
+    (2 * jumpApexHeight()) / (motionTuning.gravity * motionTuning.fallGravityMultiplier),
+  );
+}
+
 export function airTime() {
-  return 2 * jumpTuning.initialVelocity / motionTuning.gravity;
+  return jumpRiseTime() + jumpFallTime();
 }
 
 export function jumpReach(speed) {
   return speed * airTime();
+}
+
+// Vertical offset from the launch surface after `seconds` of a normal jump.
+// Uses the same asymmetric gravity as stepPlayerMotion().
+export function jumpHeightAt(seconds) {
+  const riseTime = jumpRiseTime();
+  if (seconds <= 0) return 0;
+  if (seconds <= riseTime) {
+    return jumpTuning.initialVelocity * seconds - .5 * motionTuning.gravity * seconds ** 2;
+  }
+  const apex = jumpApexHeight();
+  const fallSeconds = seconds - riseTime;
+  return apex - .5 * motionTuning.gravity * motionTuning.fallGravityMultiplier * fallSeconds ** 2;
 }
 
 export function gapReach(speed) {

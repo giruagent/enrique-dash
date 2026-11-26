@@ -24,6 +24,20 @@ const fullscreenButton = document.querySelector('#fullscreen-toggle');
 const musicButton = document.querySelector('#music-toggle');
 const laneY = -1.7;
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// One global gameplay language. Course colour belongs to the environment, never to a gameplay
+// object: danger reads red, collectibles gold, portals per type, and platforms as slate ground.
+const GAMEPLAY_COLORS = Object.freeze({
+  hazard: 0xff3b57,
+  shard: 0xffe066,
+  platform: 0x9fb4d6,
+  portal: Object.freeze({
+    spring: 0xffb54f,
+    dash: 0x52eaff,
+    float: 0xb884ff,
+    shield: 0x6c9dff,
+    phase: 0xff6fe0,
+  }),
+});
 const musicEngine = new MusicEngine();
 const lossCue = typeof Audio === 'function' ? createLossCue(import.meta.env.BASE_URL, Audio) : null;
 let selectedLevelIndex = 0;
@@ -334,10 +348,10 @@ function moveFeatureGroup(group, dt, speed, removeFeature) {
       feature.mesh.rotation.y += dt * (feature.type === 'drone' ? 1.7 : .8);
       if (feature.type === 'drone') feature.mesh.position.y = feature.baseY + Math.sin(simulationTime * 2.2 + feature.phase) * .16;
     }
-    if (!reducedMotion && group === portals) feature.mesh.rotation.z += dt * 1.2;
+    if (!reducedMotion && group === portals && feature.spin) feature.spin.rotation.z += dt * 1.2;
     if (!reducedMotion && group === collectibles) {
-      feature.mesh.rotation.x += dt * 1.8;
-      feature.mesh.rotation.y += dt * 2.2;
+      feature.mesh.rotation.y += dt * .6;
+      if (feature.halo) feature.halo.rotation.z += dt * .9;
     }
     if (feature.center + (feature.width ?? 0) / 2 < -9) {
       if (removeFeature === removeMeshFeature) removeFeature(feature, index, group);
@@ -365,9 +379,17 @@ function removeMeshFeature(feature, index, group) {
 function disposeMesh(mesh) {
   if (!mesh || !scene) return;
   scene.remove(mesh);
-  mesh.geometry?.dispose();
-  if (Array.isArray(mesh.material)) mesh.material.forEach((material) => material.dispose());
-  else mesh.material?.dispose();
+  // Feature meshes may be groups (portals, shards, hover and island platforms).
+  mesh.traverse?.((child) => {
+    child.geometry?.dispose();
+    if (Array.isArray(child.material)) child.material.forEach((material) => material.dispose());
+    else child.material?.dispose();
+  });
+  if (typeof mesh.traverse !== 'function') {
+    mesh.geometry?.dispose();
+    if (Array.isArray(mesh.material)) mesh.material.forEach((material) => material.dispose());
+    else mesh.material?.dispose();
+  }
 }
 
 function triggerPortals() {
@@ -461,19 +483,6 @@ function updateProgress(percent) {
 }
 
 
-// Hazards must read as danger, not as scenery. The course palette is used for platforms, shards
-// and portals, so a hazard painted in the same hue disappears into the level. Warm courses get an
-// amber warning colour, everything else a crimson one; both are far from the level accent.
-const hazardDangerColors = Object.freeze({ warm: 0xffc23b, cool: 0xff3b57 });
-
-function hazardColor(levelColor) {
-  const color = new THREE.Color(levelColor);
-  const hsl = { h: 0, s: 0, l: 0 };
-  color.getHSL(hsl);
-  const warm = hsl.h < .09 || hsl.h > .92;
-  return hazardDangerColors[warm ? 'warm' : 'cool'];
-}
-
 function spawnObstacles() {
   const profile = getHazardProfile(level.hazardStyle);
   for (const [distanceAlongTrack, count] of level.obstacles) {
@@ -509,8 +518,15 @@ function spawnObstacles() {
           geometry = new THREE.ConeGeometry(profile.width * .5, profile.height, profile.shape === 'coral' ? 5 : 4);
           geometry.rotateY(Math.PI / 4);
       }
-      const color = level.hazardColor ?? hazardColor(level.color);
-      const material = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: .35, metalness: .16, roughness: .4 });
+      const color = GAMEPLAY_COLORS.hazard;
+      const material = new THREE.MeshStandardMaterial({
+        color,
+        emissive: color,
+        emissiveIntensity: .9,
+        metalness: .2,
+        roughness: .34,
+        flatShading: true,
+      });
       const center = distanceAlongTrack - 3 + index * 1.28;
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.set(center, laneY + (profile.offsetY ?? profile.height / 2), 0);
@@ -544,35 +560,94 @@ function spawnCourseFeatures() {
   for (const definition of level.platforms ?? []) {
     const center = definition.at - 3 + definition.width / 2;
     const height = definition.height ?? 0;
-    const material = new THREE.MeshStandardMaterial({ color: definition.color ?? level.color, emissive: definition.color ?? level.color, emissiveIntensity: .25, metalness: .22, roughness: .42 });
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(definition.width, .28, 1.95), material);
-    mesh.position.set(center, laneY + height - .14, -.12);
+    const kind = definition.kind ?? 'kerb';
+    const material = new THREE.MeshStandardMaterial({
+      color: GAMEPLAY_COLORS.platform,
+      emissive: GAMEPLAY_COLORS.platform,
+      emissiveIntensity: .10,
+      metalness: .35,
+      roughness: .48,
+    });
+    let mesh;
+    if (kind === 'island') {
+      // Six-sided prism: reads as floating rock instead of a box bridge.
+      mesh = new THREE.Mesh(new THREE.CylinderGeometry(definition.width / 2, definition.width / 2 * .84, .34, 6), material);
+      mesh.position.set(center, laneY + height - .17, -.12);
+    } else if (kind === 'hover') {
+      mesh = new THREE.Group();
+      const slab = new THREE.Mesh(new THREE.BoxGeometry(definition.width, .16, 1.9), material);
+      slab.position.y = .06;
+      mesh.add(slab);
+      for (const side of [-1, 1]) {
+        const keel = new THREE.Mesh(new THREE.ConeGeometry(.16, .24, 4), material);
+        keel.position.set(side * definition.width * .26, -.20, 0);
+        keel.rotation.x = Math.PI;
+        mesh.add(keel);
+      }
+      mesh.position.set(center, laneY + height - .14, -.12);
+    } else {
+      mesh = new THREE.Mesh(new THREE.BoxGeometry(definition.width, .28, 1.95), material);
+      mesh.position.set(center, laneY + height - .14, -.12);
+      if (kind === 'shelf') {
+        // A low lip marks the long structural run as a shelf rather than a short kerb.
+        const lip = new THREE.Mesh(new THREE.BoxGeometry(definition.width - .2, .05, 2.08), material);
+        lip.position.y = .155;
+        mesh.add(lip);
+      }
+    }
     scene.add(mesh);
-    platforms.push({ center, width: definition.width, height, currentHeight: height, kind: definition.kind ?? 'bridge', bob: definition.kind === 'hover' ? .1 : 0, phase: center * .17, mesh });
+    platforms.push({
+      center,
+      width: definition.width,
+      height,
+      currentHeight: height,
+      kind,
+      bob: kind === 'hover' ? .1 : 0,
+      phase: center * .17,
+      mesh,
+    });
   }
 
-  const portalColors = { spring: 0xffb54f, dash: 0x52eaff, float: 0xb884ff, shield: 0x6c9dff, phase: 0xff6fe0 };
   for (const definition of level.portals ?? []) {
     const center = definition.at - 3;
-    const color = portalColors[definition.type] ?? level.color;
-    const mesh = new THREE.Mesh(
+    const color = GAMEPLAY_COLORS.portal[definition.type] ?? GAMEPLAY_COLORS.portal.dash;
+    const group = new THREE.Group();
+    group.position.set(center, laneY, 0);
+    const ring = new THREE.Mesh(
       new THREE.TorusGeometry(.57, .12, 8, 24),
-      new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: .7, metalness: .2, roughness: .28 }),
+      new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: .8, metalness: .25, roughness: .26 }),
     );
-    mesh.position.set(center, laneY + 1.15, .08);
-    scene.add(mesh);
-    portals.push({ center, type: definition.type, triggered: false, mesh });
+    ring.position.y = 1.15;
+    const disc = new THREE.Mesh(
+      new THREE.CircleGeometry(.42, 28),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .9, side: THREE.DoubleSide, toneMapped: false }),
+    );
+    disc.position.set(0, 1.15, .03);
+    const strip = new THREE.Mesh(
+      new THREE.BoxGeometry(.95, .045, 2.3),
+      new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: .65, metalness: .15, roughness: .4 }),
+    );
+    strip.position.y = .06;
+    group.add(ring, disc, strip);
+    scene.add(group);
+    portals.push({ center, type: definition.type, triggered: false, mesh: group, spin: ring });
   }
 
   for (const definition of level.enemies ?? []) {
     const type = definition.type ?? 'crawler';
     const width = type === 'drone' ? .72 : .9;
     const height = type === 'drone' ? .68 : .58;
-    const color = type === 'drone' ? 0xff6ce5 : 0xff5274;
+    const color = GAMEPLAY_COLORS.hazard;
     const geometry = type === 'drone' ? new THREE.OctahedronGeometry(.43, 0) : new THREE.DodecahedronGeometry(.42, 0);
-    const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: .46, metalness: .18, roughness: .35 }));
+    const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: .6, metalness: .18, roughness: .35, flatShading: true }));
     const center = definition.at - 3;
-    const altitude = type === 'drone' ? definition.height ?? 1.12 : .29;
+    const perch = (level.platforms ?? []).find((platform) => (
+      platform.kind === 'perch'
+      && Math.abs(platform.at + platform.width / 2 - definition.at) < .01
+    ));
+    const altitude = type === 'drone'
+      ? definition.height ?? 1.12
+      : (perch?.height ?? 0) + .29;
     mesh.position.set(center, laneY + altitude, -.05);
     scene.add(mesh);
     enemies.push({ center, type, width, height, baseY: mesh.position.y, phase: center * .11, mesh });
@@ -581,13 +656,33 @@ function spawnCourseFeatures() {
   for (const definition of level.collectibles ?? []) {
     const center = definition.at - 3;
     const height = definition.height ?? 1.7;
-    const mesh = new THREE.Mesh(
+    const group = new THREE.Group();
+    group.position.set(center, laneY + height, -.02);
+    const crystal = new THREE.Mesh(
       new THREE.OctahedronGeometry(.3, 0),
-      new THREE.MeshStandardMaterial({ color: level.color, emissive: level.color, emissiveIntensity: .8, metalness: .35, roughness: .2 }),
+      new THREE.MeshStandardMaterial({
+        color: GAMEPLAY_COLORS.shard,
+        emissive: GAMEPLAY_COLORS.shard,
+        emissiveIntensity: .95,
+        metalness: .4,
+        roughness: .2,
+      }),
     );
-    mesh.position.set(center, laneY + height, -.02);
-    scene.add(mesh);
-    collectibles.push({ center, height, mesh });
+    const halo = new THREE.Mesh(
+      new THREE.TorusGeometry(.42, .03, 6, 24),
+      new THREE.MeshStandardMaterial({
+        color: GAMEPLAY_COLORS.shard,
+        emissive: GAMEPLAY_COLORS.shard,
+        emissiveIntensity: .7,
+        metalness: .2,
+        roughness: .3,
+      }),
+    );
+    halo.rotation.x = Math.PI / 2;
+    halo.rotation.y = .2;
+    group.add(crystal, halo);
+    scene.add(group);
+    collectibles.push({ center, height, mesh: group, halo });
   }
   updateCollectibleHud();
 }

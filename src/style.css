@@ -5,3 +5,14 @@
 @media(max-width:350px){.game-controls button{padding-inline:6px;font-size:9px;letter-spacing:.25px}.game-bottom>span{font-size:9px}}
 .game-wrap.is-paused .game-overlay{background:rgba(9,13,27,.88);border:1px solid rgba(200,255,82,.32);padding:16px 18px;box-shadow:0 12px 34px rgba(0,0,0,.35)}
 @media(forced-colors:active){.game-wrap.is-paused .game-overlay{background:Canvas;border-color:CanvasText;color:CanvasText;text-shadow:none;box-shadow:none}.game-wrap.is-paused .game-overlay p{color:CanvasText}}
+
+/* Course legend: one role, one colour, readable at 8–10px and wrapping to two rows on phones. */
+.game-legend{position:absolute;z-index:2;left:20px;right:20px;bottom:54px;margin:0;padding:3px 8px;list-style:none;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px 14px;font-size:9px;line-height:1.2;letter-spacing:1px;font-weight:700;color:#c9d5e9;background:linear-gradient(180deg,rgba(7,11,22,0),rgba(7,11,22,.55));pointer-events:none;text-shadow:0 1px 6px #05080f}
+.game-legend li{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.legend-glyph{font-size:10px;line-height:1}
+.legend-danger{color:#ff3b57}
+.legend-shard{color:#ffe066}
+.legend-power{color:#eaf2ff}
+.legend-platform{color:#9fb4d6}
+@media(max-width:480px){.game-legend{left:9px;right:9px;bottom:68px;gap:3px 10px;padding:2px 4px;font-size:8px;letter-spacing:.55px}.legend-glyph{font-size:9px}}
+@media(forced-colors:active){.game-legend{color:CanvasText;background:none;text-shadow:none}.legend-danger,.legend-shard,.legend-power,.legend-platform{color:CanvasText}}
