@@ -33,7 +33,7 @@ const QUOTAS = [
 const COPY = {
   'neon-run': {
     signature: 'Three open gaps on a clean straight, each one a single jump.',
-    designHook: 'Six hazard-free openings and three holes, spaced so you can land and look before the next.',
+    designHook: 'Three spike groups and three holes, spaced so you can land and look before the next.',
   },
   'skyline-rush': {
     signature: 'A float portal stretches the arc you need over the middle hole.',

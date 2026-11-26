@@ -9,7 +9,7 @@ Run `npm run levels:compose` to deterministically rebuild every layout from its 
 ### 01 — Neon Run (78 units)
 - **Signature:** Three open gaps on a clean straight, each one a single jump.
 - **Rhythm:** 2 + 1 + 1 + 2 input beats; target 0.62 inputs/s, measured 0.63; 3 open gaps and 0 bridges.
-- **Design hook:** Six hazard-free openings and three holes, spaced so you can land and look before the next.
+- **Design hook:** Three spike groups and three holes, spaced so you can land and look before the next.
 - **Layout:** Hazard groups at 9.84, 32.7 (double), 68.16; gaps at 14.66 (2.5), 48.15 (2.5), 58.24 (2.5); bridges: none; portals: none; enemies: none; shards: none.
 - **Audio:** 118 BPM with the existing sixteen-step procedural motif.
 

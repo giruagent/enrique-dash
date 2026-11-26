@@ -12,7 +12,7 @@ export const levels = [
   {
     ...emptyCourse, id: 'neon-run', name: 'Neon Run', zone: 'THE FIRST STEP',
     color: 0xc8ff52, background: 0x10162a, floor: 0x141c32, speed: 8.2, length: 78,
-    environment: 'neon-city', signature: 'Three open gaps on a clean straight, each one a single jump.', designHook: 'Six hazard-free openings and three holes, spaced so you can land and look before the next.', hazardStyle: 'spike',
+    environment: 'neon-city', signature: 'Three open gaps on a clean straight, each one a single jump.', designHook: 'Three spike groups and three holes, spaced so you can land and look before the next.', hazardStyle: 'spike',
     obstacles: [[9.84, 1], [32.7, 2], [68.16, 1]],
     gaps: [{ at: 14.66, width: 2.5 }, { at: 48.15, width: 2.5 }, { at: 58.24, width: 2.5 }],
     platforms: [],

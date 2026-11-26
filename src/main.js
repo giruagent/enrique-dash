@@ -460,6 +460,20 @@ function updateProgress(percent) {
   }
 }
 
+
+// Hazards must read as danger, not as scenery. The course palette is used for platforms, shards
+// and portals, so a hazard painted in the same hue disappears into the level. Warm courses get an
+// amber warning colour, everything else a crimson one; both are far from the level accent.
+const hazardDangerColors = Object.freeze({ warm: 0xffc23b, cool: 0xff3b57 });
+
+function hazardColor(levelColor) {
+  const color = new THREE.Color(levelColor);
+  const hsl = { h: 0, s: 0, l: 0 };
+  color.getHSL(hsl);
+  const warm = hsl.h < .09 || hsl.h > .92;
+  return hazardDangerColors[warm ? 'warm' : 'cool'];
+}
+
 function spawnObstacles() {
   const profile = getHazardProfile(level.hazardStyle);
   for (const [distanceAlongTrack, count] of level.obstacles) {
@@ -495,7 +509,7 @@ function spawnObstacles() {
           geometry = new THREE.ConeGeometry(profile.width * .5, profile.height, profile.shape === 'coral' ? 5 : 4);
           geometry.rotateY(Math.PI / 4);
       }
-      const color = level.hazardColor ?? level.color;
+      const color = level.hazardColor ?? hazardColor(level.color);
       const material = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: .35, metalness: .16, roughness: .4 });
       const center = distanceAlongTrack - 3 + index * 1.28;
       const mesh = new THREE.Mesh(geometry, material);
