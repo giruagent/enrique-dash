@@ -9,9 +9,32 @@ export function levelProgressPercent(distance, length) {
   return Math.max(0, Math.min(100, (distance / length) * 100));
 }
 
-export function getTrackSupportHeight(playerX, baseHeight, gaps, platforms) {
-  const platform = platforms.find(({ center, width }) => Math.abs(playerX - center) <= width / 2);
-  if (platform) return baseHeight + platform.height;
+export const platformTuning = Object.freeze({ maxStepHeight: .6, landingTolerance: .08 });
+
+// Returns the surface the player should step up onto, or null.
+export function findStepSurface(playerX, playerY, grounded, baseHeight, platforms, maxStepHeight = platformTuning.maxStepHeight) {
+  if (!grounded) return null;
+  let stepSurface = null;
+  for (const { center, width, height, currentHeight } of platforms) {
+    if (Math.abs(playerX - center) > width / 2) continue;
+    const surface = baseHeight + (currentHeight ?? height);
+    if (surface <= playerY || surface - playerY > maxStepHeight) continue;
+    if (stepSurface === null || surface > stepSurface) stepSurface = surface;
+  }
+  return stepSurface;
+}
+
+// Layered support: highest platform surface at or below the feet, else the ground,
+// else null when the player is over a gap.
+export function getTrackSupportHeight(playerX, playerY, baseHeight, gaps, platforms, tolerance = .05) {
+  let supportHeight = null;
+  for (const { center, width, height, currentHeight } of platforms) {
+    if (Math.abs(playerX - center) > width / 2) continue;
+    const surface = baseHeight + (currentHeight ?? height);
+    if (surface > playerY + tolerance) continue;
+    if (supportHeight === null || surface > supportHeight) supportHeight = surface;
+  }
+  if (supportHeight !== null) return supportHeight;
   const hole = gaps.find(({ center, width }) => Math.abs(playerX - center) <= width / 2);
   return hole ? null : baseHeight;
 }

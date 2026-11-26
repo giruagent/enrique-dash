@@ -1,6 +1,6 @@
 # Enrique Dash
 
-**Current test version: 0.4.4** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
+**Current test version: 0.5.0** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
 
 ## Play locally
 
@@ -39,6 +39,10 @@ Each level has its own speed, obstacle sequence, color palette, tempo, scale, ch
 ### v0.3.1
 
 - Keep the exact app version visible inside the game HUD, including fullscreen mode.
+
+### v0.5.0
+
+- Fixed raised-platform collision so grounded runners step onto low platforms, airborne runners can pass underneath, and platforms over gaps act as bridges while preserving landings from above.
 
 ### v0.4.4
 
