@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getLevel, levels, validateLevels } from './levels.js';
+import { getLevel, levelValidationError, levels, validateLevels } from './levels.js';
+
+test('the valid course catalog imports without a validation failure', () => {
+  assert.equal(levelValidationError, null);
+});
 
 test('the campaign contains twenty uniquely named playable levels', () => {
   assert.equal(levels.length, 20);

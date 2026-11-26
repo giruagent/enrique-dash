@@ -5,6 +5,11 @@ import { readFile } from 'node:fs/promises';
 const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 const styles = await readFile(new URL('./style.css', import.meta.url), 'utf8');
 
+test('the document declares the expected Content Security Policy', () => {
+  const policy = html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)">/)?.[1];
+  assert.equal(policy, "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self'; connect-src 'self'; worker-src 'self' blob:; base-uri 'self'; form-action 'none'; frame-ancestors 'none'");
+});
+
 test('the game surface is focusable and linked to visible control instructions', () => {
   const gameCanvas = html.match(/<div id="game-canvas"[^>]*>/)?.[0] ?? '';
   assert.match(gameCanvas, /role="application"/);
