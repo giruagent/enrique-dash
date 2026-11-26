@@ -2,7 +2,7 @@ let THREE;
 import packageInfo from '../package.json';
 import { getLevel, levels } from './levels.js';
 import { createLossCue, playOneShot, primeOneShot, stopOneShot } from './audio-cues.js';
-import { canConsumeJumpBuffer, getHazardProfile, getTrackSupportHeight, integrateVerticalMotion, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, portalEffects, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldSpawnCourseFeatures, shouldStompEnemy } from './game-logic.js';
+import { canConsumeJumpBuffer, findStepSurface, getHazardProfile, getTrackSupportHeight, integrateVerticalMotion, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, portalEffects, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldSpawnCourseFeatures, shouldStompEnemy } from './game-logic.js';
 import { MusicEngine } from './music.js';
 import './style.css';
 
@@ -268,20 +268,28 @@ function update(dt) {
   triggerPortals();
   const wasGrounded = player.userData.grounded;
 
+  const stepSurface = findStepSurface(
+    player.position.x,
+    player.position.y,
+    player.userData.grounded,
+    laneY,
+    platforms,
+  );
+  if (stepSurface !== null) {
+    player.position.y = stepSurface;
+    player.userData.vy = 0;
+    player.userData.grounded = true;
+    player.userData.coyoteTimer = jumpTuning.coyoteSeconds;
+  }
   const supportHeight = getTrackSupportHeight(
     player.position.x,
+    player.position.y,
     laneY,
     gaps.map(({ center, width }) => ({ center, width })),
-    platforms.map(({ center, width, height, currentHeight }) => ({ center, width, height: currentHeight ?? height })),
+    platforms,
   );
   player.userData.supportY = supportHeight ?? laneY;
   const previousY = player.position.y;
-  const raisedPlatform = platforms.find(({ center, width, height, currentHeight }) => (currentHeight ?? height) > .05 && Math.abs(player.position.x - center) <= width / 2);
-  const raisedHeight = raisedPlatform ? raisedPlatform.currentHeight ?? raisedPlatform.height : null;
-  if (player.userData.grounded && raisedPlatform && player.position.y < laneY + raisedHeight - .04) {
-    crash('Missed the platform.');
-    return;
-  }
 
   if (player.userData.grounded && supportHeight !== null && player.position.y <= supportHeight + .05) {
     player.position.y = supportHeight;

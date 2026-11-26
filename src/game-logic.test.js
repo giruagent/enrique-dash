@@ -1,6 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { canConsumeJumpBuffer, getHazardProfile, getTrackSupportHeight, integrateVerticalMotion, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, portalEffects, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldSpawnCourseFeatures, shouldStompEnemy } from './game-logic.js';
+import { readFileSync, readdirSync } from 'node:fs';
+import { canConsumeJumpBuffer, findStepSurface, getHazardProfile, getTrackSupportHeight, integrateVerticalMotion, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, portalEffects, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldSpawnCourseFeatures, shouldStompEnemy } from './game-logic.js';
+
+function sourceFiles(directory) {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => (
+    entry.isDirectory()
+      ? sourceFiles(new URL(`${entry.name}/`, directory))
+      : [new URL(entry.name, directory)]
+  ));
+}
 
 test('hazard profiles give each environment collision geometry and a safe fallback', () => {
   assert.equal(getHazardProfile('crystal-beam').shape, 'beam');
@@ -40,9 +49,64 @@ test('level progress stays within zero and one hundred percent', () => {
 
 test('gaps remove ground support, while platforms provide a bridge or raised landing surface', () => {
   const hole = [{ center: -3, width: 3 }];
-  assert.equal(getTrackSupportHeight(-3, -1.7, hole, []), null);
-  assert.equal(getTrackSupportHeight(-3, -1.7, hole, [{ center: -3, width: 4, height: 0 }]), -1.7);
-  assert.equal(getTrackSupportHeight(-3, -1.7, [], [{ center: -3, width: 4, height: .45 }]), -1.25);
+  assert.equal(getTrackSupportHeight(-3, -1.7, -1.7, hole, []), null);
+  assert.equal(getTrackSupportHeight(-3, -1.7, -1.7, hole, [{ center: -3, width: 4, height: 0 }]), -1.7);
+  assert.equal(getTrackSupportHeight(-3, -1.25, -1.7, [], [{ center: -3, width: 4, height: .45 }]), -1.25);
+});
+
+for (const height of [.4, .45, .5, .55]) {
+  test(`a grounded player steps up onto a real ${height}-unit platform`, () => {
+    const baseHeight = -1.7;
+    const platforms = [{ center: -3, width: 4, height }];
+    assert.equal(findStepSurface(-3, baseHeight, true, baseHeight, platforms), baseHeight + height);
+  });
+}
+
+test('a grounded player does not step up when the rise exceeds maxStepHeight', () => {
+  const baseHeight = -1.7;
+  const platforms = [{ center: -3, width: 4, height: 1.5 }];
+  assert.equal(findStepSurface(-3, baseHeight, true, baseHeight, platforms), null);
+  assert.equal(getTrackSupportHeight(-3, baseHeight, baseHeight, [], platforms), baseHeight);
+});
+
+test('an airborne player does not step up onto a platform', () => {
+  const baseHeight = -1.7;
+  const platforms = [{ center: -3, width: 4, height: .45 }];
+  assert.equal(findStepSurface(-3, baseHeight, false, baseHeight, platforms), null);
+});
+
+test('landing from above still returns the platform surface as support', () => {
+  const platforms = [{ center: -3, width: 4, height: .45, currentHeight: .5 }];
+  assert.equal(getTrackSupportHeight(-3, -1.1, -1.7, [], platforms), -1.2);
+});
+
+test('a player under a platform over solid ground is supported by the ground', () => {
+  const baseHeight = -1.7;
+  const platforms = [{ center: -3, width: 4, height: .45 }];
+  assert.equal(getTrackSupportHeight(-3, baseHeight, baseHeight, [], platforms), baseHeight);
+});
+
+test('a grounded player under a platform over a gap steps up onto the bridge', () => {
+  const baseHeight = -1.7;
+  const hole = [{ center: -3, width: 3 }];
+  const platforms = [{ center: -3, width: 4, height: .45 }];
+  const stepSurface = findStepSurface(-3, baseHeight, true, baseHeight, platforms);
+  assert.equal(stepSurface, -1.25);
+  assert.equal(getTrackSupportHeight(-3, stepSurface, baseHeight, hole, platforms), stepSurface);
+});
+
+test('an airborne player under a platform over a gap has null support', () => {
+  const baseHeight = -1.7;
+  const hole = [{ center: -3, width: 3 }];
+  const platforms = [{ center: -3, width: 4, height: .45 }];
+  assert.equal(getTrackSupportHeight(-3, baseHeight, baseHeight, hole, platforms), null);
+});
+
+test('the obsolete platform crash message is absent from all source files', () => {
+  const removedMessage = ['Missed the', 'platform.'].join(' ');
+  for (const file of sourceFiles(new URL('./', import.meta.url))) {
+    assert.equal(readFileSync(file, 'utf8').includes(removedMessage), false, file.pathname);
+  }
 });
 
 test('portals expose distinct supported effects for movement and hazard defense', () => {
