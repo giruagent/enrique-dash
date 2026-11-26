@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { activeEffects, canConsumeJumpBuffer, courseMedal, effectCopy, emptyProgress, findStepSurface, finishGateDistance, getHazardProfile, getTrackSupportHeight, integrateVerticalMotion, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, mergeRunProgress, parseProgress, portalCopy, portalEffects, portalLabel, PROGRESS_VERSION, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy } from './game-logic.js';
+import { activeEffects, canConsumeJumpBuffer, checkpointTuning, courseMedal, effectCopy, emptyProgress, findStepSurface, finishGateDistance, getHazardProfile, getTrackSupportHeight, integrateVerticalMotion, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, mergeRunProgress, parseProgress, portalCopy, portalEffects, portalLabel, PROGRESS_VERSION, safeCheckpointDistance, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy } from './game-logic.js';
+import { levels } from './levels.js';
+import { beatWindows, jumpApexHeight } from '../tools/level-physics.mjs';
 
 function sourceFiles(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => (
@@ -350,18 +352,18 @@ test('progress parsing never mutates the raw v2 object', () => {
 test('a worse run never lowers best or shards and never clears a clear flag', () => {
   const progress = { version: 2, courses: { 'neon-run': { best: .8, shards: 2, cleared: true } } };
   const output = mergeRunProgress(progress, 'neon-run', { reached: .3, shards: 1, cleared: false });
-  assert.deepEqual(output.courses['neon-run'], { best: .8, shards: 2, cleared: true });
+  assert.deepEqual(output.courses['neon-run'], { best: .8, shards: 2, cleared: true, noCheckpoint: true });
   assert.equal(output.version, 2);
 });
 
 test('mergeRunProgress takes maxima, ORs cleared and stays immutable', () => {
   const progress = { version: 2, courses: { 'neon-run': { best: .8, shards: 2, cleared: false } } };
   const snapshot = structuredClone(progress);
-  const output = mergeRunProgress(progress, 'neon-run', { reached: .55, shards: 1, cleared: true });
+  const output = mergeRunProgress(progress, 'neon-run', { reached: .55, shards: 1, cleared: true, usedCheckpoint: false });
   assert.deepEqual(progress, snapshot);
   assert.notEqual(output, progress);
   assert.notEqual(output.courses, progress.courses);
-  assert.deepEqual(output.courses['neon-run'], { best: .8, shards: 2, cleared: true });
+  assert.deepEqual(output.courses['neon-run'], { best: .8, shards: 2, cleared: true, noCheckpoint: true });
   assert.deepEqual(
     mergeRunProgress(emptyProgress(), 'candy-comet', { reached: .82, shards: 1.9, cleared: false }).courses['candy-comet'],
     { best: .82, shards: 1, cleared: false },
@@ -378,4 +380,78 @@ test('course medals are bronze for a clear, silver for every shard, and none bef
   assert.equal(courseMedal({ cleared: true, shards: 0 }, { collectibles: [] }), 'bronze');
   assert.equal(courseMedal({ cleared: true, shards: 3 }, { collectibles: [] }), 'bronze');
   assert.equal(courseMedal({ cleared: true, shards: 3 }, {}), 'bronze');
+});
+
+test('gold beats silver and is earned by any clear that never used its checkpoint', () => {
+  const withShards = { collectibles: [{}, {}, {}] };
+  assert.equal(courseMedal({ cleared: true, shards: 3, noCheckpoint: true }, withShards), 'gold');
+  assert.equal(courseMedal({ cleared: true, shards: 0, noCheckpoint: true }, withShards), 'gold');
+  assert.equal(courseMedal({ cleared: true, noCheckpoint: true }, { collectibles: [] }), 'gold');
+  assert.equal(courseMedal({ cleared: false, noCheckpoint: true }, withShards), null);
+});
+
+test('a course shorter than the checkpoint minimum gets no flag', () => {
+  assert.equal(checkpointTuning.minimumLength, 120);
+  assert.equal(safeCheckpointDistance({ length: 119 }), null);
+  assert.equal(safeCheckpointDistance({ length: 78 }), null);
+  assert.equal(safeCheckpointDistance({}), null);
+  assert.equal(safeCheckpointDistance(null), null);
+});
+
+test('every long course gets a past-half checkpoint clear of gaps, hazards, enemies and portals', () => {
+  const clearance = checkpointTuning.clearance * jumpApexHeight();
+  for (const level of levels) {
+    const distance = safeCheckpointDistance(level);
+    if (level.length < checkpointTuning.minimumLength) {
+      assert.equal(distance, null, `${level.id} is too short for a checkpoint`);
+      continue;
+    }
+    assert.ok(Number.isFinite(distance), `${level.id} is long enough for a checkpoint`);
+    assert.ok(distance >= level.length * checkpointTuning.windowStart, `${level.id} checkpoint is before the window`);
+    assert.ok(distance <= level.length * checkpointTuning.windowEnd, `${level.id} checkpoint is after the window`);
+    for (const beat of beatWindows(level)) {
+      if (!['hazard', 'gap', 'enemy'].includes(beat.kind)) continue;
+      const clear = distance <= beat.start - clearance + 1e-9 || distance >= beat.end + clearance - 1e-9;
+      assert.ok(clear, `${level.id} checkpoint sits too close to ${beat.id}`);
+    }
+    for (const gap of level.gaps) {
+      assert.ok(distance <= gap.at || distance >= gap.at + gap.width, `${level.id} checkpoint sits in a gap`);
+    }
+    for (const portal of level.portals) {
+      assert.ok(Math.abs(distance - portal.at) >= clearance - 1e-9, `${level.id} checkpoint sits on a portal`);
+    }
+  }
+});
+
+test('the checkpoint scan is deterministic and returns null when the window is crowded', () => {
+  const level = levels.find(({ length }) => length >= checkpointTuning.minimumLength);
+  assert.equal(safeCheckpointDistance(level), safeCheckpointDistance(level));
+  const crowded = {
+    length: 120,
+    hazardStyle: 'spike',
+    obstacles: Array.from({ length: 60 }, (_, index) => [3 + index * 1.2, 1]),
+    gaps: [],
+    platforms: [],
+    portals: [],
+    enemies: [],
+    collectibles: [],
+  };
+  assert.equal(safeCheckpointDistance(crowded), null);
+});
+
+test('mergeRunProgress remembers a checkpoint-free clear and never downgrades it', () => {
+  const first = mergeRunProgress(emptyProgress(), 'neon-run', { reached: 1, cleared: true, usedCheckpoint: false });
+  assert.equal(first.courses['neon-run'].noCheckpoint, true);
+  const laterWithCheckpoint = mergeRunProgress(first, 'neon-run', { reached: 1, cleared: true, usedCheckpoint: true });
+  assert.equal(laterWithCheckpoint.courses['neon-run'].noCheckpoint, true);
+  const laterFailed = mergeRunProgress(first, 'neon-run', { reached: .4, cleared: false, usedCheckpoint: false });
+  assert.equal(laterFailed.courses['neon-run'].noCheckpoint, true);
+  const checkpointClear = mergeRunProgress(emptyProgress(), 'neon-run', { reached: 1, cleared: true, usedCheckpoint: true });
+  assert.equal(checkpointClear.courses['neon-run'].noCheckpoint, undefined);
+  const partialRun = mergeRunProgress(emptyProgress(), 'neon-run', { reached: .6, cleared: false, usedCheckpoint: false });
+  assert.equal(partialRun.courses['neon-run'].noCheckpoint, undefined);
+  assert.deepEqual(
+    parseProgress(JSON.stringify({ version: 2, courses: { 'neon-run': { best: 1, shards: 0, cleared: true, noCheckpoint: true } } })),
+    { version: 2, courses: { 'neon-run': { best: 1, shards: 0, cleared: true, noCheckpoint: true } } },
+  );
 });

@@ -1,6 +1,6 @@
 # Enrique Dash
 
-**Current test version: 0.8.2** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
+**Current test version: 0.9.0** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
 
 ## Play locally
 
@@ -48,6 +48,12 @@ See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the auto-playe
 - Added a mute toggle and start audio only following a user gesture.
 - Deferred loading Three.js and the 2.6 MB character atlas until the first play action, retaining a static preview and cube fallback.
 - Added Node's built-in test runner for level validation, collision/progress rules, and music theory helpers.
+
+### v0.9.0
+
+- Every course of 120 units or more now has one checkpoint: `safeCheckpointDistance()` picks the clearest half-unit spot inside the 38–62 % window, away from hazards, gaps, enemies and portals. The flag is a white pole, a two-triangle cyan pennant and a cyan lane strip, scrolls with the world and announces `Checkpoint.` when passed.
+- Dying after the flag now resumes from the checkpoint: the course is rebuilt shifted by the attempt start, features at or behind the runner are dropped, the progress bar starts where the flag sits and the overlay reads “One more try — from the checkpoint.” The Play button still restarts from zero.
+- A new gold medal rewards a clear that never used the course checkpoint; it is stored as `noCheckpoint` and never downgraded. Gold beats silver, and short courses earn it by clearing normally.
 
 ### v0.8.2
 
