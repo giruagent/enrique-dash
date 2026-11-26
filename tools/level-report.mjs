@@ -14,18 +14,30 @@ function featureCounts(level) {
   };
 }
 
+function bridgeCount(level) {
+  return (level.gaps ?? []).filter((gap) => (level.platforms ?? []).some((platform) => (
+    platform.height <= .6
+    && platform.at <= gap.at
+    && platform.at + platform.width >= gap.at + gap.width
+  ))).length;
+}
+
 export function analyzeLevel(level, result = playLevel(level)) {
   const beats = beatWindows(level);
+  const inputBeats = beats.filter(({ kind }) => kind === 'hazard' || kind === 'gap' || kind === 'enemy');
   const deadBandViolations = [];
   const telegraphViolations = [];
   let previousBeat = null;
   let previousEnd = 0;
   let minimumTelegraph = Infinity;
+  let comboBeats = 0;
 
-  for (const beat of beats) {
+  for (const beat of inputBeats) {
+    let sameJump = false;
     if (previousBeat) {
       const distance = beat.at - previousBeat.at;
-      if (distance >= beat.reach && distance < 1.35 * beat.reach) {
+      sameJump = distance <= .8 * beat.reach;
+      if (!sameJump && distance < 1.35 * beat.reach) {
         deadBandViolations.push({
           from: previousBeat.id,
           to: beat.id,
@@ -36,11 +48,17 @@ export function analyzeLevel(level, result = playLevel(level)) {
       }
     }
 
-    const clearDistance = Math.max(0, beat.courseStart - previousEnd);
-    const seconds = clearDistance / level.speed;
-    minimumTelegraph = Math.min(minimumTelegraph, seconds);
-    if (seconds < .6) {
-      telegraphViolations.push({ beat: beat.id, at: beat.at, clearDistance, seconds });
+    // Only the first beat of a phrase needs clear track. A beat sharing the
+    // previous jump is already committed to and cannot be re-read in time.
+    if (sameJump) {
+      comboBeats++;
+    } else {
+      const clearDistance = Math.max(0, beat.courseStart - previousEnd);
+      const seconds = clearDistance / level.speed;
+      minimumTelegraph = Math.min(minimumTelegraph, seconds);
+      if (seconds < .6) {
+        telegraphViolations.push({ beat: beat.id, at: beat.at, clearDistance, seconds });
+      }
     }
     previousBeat = beat;
     previousEnd = Math.max(previousEnd, beat.courseEnd);
@@ -54,14 +72,17 @@ export function analyzeLevel(level, result = playLevel(level)) {
   return {
     level,
     result,
-    beats: beats.length,
+    beats: inputBeats.length,
+    comboBeats,
     finishTime,
-    inputsPerSecond: beats.length / finishTime,
+    inputsPerSecond: inputBeats.length / finishTime,
     obstaclesPerSecond: obstacleCount / finishTime,
     gapCount: counts.gaps,
+    bridgeCount: bridgeCount(level),
     enemyCount: counts.enemies,
     tightestMargin: result.tightestMargin,
     jumps: result.jumps,
+    jumpsPerBeat: result.jumps / inputBeats.length,
     completed: result.completed,
     deadBandViolations,
     telegraphViolations,
@@ -96,9 +117,12 @@ export function formatReport(metrics) {
       fixed(metric.inputsPerSecond),
       fixed(metric.obstaclesPerSecond),
       metric.gapCount,
+      metric.bridgeCount,
       metric.enemyCount,
       fixed(metric.tightestMargin),
       metric.jumps,
+      fixed(metric.jumpsPerBeat),
+      metric.comboBeats,
       dead ? `${dead}: ${metric.deadBandViolations.map(({ distance }) => fixed(distance)).join(', ')}` : '0',
       `${telegraph} (min ${fixed(metric.minimumTelegraph)}s)`,
       `${metric.variety.count}${single ? `; once: ${single}` : ''}`,
@@ -107,7 +131,7 @@ export function formatReport(metrics) {
   });
 
   const output = [table(
-    ['LEVEL', 'INPUT/S', 'OBS/S', 'GAPS', 'ENEMIES', 'MARGIN', 'JUMPS', 'DEAD-BAND: DISTANCES', 'TELEGRAPH <0.6s', 'VARIETY', 'RESULT'],
+    ['LEVEL', 'INPUT/S', 'OBS/S', 'GAPS', 'BRIDGES', 'ENEMIES', 'MARGIN', 'JUMPS', 'JUMP/BEAT', 'COMBO', 'DEAD-BAND: DISTANCES', 'FIRST-BEAT TELEGRAPH <0.6s', 'VARIETY', 'RESULT'],
     rows,
   )];
 

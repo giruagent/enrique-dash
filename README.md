@@ -1,6 +1,6 @@
 # Enrique Dash
 
-**Current test version: 0.5.5** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
+**Current test version: 0.6.1** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
 
 ## Play locally
 
@@ -48,6 +48,18 @@ See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the auto-playe
 - Added a mute toggle and start audio only following a user gesture.
 - Deferred loading Three.js and the 2.6 MB character atlas until the first play action, retaining a static preview and cube fallback.
 - Added Node's built-in test runner for level validation, collision/progress rules, and music theory helpers.
+
+### v0.6.1
+
+- Hazards now use a dedicated warning colour (crimson on cool courses, amber on warm ones) instead of the course accent, so spikes, vents and panels no longer disappear into the scenery that shares their hue.
+
+### v0.6.0
+
+- Recomposed all twenty courses with `tools/compose-levels.mjs`: deliberate two-in-one beats sit at or below 0.80 jump reach and every other interval is a full 1.35-reach reaction rest, so no authored beat lands in the unfair 0.80–1.35 dead band.
+- Made every gap real: bridges are optional and capped per tier, every course from the fifth on keeps at least two open gaps, and the auto-player now jumps at least 75% of jump-triggering beats (Eclipse Crown jumps 12 of 16).
+- Raised the campaign from **0.55 to 0.82 average inputs/s** (+49%) and made the curve climb in every five-course block: 0.67, 0.76, 0.86, 0.97; Neon Run now runs at 0.63 and Eclipse Crown at 1.02.
+- All twenty courses finish under the unchanged auto-player with zero deaths; the report shows 20/20 completed, 0 dead-band violations, 0 first-beat telegraph violations and a tightest jump margin of 0.51 units.
+- Added level regression tests for jump ratio, bridge caps and open gaps, landing margin, first-beat telegraph, ±5% input-rate accuracy, curve, variety, compounds and apex shards.
 
 ### v0.3.1
 

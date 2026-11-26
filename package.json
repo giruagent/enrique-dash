@@ -1,7 +1,7 @@
 {
   "name": "enrique-dash",
   "private": true,
-  "version": "0.5.5",
+  "version": "0.6.1",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
@@ -9,6 +9,7 @@
     "preview": "vite preview --host 0.0.0.0",
     "test": "node --test src/*.test.js",
     "levels:play": "node tools/auto-player.mjs",
+    "levels:compose": "node tools/compose-levels.mjs && node tools/apply-feature-quotas.mjs",
     "levels:report": "node tools/level-report.mjs",
     "levels:check": "node tools/auto-player.mjs && node --test src/levels.tools.test.js"
   },
