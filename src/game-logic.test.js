@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { canConsumeJumpBuffer, courseMedal, emptyProgress, findStepSurface, finishGateDistance, getHazardProfile, getTrackSupportHeight, integrateVerticalMotion, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, mergeRunProgress, parseProgress, portalCopy, portalEffects, portalLabel, PROGRESS_VERSION, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy } from './game-logic.js';
+import { activeEffects, canConsumeJumpBuffer, courseMedal, effectCopy, emptyProgress, findStepSurface, finishGateDistance, getHazardProfile, getTrackSupportHeight, integrateVerticalMotion, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, mergeRunProgress, parseProgress, portalCopy, portalEffects, portalLabel, PROGRESS_VERSION, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy } from './game-logic.js';
 
 function sourceFiles(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => (
@@ -136,6 +136,82 @@ test('an unknown portal type falls back to the phase label without throwing', ()
   assert.equal(portalLabel('unknown-portal'), portalCopy.phase);
   assert.equal(portalLabel(), portalCopy.phase);
   assert.equal(portalLabel('toString'), portalCopy.phase);
+});
+
+test('effect copy names every visible power-up in its gameplay colour', () => {
+  assert.deepEqual(effectCopy, {
+    dash: { name: 'DASH', color: 0x52eaff },
+    float: { name: 'FLOAT', color: 0xb884ff },
+    phase: { name: 'PHASE', color: 0xff6fe0 },
+    shield: { name: 'SHIELD', color: 0x6c9dff },
+  });
+});
+
+test('activeEffects is empty for no effects or junk timers', () => {
+  assert.deepEqual(activeEffects(), []);
+  assert.deepEqual(activeEffects(null), []);
+  assert.deepEqual(activeEffects({}), []);
+  assert.deepEqual(activeEffects({
+    dashTimer: '1',
+    gravityTimer: Infinity,
+    phaseTimer: {},
+    shieldCharges: NaN,
+  }), []);
+});
+
+for (const [type, timer, total] of [
+  ['dash', 'dashTimer', portalEffects.dash.duration],
+  ['float', 'gravityTimer', portalEffects.float.duration],
+  ['phase', 'phaseTimer', portalEffects.phase.duration],
+]) {
+  test(`activeEffects reports a live ${type} with its remaining fraction`, () => {
+    const active = activeEffects({ [timer]: total / 2 });
+    assert.equal(active.length, 1);
+    assert.equal(active[0].type, type);
+    assert.equal(active[0].total, total);
+    assert.equal(active[0].remaining, total / 2);
+    assert.ok(Math.abs(active[0].ratio - .5) < 1e-12);
+    assert.deepEqual({ name: active[0].name, color: active[0].color }, effectCopy[type]);
+  });
+}
+
+test('two live effects keep the stable dash, float, phase, shield order', () => {
+  const active = activeEffects({ phaseTimer: 1.2, gravityTimer: 1.4 });
+  assert.deepEqual(active.map((effect) => effect.type), ['float', 'phase']);
+  const all = activeEffects({
+    phaseTimer: portalEffects.phase.duration / 2,
+    dashTimer: portalEffects.dash.duration,
+    gravityTimer: portalEffects.float.duration,
+    shieldCharges: 1,
+  });
+  assert.deepEqual(all.map((effect) => effect.type), ['dash', 'float', 'phase', 'shield']);
+  assert.deepEqual(all.map((effect) => effect.ratio), [1, 1, .5, 1]);
+});
+
+test('a near-zero timer clamps its ratio and the entry disappears at exactly zero', () => {
+  const near = activeEffects({ dashTimer: 1e-9 });
+  assert.equal(near.length, 1);
+  assert.ok(near[0].ratio > 0 && near[0].ratio <= 1);
+  assert.ok(Number.isFinite(near[0].ratio));
+  assert.equal(activeEffects({ dashTimer: 1e6 })[0].ratio, 1);
+  assert.deepEqual(activeEffects({ dashTimer: 0 }), []);
+  assert.deepEqual(activeEffects({ dashTimer: -1 }), []);
+  assert.deepEqual(activeEffects({ dashTimer: NaN }), []);
+});
+
+test('shield charges stay at full ratio until the saved hit is spent', () => {
+  assert.deepEqual(activeEffects({ shieldCharges: 1 }), [{
+    type: 'shield',
+    remaining: 1,
+    total: 1,
+    ratio: 1,
+    name: 'SHIELD',
+    color: 0x6c9dff,
+  }]);
+  const two = activeEffects({ shieldCharges: 2 });
+  assert.equal(two[0].remaining, 2);
+  assert.equal(two[0].ratio, 1);
+  assert.deepEqual(activeEffects({ shieldCharges: 0 }), []);
 });
 
 test('the finish gate helper returns the authored course length', () => {

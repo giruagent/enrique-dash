@@ -27,3 +27,14 @@
 .legend-platform{color:#9fb4d6}
 @media(max-width:480px){.game-legend{left:9px;right:9px;bottom:68px;gap:3px 10px;padding:2px 4px;font-size:8px;letter-spacing:.55px}.legend-glyph{font-size:9px}}
 @media(forced-colors:active){.game-legend{color:CanvasText;background:none;text-shadow:none}.legend-danger,.legend-shard,.legend-power,.legend-platform{color:CanvasText}}
+
+/* Active power-up pills: top-left under the level name, clear of the finish chip and HUD row. */
+.effect-hud{position:absolute;left:0;top:42px;z-index:1;display:flex;flex-wrap:wrap;gap:4px;max-width:33%;margin:0;padding:0;list-style:none;pointer-events:none}
+.effect-hud[hidden]{display:none}
+.effect-pill{display:flex;min-width:50px;flex-direction:column;gap:3px;padding:3px 6px 4px;border:1px solid rgba(255,255,255,.16);border-left:2px solid var(--effect-color,#fff);border-radius:2px;background:rgba(7,11,22,.66)}
+.effect-pill-name{color:var(--effect-color,#fff);font-size:8px;line-height:1;font-weight:800;letter-spacing:1px}
+.effect-pill-track{display:block;height:2px;overflow:hidden;background:rgba(255,255,255,.2)}
+.effect-pill-fill{display:block;height:100%;width:100%;background:var(--effect-color,#fff);transition:width .08s linear}
+@media(max-width:560px){.effect-hud{top:40px;gap:3px;max-width:33%}.effect-pill{min-width:36px;padding:2px 5px 3px}.effect-pill-name{font-size:7px;letter-spacing:.7px}}
+@media(prefers-reduced-motion:reduce){.effect-pill-fill{transition:none}}
+@media(forced-colors:active){.effect-pill{border-color:CanvasText;background:Canvas}.effect-pill-name{color:CanvasText}.effect-pill-track,.effect-pill-fill{background:CanvasText}}

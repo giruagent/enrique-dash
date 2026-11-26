@@ -88,3 +88,28 @@ test('level cards show a progress bar, shard pips and a medal dot', async () => 
   assert.match(styles, /\.level-card-medal\.bronze\s*\{[^}]*background:\s*#c98a4b/);
   assert.match(styles, /\.level-card-medal\.silver\s*\{[^}]*background:\s*#dfe8f5/);
 });
+
+test('the HUD shows an effect pill row that main.js fills from activeEffects', async () => {
+  const main = await readFile(new URL('./main.js', import.meta.url), 'utf8');
+  const effectHud = html.match(/<ul[^>]*id="effect-hud"[^>]*>/)?.[0] ?? '';
+  assert.notEqual(effectHud, '');
+  assert.match(effectHud, /class="effect-hud"/);
+  assert.match(effectHud, /aria-hidden="true"/);
+  const hudStart = html.indexOf('<div class="game-hud">');
+  const canvasStart = html.indexOf('<div id="game-canvas"');
+  const effectStart = html.indexOf('id="effect-hud"');
+  assert.ok(hudStart !== -1 && effectStart > hudStart && effectStart < canvasStart, 'the effect HUD belongs inside the game HUD');
+  assert.match(styles, /\.effect-hud\[hidden\]\s*\{[^}]*display:\s*none/);
+  assert.match(styles, /\.effect-pill-fill\s*\{[^}]*background:\s*var\(--effect-color/);
+  assert.match(main, /activeEffects\(/);
+  assert.match(main, /EFFECT_BAR_INTERVAL_MS\s*=\s*100/);
+  assert.match(main, /Math\.round\(effect\.ratio \* 100\)/);
+});
+
+test('the active effect ring and shield halo use the authored geometry', async () => {
+  const main = await readFile(new URL('./main.js', import.meta.url), 'utf8');
+  assert.match(main, /new THREE\.TorusGeometry\(\.55, \.04,/);
+  assert.match(main, /emissiveIntensity:\s*\.8/);
+  assert.match(main, /effectCopy\.shield\.color/);
+  assert.match(main, /reducedMotion \? 0 : Math\.sin\(simulationTime/);
+});
