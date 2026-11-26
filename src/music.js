@@ -60,6 +60,7 @@ export class MusicEngine {
     this.suspendTimer = null;
     this.track = null;
     this.desired = false;
+    this.resumeAttempts = 0;
     this.step = 0;
     this.nextStepAt = 0;
     this.generation = 0;
@@ -69,6 +70,7 @@ export class MusicEngine {
     clearTimeout(this.suspendTimer);
     this.suspendTimer = null;
     this.desired = true;
+    this.resumeAttempts = 0;
     this.track = track;
     const generation = ++this.generation;
     if (!this.context) this.createAudioGraph();
@@ -136,9 +138,15 @@ export class MusicEngine {
   scheduleAhead() {
     if (!this.context || !this.track || !this.desired) return;
     if (this.context.state !== 'running') {
-      void this.context.resume().catch(() => {});
+      // Retry eagerly at first, then back off: a suspended context would otherwise get
+      // forty resume() calls a second, each one logging a browser warning.
+      this.resumeAttempts++;
+      if (this.resumeAttempts <= 3 || this.resumeAttempts % 20 === 0) {
+        void this.context.resume().catch(() => {});
+      }
       return;
     }
+    this.resumeAttempts = 0;
     const plan = planScheduleWindow({
       currentTime: this.context.currentTime,
       nextStepAt: this.nextStepAt,

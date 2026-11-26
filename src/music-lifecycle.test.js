@@ -303,3 +303,27 @@ test('a stopped engine never revives itself when the context state changes', asy
   assert.equal(timers.intervals.size, 0);
   assert.equal(context.scheduledTimes.length, scheduledCount);
 });
+
+test('retrying a stuck resume backs off instead of hammering the context', async (t) => {
+  const { engine, timers, getContext } = createHarness(t, {
+    state: 'suspended',
+    failedResumeAttempts: 999,
+  });
+
+  await engine.start(track);
+  const context = getContext();
+  assert.equal(context.resumeCalls, 1);
+
+  for (let tick = 0; tick < 20; tick++) timers.tickIntervals();
+
+  assert.equal(context.state, 'suspended');
+  assert.ok(context.resumeCalls <= 6, `expected backoff, got ${context.resumeCalls} resume calls`);
+  assert.equal(timers.intervals.size, 1);
+
+  context.failedResumeAttempts = 0;
+  for (let tick = 0; tick < 60 && context.state !== 'running'; tick++) timers.tickIntervals();
+  timers.tickIntervals();
+
+  assert.equal(context.state, 'running');
+  assert.ok(context.scheduledTimes.length > 0);
+});
