@@ -31,3 +31,12 @@ test('paused overlay has a dedicated high-contrast backdrop', () => {
 test('paused overlay uses system colors in forced-colors mode', () => {
   assert.match(styles, /@media\s*\(forced-colors:\s*active\)[\s\S]*?\.game-wrap\.is-paused\s+\.game-overlay\s*\{[^}]*background:\s*Canvas/);
 });
+
+test('starting a run never consumes a jump', async () => {
+  const main = await readFile(new URL('./main.js', import.meta.url), 'utf8');
+  // The tap that starts or restarts a run must only start it. Applying it as a jump dropped the
+  // player into the first gap on thirteen of the twenty composed courses.
+  assert.doesNotMatch(main, /jumpAfterLoad/);
+  assert.doesNotMatch(main, /pendingStartJump/);
+  assert.match(main, /void start\(\);/);
+});

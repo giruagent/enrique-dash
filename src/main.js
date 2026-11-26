@@ -2,7 +2,7 @@ let THREE;
 import packageInfo from '../package.json';
 import { getLevel, levelValidationError, levels } from './levels.js';
 import { createLossCue, playOneShot, primeOneShot, stopOneShot } from './audio-cues.js';
-import { canConsumeJumpBuffer, getHazardProfile, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, portalEffects, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy, stepPlayerMotion } from './game-logic.js';
+import { canConsumeJumpBuffer, getHazardProfile, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, portalEffects, shouldAcceptJumpInput, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy, stepPlayerMotion } from './game-logic.js';
 import { MusicEngine } from './music.js';
 import './style.css';
 
@@ -33,7 +33,7 @@ let sceneStarted = false;
 let scenePromise = null;
 let floor, floorMaterial, trackEdgeMaterial, sceneryGroup;
 let running = false, started = false, dead = false, completed = false, distance = 0, attempt = 1;
-let simulationTime = 0, graphicsUnavailable = false, pendingStartJump = false;
+let simulationTime = 0, graphicsUnavailable = false;
 let musicEnabled = true, pseudoFullscreen = false, activeAnimation = '', animationTime = 0;
 const obstacles = [];
 const gaps = [];
@@ -728,17 +728,15 @@ function selectLevel(index) {
   });
 }
 
-async function start({ jumpAfterLoad = false } = {}) {
+async function start() {
   if (graphicsUnavailable) return false;
   if (running) return true;
   const resuming = isGamePaused({ started, running, dead, completed });
   if (dead || completed) reset();
-  pendingStartJump = mergeJumpRequest(pendingStartJump, jumpAfterLoad);
   primeOneShot(lossCue);
   if (musicEnabled) musicEngine.start(level.music).catch((error) => console.warn('Music could not start.', error));
   const ready = await ensureScene();
   if (!ready || graphicsUnavailable) {
-    pendingStartJump = false;
     void musicEngine.stop();
     return false;
   }
@@ -756,13 +754,8 @@ async function start({ jumpAfterLoad = false } = {}) {
     spawnObstacles();
     spawnCourseFeatures();
   }
-  if (shouldApplyBufferedStartJump(pendingStartJump, player.userData.grounded)) {
-    player.userData.vy = jumpTuning.initialVelocity;
-    player.userData.grounded = false;
-    player.userData.coyoteTimer = 0;
-    player.userData.jumpBufferTimer = 0;
-  }
-  pendingStartJump = false;
+  // A tap that starts a run must never be spent as a jump: with the composed courses an
+  // unavoidable jump at distance 0 lands the player straight into the first gap.
   startRenderLoop();
   syncPauseButton();
   return true;
@@ -812,7 +805,7 @@ function jump() {
   if (graphicsUnavailable) return;
   if (dead || completed) reset();
   if (!sceneStarted || !running) {
-    void start({ jumpAfterLoad: !started });
+    void start();
     return;
   }
   player.userData.jumpBufferTimer = jumpTuning.inputBufferSeconds;
@@ -857,7 +850,6 @@ function reset() {
   completed = false;
   started = false;
   running = false;
-  pendingStartJump = false;
   simulationTime = 0;
   distance = 0;
   attempt = 1;
