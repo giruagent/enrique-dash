@@ -1,114 +1,150 @@
 # Enrique Dash — 20-Level Course Plan
 
-## Campaign rules
+## How the courses are composed
 
-- Every level is selectable from the course grid; the game still uses one-button jump controls.
-- Course length rises from 78 to a hard cap of 150 track units. With speeds capped below 10 units/second, the later courses grow in challenge without turning into long marathons.
-- Distances below are measured from the start of each course. A gap is never made safe by a portal; portals affect only their documented movement/defense mechanic.
-- Raised bridges top out at 0.55 units. Gaps are short and spaced to leave readable landing room. Hazard groups are intentionally sparser in courses with more authored mechanics.
-- Visual environment, hazard silhouette, palette, course rhythm, and procedural music parameters vary by level. Music currently shares the same synthesizer palette; per-level BPM, scale, chord progression, and motif are authored in data.
+Run `npm run levels:compose` to deterministically rebuild every layout from its level-id seed and the v0.6.0 blueprint. The composer preserves course identity, art, music, speed and length; lays combo phrases and fair rests against the real portal speed profile; places low bridges and apex shards; and rejects any layout that the unchanged auto-player cannot finish without a death or dead-band violation. See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the shared physics and checks.
 
 ## Individual designs
 
 ### 01 — Neon Run (78 units)
-- **Purpose:** Teach one jump at a time with the existing course rhythm.
-- **Plan:** Neon city; spike groups at 13, 23 (pair), 35, 46 (pair), 58, and 69 (pair). No gaps or portals yet, so the first run introduces the basic timing without stacking new rules.
-- **Audio:** 118 BPM minor-pentatonic motif; restrained opening theme.
+- **Signature:** A spike group into a gap in the same jump.
+- **Rhythm:** 2 + 1 + 1 + 2 input beats; target 0.62 inputs/s, measured 0.63; 3 gaps and 0 compound bridges.
+- **Design hook:** Neon Run lays out 3 spike groups and 3 gaps.
+- **Layout:** Hazard groups at 9.84, 33.57 (double), 68.16; gaps at 15.53 (2.5), 51.61 (2.5), 63.75 (4.3); bridges: none; portals: none; enemies: none; shards: none.
+- **Audio:** 118 BPM with the existing sixteen-step procedural motif.
 
 ### 02 — Skyline Rush (88 units)
-- **Hook:** Float portal over broken rooftops.
-- **Plan:** Rooftop vents at 12, 55, and 82; gaps at 22 (3.2) and 64 (4.0); float portal at 32; crawler at 41; raised rooftop bridge from 47 to 51 (+0.5).
-- **Audio:** 124 BPM bright pentatonic breakbeat profile.
+- **Signature:** Gap, then a vent group in the same jump.
+- **Rhythm:** 1 + 2 + 2 + 2 input beats; target 0.64 inputs/s, measured 0.67; 3 gaps and 0 compound bridges.
+- **Design hook:** Skyline Rush lays out 4 vent groups, 3 gaps, 1 portal (float) and 1 apex shard.
+- **Layout:** Hazard groups at 10.08, 32.69, 55.31, 77.92; gaps at 28.31 (4.3), 50.92 (4.3), 73.54 (4.3); bridges: none; portals: float at 38.89; enemies: none; shards: 7.67 (height 1.9).
+- **Audio:** 124 BPM with the existing sixteen-step procedural motif.
 
 ### 03 — Solar Flare (92 units)
-- **Hook:** Spring portal launches across fractured solar-array lanes.
-- **Plan:** Solar-panel hazards at 12, 44, and 87; gaps at 30 (3.0) and 61 (4.0); spring portal at 26; raised panel from 51 to 54.8 (+0.55); drone at 72.
-- **Audio:** 130 BPM Dorian pulse with a rising launch motif.
+- **Signature:** Gap, then a solar panel group in the same jump.
+- **Rhythm:** 1 + 2 + 2 + 2 input beats; target 0.66 inputs/s, measured 0.65; 3 gaps and 0 compound bridges.
+- **Design hook:** Solar Flare lays out 4 solar panel groups, 3 gaps, 1 portal (spring) and 1 apex shard.
+- **Layout:** Hazard groups at 10.2, 33.93, 57.8, 81.8; gaps at 29.63 (4.2), 53.36 (4.3), 77.23 (4.5); bridges: none; portals: spring at 40.54; enemies: none; shards: 7.55 (height 1.9).
+- **Audio:** 130 BPM with the existing sixteen-step procedural motif.
 
 ### 04 — Gravity Garden (96 units)
-- **Hook:** Brief phase window through glowing vine hazards.
-- **Plan:** Vine hazards at 13, 38, and 87; gaps at 24 (3.4) and 67 (4.1); phase portal at 34; bobbing root bridge from 56 to 60.1 (+0.5); drone at 78.
-- **Audio:** 110 BPM buoyant major-pentatonic theme.
+- **Signature:** A vine group into a gap in the same jump.
+- **Rhythm:** 3 + 2 + 3 input beats; target 0.68 inputs/s, measured 0.71; 4 gaps and 0 compound bridges.
+- **Design hook:** Gravity Garden lays out 4 vine groups, 4 gaps, 1 portal (float) and 1 apex shard.
+- **Layout:** Hazard groups at 10.2, 20.71, 50.37, 85.8; gaps at 16 (4.6), 45.8 (4.5), 75.47 (2.5), 81.37 (4.3); bridges: none; portals: float at 29.24; enemies: none; shards: 8.12 (height 1.9).
+- **Audio:** 110 BPM with the existing sixteen-step procedural motif.
 
 ### 05 — Pixel Pier (100 units)
-- **Hook:** One shield charge plus a collectible shard.
-- **Plan:** Block hazards at 12, 41, and 86; gaps at 23 (3.5) and 65 (4.0); shield portal at 33; raised boardwalk from 54 to 58 (+0.5); crawler at 77; optional shard at 92.
-- **Audio:** 136 BPM Mixolydian arcade profile.
+- **Signature:** A pixel block group into a gap in the same jump.
+- **Rhythm:** 3 + 2 + 3 input beats; target 0.70 inputs/s, measured 0.69; 3 gaps and 1 compound bridge.
+- **Design hook:** Pixel Pier lays out 5 pixel block groups, 3 gaps, 1 low pier bridge, 1 portal (spring) and 1 apex shard.
+- **Layout:** Hazard groups at 10.32, 47.64, 53.6, 83.81, 89.68; gaps at 16.09 (2.5), 22.05 (2.5), 79.19 (4.5); bridges: pier at 22.05, width 2.5, height 0.05; portals: spring at 30.75; enemies: none; shards: 8.01 (height 1.9).
+- **Audio:** 136 BPM with the existing sixteen-step procedural motif.
 
 ### 06 — Midnight Circuit (104 units)
-- **Hook:** Dash portal adds speed on a clear raceway.
-- **Plan:** Timing-bar hazards at 13, 56, and 98; gaps at 26 (3.8) and 73 (4.2); dash portal at 38; drone at 84; raised curb from 61 to 64.5 (+0.4).
-- **Audio:** 140 BPM Phrygian electro pulse.
+- **Signature:** A circuit beam group into a gap in the same jump.
+- **Rhythm:** 2 + 3 + 3 input beats; target 0.72 inputs/s, measured 0.70; 3 gaps and 1 compound bridge.
+- **Design hook:** Midnight Circuit lays out 5 circuit beam groups, 3 gaps, 1 low curb bridge, 1 portal (dash) and 1 apex shard.
+- **Layout:** Hazard groups at 10.44, 49.34, 55.37, 87.53, 93.56; gaps at 16.38 (2.5), 43.71 (5), 82.71 (4.7); bridges: curb at 16.38, width 2.5, height 0.05; portals: dash at 25.67; enemies: none; shards: 8.68 (height 1.9).
+- **Audio:** 140 BPM with the existing sixteen-step procedural motif.
 
 ### 07 — Candy Comet (108 units)
-- **Hook:** Float portal softens the airtime through a nougat bridge break.
-- **Plan:** Candy-cane hazards at 13, 42, and 99; gaps at 25 (3.6) and 72 (4.1); float portal at 36; raised bridge from 48 to 52.2 (+0.55); crawler at 60 and drone at 84.
-- **Audio:** 126 BPM bright pentatonic, playful lead motif.
+- **Signature:** A candy cane group into a gap in the same jump.
+- **Rhythm:** 3 + 3 + 3 input beats; target 0.74 inputs/s, measured 0.73; 4 gaps and 1 compound bridge.
+- **Design hook:** Candy Comet lays out 4 candy cane groups, 4 gaps, 1 low nougat bridge, 1 portal (spring), 1 crawler and 1 apex shard.
+- **Layout:** Hazard groups at 10.56, 49.04, 59.39 (double), 85.66; gaps at 16.66 (2.5), 22.76 (2.5), 54.94 (4.3), 91.77 (4.8); bridges: nougat at 22.76, width 2.5, height 0.05; portals: spring at 31.7; enemies: crawler at 96.64; shards: 8.28 (height 1.9).
+- **Audio:** 126 BPM with the existing sixteen-step procedural motif.
 
 ### 08 — Aqua Pulse (112 units)
-- **Hook:** Coral gates and underwater current rhythm.
-- **Plan:** Coral hazards at 16, 34, and 103; gaps at 45 (3.2) and 91 (3.6); float portal at 25; reef platform from 66 to 70.2 (+0.4); drone at 60; optional shell at 74.
-- **Audio:** 132 BPM Dorian liquid-pulse profile.
+- **Signature:** A coral group into a gap in the same jump.
+- **Rhythm:** 3 + 3 + 3 input beats; target 0.76 inputs/s, measured 0.71; 5 gaps and 3 compound bridges.
+- **Design hook:** Aqua Pulse lays out 3 coral groups, 5 gaps, 3 low reef bridges, 1 portal (float), 1 crawler and 1 apex shard.
+- **Layout:** Hazard groups at 10.68, 50.12, 62.46 (double); gaps at 16.85 (2.5), 23.02 (2.5), 56.29 (2.5), 89.56 (2.5), 95.73 (4.7); bridges: reef at 16.85, width 2.5, height 0.05; reef at 23.02, width 2.5, height 0.05; reef at 56.29, width 2.5, height 0.05; portals: float at 32.24; enemies: crawler at 100.52; shards: 8.23 (height 1.9).
+- **Audio:** 132 BPM with the existing sixteen-step procedural motif.
 
 ### 09 — Crystal Cavern (116 units)
-- **Hook:** Wide crystal-beam silhouettes demand a clear jump.
-- **Plan:** Beam hazards at 15, 33, 51, 72, and 100; gap at 58 (3.2); spring portal at 45 launches over the beam at 51; crystal shelf from 82 to 86 (+0.45); optional shard at 88. No roaming enemy is added, keeping beam timing readable.
-- **Audio:** 116 BPM dark Phrygian arpeggio profile.
+- **Signature:** Two crystal beam groups in one jump.
+- **Rhythm:** 4 + 3 + 3 input beats; target 0.78 inputs/s, measured 0.78; 4 gaps and 2 compound bridges.
+- **Design hook:** Crystal Cavern lays out 5 crystal beam groups, 4 gaps, 2 low crystal bridges, 1 portal (phase), 1 drone and 1 apex shard.
+- **Layout:** Hazard groups at 10.8, 16.84, 55.2, 61.44, 93.57; gaps at 23.08 (2.5), 29.32 (2.5), 67.68 (2.5), 99.71 (4.6); bridges: crystal at 29.32, width 2.5, height 0.05; crystal at 67.68, width 2.5, height 0.05; portals: phase at 39.54; enemies: drone at 104.4; shards: 9.15 (height 1.9).
+- **Audio:** 116 BPM with the existing sixteen-step procedural motif.
 
 ### 10 — Stormbreaker (120 units)
-- **Hook:** Storm debris alternates with float and dash portals.
-- **Plan:** Debris at 16, 35, 89, and 108; gaps at 52 (3.3) and 97 (3.8); float portal at 27 and dash portal at 82; cliff platform from 77 to 81 (+0.45); drone at 62; optional wind bell at 66.
-- **Audio:** 144 BPM Mixolydian driving hand-drum profile.
+- **Signature:** A storm debris group into a gap in the same jump.
+- **Rhythm:** 3 + 3 + 4 input beats; target 0.80 inputs/s, measured 0.79; 6 gaps and 5 compound bridges.
+- **Design hook:** Stormbreaker lays out 3 storm debris groups, 6 gaps, 5 low cliff bridges, 2 portals (float and dash), 1 drone and 1 apex shard.
+- **Layout:** Hazard groups at 10.92, 50.7, 91.06; gaps at 17.23 (2.5), 23.54 (2.5), 56.8 (2.5), 63.11 (2.5), 97.37 (2.5), 103.68 (4.5); bridges: cliff at 17.23, width 2.5, height 0.05; cliff at 23.54, width 2.5, height 0.05; cliff at 56.8, width 2.5, height 0.05; cliff at 63.11, width 2.5, height 0.05; cliff at 97.37, width 2.5, height 0.05; portals: float at 32.77, dash at 72.62; enemies: drone at 108.28; shards: 8.45 (height 1.9).
+- **Audio:** 144 BPM with the existing sixteen-step procedural motif.
 
 ### 11 — Final Orbit (124 units)
-- **Hook:** Four automatic spring launches connect the shipyard run.
-- **Plan:** Asteroid hazards at 16, 36, and 118; gaps at 52 (3.2) and 80 (3.6); spring portals at 23, 49, 77, and 103; gantry from 67 to 71.2 (+0.5); drone at 96; optional star at 114.
-- **Audio:** 150 BPM minor-pentatonic launch theme.
+- **Signature:** Two asteroid groups in one jump.
+- **Rhythm:** 4 + 4 + 3 input beats; target 0.82 inputs/s, measured 0.85; 5 gaps and 5 compound bridges.
+- **Design hook:** Final Orbit lays out 5 asteroid groups, 5 gaps, 5 low gantry bridges, 2 portals (spring and dash), 1 drone and 1 apex shard.
+- **Layout:** Hazard groups at 11.04, 17.42, 55.35, 67.9, 99.4; gaps at 23.7 (2.5), 30.08 (2.5), 61.53 (2.5), 74.18 (2.5), 105.78 (2.5); bridges: gantry at 23.7, width 2.5, height 0.05; gantry at 30.08, width 2.5, height 0.05; gantry at 61.53, width 2.5, height 0.05; gantry at 74.18, width 2.5, height 0.05; gantry at 105.78, width 2.5, height 0.05; portals: spring at 38.67, dash at 82.76; enemies: drone at 112.16; shards: 8.55 (height 1.9).
+- **Audio:** 150 BPM with the existing sixteen-step procedural motif.
 
 ### 12 — Mosslight Hollow (128 units)
-- **Hook:** Three hover-stone groups span visible shallow chasms.
-- **Plan:** Stump hazards at 18, 46, and 84; gaps at 33 (3.2), 71 (3.6), and 108 (3.4); raised hover-stones from 24–29 (+0.45), 62–67 (+0.5), and 99–104 (+0.45); float portal at 89; drone at 92; optional firefly at 121.
-- **Audio:** 112 BPM warm pentatonic thumb-piano profile.
+- **Signature:** Gap, then a moss stump group in the same jump.
+- **Rhythm:** 4 + 4 + 4 input beats; target 0.84 inputs/s, measured 0.86; 7 gaps and 5 compound bridges.
+- **Design hook:** Mosslight Hollow lays out 4 moss stump groups, 7 gaps, 5 low hover bridges, 1 portal (float), 1 drone and 2 apex shards.
+- **Layout:** Hazard groups at 17.42, 55, 67.65, 103.4; gaps at 11.04 (2.5), 23.8 (2.5), 30.18 (2.5), 61.27 (2.5), 73.93 (2.5), 98.75 (4.6), 109.78 (2.5); bridges: hover at 23.8, width 2.5, height 0.05; hover at 30.18, width 2.5, height 0.05; hover at 61.27, width 2.5, height 0.05; hover at 73.93, width 2.5, height 0.05; hover at 109.78, width 2.5, height 0.05; portals: float at 38.62; enemies: drone at 116.16; shards: 9.39 (height 1.9), 18.12 (height 1.88).
+- **Audio:** 112 BPM with the existing sixteen-step procedural motif.
 
 ### 13 — Clockwork Orchard (132 units)
-- **Hook:** Shield portals pair with a sequence of protected mechanical enemies.
-- **Plan:** Gear hazards at 15, 38, 68, 99, and 128; gaps at 55 (3.4) and 89 (3.8); shield portals at 20, 48, 79, and 109; trellis from 75 to 79.5 (+0.55); crawler/drone encounters at 29, 57, 89, and 119; optional gear-fruit at 68.
-- **Audio:** 120 BPM Mixolydian ticking, plucked theme.
+- **Signature:** Two gear fruit groups in one jump.
+- **Rhythm:** 4 + 4 + 4 input beats; target 0.86 inputs/s, measured 0.88; 6 gaps and 5 compound bridges.
+- **Design hook:** Clockwork Orchard lays out 5 gear fruit groups, 6 gaps, 5 low trellis bridges, 2 portals (dash and spring), 1 drone and 2 apex shards.
+- **Layout:** Hazard groups at 11.16, 17.5, 56.75, 69.65, 107.14; gaps at 23.95 (2.5), 30.4 (2.5), 63.2 (2.5), 75.89 (2.5), 102.29 (4.8), 113.59 (2.5); bridges: trellis at 23.95, width 2.5, height 0.05; trellis at 30.4, width 2.5, height 0.05; trellis at 63.2, width 2.5, height 0.05; trellis at 75.89, width 2.5, height 0.05; trellis at 113.59, width 2.5, height 0.05; portals: dash at 39.36, spring at 84.86; enemies: drone at 120.04; shards: 8.64 (height 1.9), 16.72 (height 1.89).
+- **Audio:** 120 BPM with the existing sixteen-step procedural motif.
 
 ### 14 — Tidal Foundry (136 units)
-- **Hook:** Alternating raised conveyor bridges and water cuts.
-- **Plan:** Pipe hazards at 12, 59, and 96; gaps at 26 (3.0), 50 (3.0), 86 (3.0), and 125 (2.8); bridges from 35–39 (+0.5), 66–70 (+0.55), and 104–108 (+0.5); dash portal at 112; crawler at 43 and 117, drone at 78.
-- **Audio:** 138 BPM Dorian metallic breakbeat profile.
+- **Signature:** Two foundry pipe groups in one jump.
+- **Rhythm:** 4 + 4 + 4 input beats; target 0.88 inputs/s, measured 0.85; 6 gaps and 5 compound bridges.
+- **Design hook:** Tidal Foundry lays out 5 foundry pipe groups, 6 gaps, 5 low conveyor bridges, 1 portal (dash), 1 drone and 2 apex shards.
+- **Layout:** Hazard groups at 11.16, 17.4, 59.9, 72.8, 111.14; gaps at 23.75 (2.5), 30.19 (2.5), 66.35 (2.5), 79.25 (2.5), 106.29 (4.8), 117.59 (2.5); bridges: conveyor at 23.75, width 2.5, height 0.05; conveyor at 30.19, width 2.5, height 0.05; conveyor at 66.35, width 2.5, height 0.05; conveyor at 79.25, width 2.5, height 0.05; conveyor at 117.59, width 2.5, height 0.05; portals: dash at 40.29; enemies: drone at 124.04; shards: 8.41 (height 1.9), 16.63 (height 1.9).
+- **Audio:** 138 BPM with the existing sixteen-step procedural motif.
 
 ### 15 — Paper Moon Parade (140 units)
-- **Hook:** Four spring portals create a measured origami parade rhythm.
-- **Plan:** Paper-banner hazards at 17, 68, and 130; gaps at 29, 57, 86, and 117 (each 3.0); spring portals at 25, 53, 82, and 113; float platform from 73 to 77.5 (+0.5); crawler at 39, drone at 98; optional lantern at 134.
-- **Audio:** 126 BPM bright pentatonic parade motif.
+- **Signature:** A paper banner group into a gap in the same jump.
+- **Rhythm:** 5 + 4 + 4 input beats; target 0.90 inputs/s, measured 0.87; 7 gaps and 3 compound bridges.
+- **Design hook:** Paper Moon Parade lays out 5 paper banner groups, 7 gaps, 3 low float bridges, 2 portals (spring), 1 drone and 2 apex shards.
+- **Layout:** Hazard groups at 11.28, 22.6, 62.21, 73.57, 113.18; gaps at 17.69 (4.8), 28.9 (2.5), 35.42 (2.5), 68.52 (5), 79.98 (2.5), 119.7 (2.5), 126.22 (2.5); bridges: float at 35.42, width 2.5, height 0.05; float at 79.98, width 2.5, height 0.05; float at 126.22, width 2.5, height 0.05; portals: spring at 44.53, spring at 89.09; enemies: drone at 106.77; shards: 9.37 (height 1.9), 28.76 (height 1.89).
+- **Audio:** 126 BPM with the existing sixteen-step procedural motif.
 
 ### 16 — Verdant Relay (144 units)
-- **Hook:** Optional shard trails reward precise hops across the raised route.
-- **Plan:** Thorn hazards at 18, 48, and 132; gaps at 35, 67, and 101 (each 3.0); leaf bridges from 22–26 (+0.5), 53–57 (+0.55), 89–93 (+0.5), and 124–128 (+0.55); float portal at 72; eight optional shards at 26, 29, 32, 57, 60, 63, 93, and 96.
-- **Audio:** 120 BPM airy major-pentatonic theme; shard trails add a light optional reward cue.
+- **Signature:** A thorn group into a gap in the same jump.
+- **Rhythm:** 3 + 3 + 4 + 4 input beats; target 0.92 inputs/s, measured 0.91; 7 gaps and 5 compound bridges.
+- **Design hook:** Verdant Relay lays out 6 thorn groups, 7 gaps, 5 low leaf bridges, 1 portal (float), 1 drone and 3 apex shards.
+- **Layout:** Hazard groups at 11.28, 43.57, 49.88, 80.91, 124.92, 131.44 (double); gaps at 17.59 (2.5), 24.11 (2.5), 56.39 (2.5), 75.86 (5), 87.22 (2.5), 93.74 (2.5), 119.72 (5); bridges: leaf at 17.59, width 2.5, height 0.05; leaf at 24.11, width 2.5, height 0.05; leaf at 56.39, width 2.5, height 0.05; leaf at 87.22, width 2.5, height 0.05; leaf at 93.74, width 2.5, height 0.05; portals: float at 63.01; enemies: drone at 113.2; shards: 8.98 (height 1.9), 41.25 (height 1.9), 49.11 (height 1.86).
+- **Audio:** 120 BPM with the existing sixteen-step procedural motif.
 
 ### 17 — Shatterglass Express (146 units)
-- **Hook:** Four phase portals line up with crystal hazards; gaps remain dangerous.
-- **Plan:** Glass hazards at 17, 29, 47, 64, 84, 101, 122, and 140; gaps at 35, 73, and 110 (each 3.0); phase portals at 21, 56, 94, and 132; rail platform from 73 to 77.5 (+0.4); optional shard at 77.
-- **Audio:** 148 BPM quick Phrygian glassy synth motif.
+- **Signature:** A glass shard group into a gap in the same jump.
+- **Rhythm:** 3 + 3 + 4 + 4 input beats; target 0.95 inputs/s, measured 0.94; 7 gaps and 5 compound bridges.
+- **Design hook:** Shatterglass Express lays out 6 glass shard groups, 7 gaps, 5 low rail bridges, 2 portals (phase and dash), 1 drone and 2 apex shards.
+- **Layout:** Hazard groups at 11.4, 42.88, 49.47, 83.86, 126.73, 133.32 (double); gaps at 17.99 (2.5), 24.58 (2.5), 56.05 (2.5), 77.28 (2.5), 90.45 (2.5), 97.04 (2.5), 121.93 (4.7); bridges: rail at 17.99, width 2.5, height 0.05; rail at 24.58, width 2.5, height 0.05; rail at 56.05, width 2.5, height 0.05; rail at 90.45, width 2.5, height 0.05; rail at 97.04, width 2.5, height 0.05; portals: phase at 30.8, dash at 63.27; enemies: drone at 115.34; shards: 9 (height 1.9), 40.51 (height 1.9).
+- **Audio:** 148 BPM with the existing sixteen-step procedural motif.
 
 ### 18 — Cloudbreaker Causeway (148 units)
-- **Hook:** Broad cloudstone spans alternate with short gaps.
-- **Plan:** Cloudstone hazards at 19, 84, and 126; gaps at 33 (3.0), 72 (4.0), and 114 (3.0); raised causeways from 23–27 (+0.55), 62–66 (+0.5), 104–108 (+0.55), and 136–140 (+0.5); float portal at 80; drone at 52, crawler at 94; optional star at 140.
-- **Audio:** 128 BPM expansive major-pentatonic profile.
+- **Signature:** A cloudstone group into a gap in the same jump.
+- **Rhythm:** 3 + 4 + 4 + 4 input beats; target 0.97 inputs/s, measured 0.96; 8 gaps and 3 compound bridges.
+- **Design hook:** Cloudbreaker Causeway lays out 6 cloudstone groups, 8 gaps, 3 low cloudstone bridges, 1 portal (shield), 1 drone and 2 apex shards.
+- **Layout:** Hazard groups at 11.4, 43.91, 55.45, 86.33, 130.12, 136.6; gaps at 17.99 (2.5), 24.58 (2.5), 50.5 (4.9), 62.04 (2.5), 81.37 (4.9), 92.91 (2.5), 99.5 (2.5), 125.32 (4.7); bridges: cloudstone at 24.58, width 2.5, height 0.05; cloudstone at 62.04, width 2.5, height 0.05; cloudstone at 99.5, width 2.5, height 0.05; portals: shield at 68.61; enemies: drone at 118.84; shards: 8.68 (height 1.9), 17.23 (height 1.9).
+- **Audio:** 128 BPM with the existing sixteen-step procedural motif.
 
 ### 19 — Magnetar Foundry (149 units)
-- **Hook:** Dash portals punctuate a long but capped asteroid-forge course.
-- **Plan:** Magnetic-core hazards at 16, 50, and 89; gaps at 29, 67, 107 (3.0) and 143 (2.5); magnetic platforms from 37–41 (+0.45), 75–79 (+0.45), and 121–125 (+0.5); dash portals at 20, 58, 98, and 138; drone at 130; optional shard at 84.
-- **Audio:** 152 BPM driving Phrygian industrial profile.
+- **Signature:** A magnetic core group into a gap in the same jump.
+- **Rhythm:** 5 + 5 + 4 input beats; target 1.00 inputs/s, measured 0.97; 7 gaps and 7 compound bridges.
+- **Design hook:** Magnetar Foundry lays out 6 magnetic core groups, 7 gaps, 7 low magnetic bridges, 2 portals (dash), 1 drone and 2 apex shards.
+- **Layout:** Hazard groups at 11.52, 24.62, 63.21, 76.52, 83.07, 121.67; gaps at 17.96 (2.5), 31.28 (2.5), 37.93 (2.5), 69.87 (2.5), 89.73 (2.5), 128.32 (2.5), 134.98 (2.5); bridges: magnetic at 17.96, width 2.5, height 0.05; magnetic at 31.28, width 2.5, height 0.05; magnetic at 37.93, width 2.5, height 0.05; magnetic at 69.87, width 2.5, height 0.05; magnetic at 89.73, width 2.5, height 0.05; magnetic at 128.32, width 2.5, height 0.05; magnetic at 134.98, width 2.5, height 0.05; portals: dash at 47.92, dash at 99.72; enemies: drone at 115.01; shards: 9.02 (height 1.9), 25.43 (height 1.86).
+- **Audio:** 152 BPM with the existing sixteen-step procedural motif.
 
 ### 20 — Eclipse Crown (150 units)
-- **Hook:** The finale alternates shield and float portals around a final sequence of gaps.
-- **Plan:** Corona hazards at 18, 80, and 132; gaps at 31, 71, and 114 (3.0) plus 145 (2.5); observatory platforms from 44–48 (+0.45), 86–90 (+0.45), and 121–125 (+0.5); shield portals at 22 and 89, float portals at 62 and 138; drone at 53 and crawler at 96; optional shard at 133.
-- **Audio:** 154 BPM minor-pentatonic finale profile with a rising final motif.
+- **Signature:** A corona group into a gap in the same jump.
+- **Rhythm:** 6 + 5 + 5 input beats; target 1.00 inputs/s, measured 1.02; 8 gaps and 7 compound bridges.
+- **Design hook:** Eclipse Crown lays out 7 corona groups, 8 gaps, 7 low observatory bridges, 2 portals (shield and float), 1 drone and 3 apex shards.
+- **Layout:** Hazard groups at 11.52, 24.83, 31.38, 64.86, 78.06, 84.51, 122.88; gaps at 18.18 (2.5), 37.93 (2.5), 44.59 (2.5), 71.41 (2.5), 90.95 (2.5), 117.87 (4.9), 129.32 (2.5), 135.98 (2.5); bridges: observatory at 18.18, width 2.5, height 0.05; observatory at 37.93, width 2.5, height 0.05; observatory at 44.59, width 2.5, height 0.05; observatory at 71.41, width 2.5, height 0.05; observatory at 90.95, width 2.5, height 0.05; observatory at 129.32, width 2.5, height 0.05; observatory at 135.98, width 2.5, height 0.05; portals: shield at 51.48, float at 97.84; enemies: drone at 111.22; shards: 9.1 (height 1.9), 25.72 (height 1.85), 33.66 (height 1.9).
+- **Audio:** 154 BPM with the existing sixteen-step procedural motif.
 
 ## Playtest checklist
 

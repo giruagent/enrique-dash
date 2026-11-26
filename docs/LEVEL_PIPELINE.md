@@ -35,7 +35,7 @@ Compare the distance between consecutive beats with one jump reach at the applic
 
 - **Same jump:** at most **0.8 × reach**.
 - **Reaction spacing:** at least **1.35 × reach**.
-- **Do not author the region between those bands.** In particular, the report calls **1.0 × reach ≤ spacing < 1.35 × reach** the **dead band**: the previous jump lands too late for a comfortable reaction, while jumping for both beats in the previous arc is too early.
+- **Do not author the region between those bands.** The report calls **0.8 × reach < spacing < 1.35 × reach** the **dead band**: the previous jump lands too late for a comfortable reaction, while jumping for both beats in the previous arc is too early.
 
 A dash portal compresses following spacing because it increases reach while the authored distance stays fixed. The report resolves dash duration in the time/distance domain and uses the speed in effect at each beat.
 
@@ -57,7 +57,7 @@ The auto-player advances at a fixed **1/120 s**, applies portals when they reach
 
 ## Read the report
 
-Each row contains inputs per second (`beats / finishTime`), individual obstacles per second, gap and enemy counts, the smallest jump margin, jump count, dead-band findings, short telegraphs, feature variety, and completion status.
+Each row contains inputs per second (hazard groups, gaps, and enemies divided by `finishTime`), individual obstacles per second, gap and enemy counts, the smallest jump margin, jump count, dead-band findings, short telegraphs, feature variety, and completion status. Platforms and portals are course features, not jump-triggering inputs, so they do not inflate the input rate.
 
 - **Margin** is course distance between the latest distance at which a jump had to start and where the auto-player actually started it. Smaller values mean less timing room; a negative value means the policy started after the ideal deadline.
 - **Dead band** shows both the number of violations and their authored beat-to-beat distances.

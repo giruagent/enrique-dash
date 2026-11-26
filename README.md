@@ -1,6 +1,6 @@
 # Enrique Dash
 
-**Current test version: 0.5.5** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
+**Current test version: 0.6.0** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
 
 ## Play locally
 
@@ -48,6 +48,13 @@ See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the auto-playe
 - Added a mute toggle and start audio only following a user gesture.
 - Deferred loading Three.js and the 2.6 MB character atlas until the first play action, retaining a static preview and cube fallback.
 - Added Node's built-in test runner for level validation, collision/progress rules, and music theory helpers.
+
+### v0.6.0
+
+- Recomposed all twenty courses with `tools/compose-levels.mjs`: combo phrases now sit inside the 0.55–0.80 jump-reach band and rests beyond 1.35 reach, so no authored beat lands in the unfair 0.80–1.35 dead band.
+- Raised the campaign from **0.55 to 0.81 average inputs/s** (+47%) and made the curve climb in every five-course block: 0.67, 0.74, 0.86, 0.96; Neon Run now runs at 0.63 and Eclipse Crown at 1.02.
+- All twenty courses finish under the unchanged auto-player with zero deaths; the report shows 20/20 completed and 0 dead-band violations.
+- Regenerated signatures, design hooks and `LEVEL_DESIGN_PLAN.md` from the composed layouts, and added level regression tests for completion, input rate, curve, variety, compounds and apex shards.
 
 ### v0.3.1
 

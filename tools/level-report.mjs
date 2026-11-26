@@ -16,16 +16,17 @@ function featureCounts(level) {
 
 export function analyzeLevel(level, result = playLevel(level)) {
   const beats = beatWindows(level);
+  const inputBeats = beats.filter(({ kind }) => kind === 'hazard' || kind === 'gap' || kind === 'enemy');
   const deadBandViolations = [];
   const telegraphViolations = [];
   let previousBeat = null;
   let previousEnd = 0;
   let minimumTelegraph = Infinity;
 
-  for (const beat of beats) {
+  for (const beat of inputBeats) {
     if (previousBeat) {
       const distance = beat.at - previousBeat.at;
-      if (distance >= beat.reach && distance < 1.35 * beat.reach) {
+      if (distance > .8 * beat.reach && distance < 1.35 * beat.reach) {
         deadBandViolations.push({
           from: previousBeat.id,
           to: beat.id,
@@ -54,9 +55,9 @@ export function analyzeLevel(level, result = playLevel(level)) {
   return {
     level,
     result,
-    beats: beats.length,
+    beats: inputBeats.length,
     finishTime,
-    inputsPerSecond: beats.length / finishTime,
+    inputsPerSecond: inputBeats.length / finishTime,
     obstaclesPerSecond: obstacleCount / finishTime,
     gapCount: counts.gaps,
     enemyCount: counts.enemies,
