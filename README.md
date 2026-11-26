@@ -38,6 +38,8 @@ Tap/click the playfield, or press Space, Arrow Up, or W to jump; press P or the 
 
 Each level has its own speed, obstacle sequence, color palette, tempo, scale, chord progression, and lead motif. Level clears are saved locally in the browser; no account is needed.
 
+See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the auto-player, fair-spacing rules, and catalogue report.
+
 ## What changed in v0.3.0
 
 - Added ten more playable courses (eleven total) and a keyboard-accessible level selector.
