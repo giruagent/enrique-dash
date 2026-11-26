@@ -51,10 +51,11 @@ See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the auto-playe
 
 ### v0.6.0
 
-- Recomposed all twenty courses with `tools/compose-levels.mjs`: combo phrases now sit inside the 0.55–0.80 jump-reach band and rests beyond 1.35 reach, so no authored beat lands in the unfair 0.80–1.35 dead band.
-- Raised the campaign from **0.55 to 0.81 average inputs/s** (+47%) and made the curve climb in every five-course block: 0.67, 0.74, 0.86, 0.96; Neon Run now runs at 0.63 and Eclipse Crown at 1.02.
-- All twenty courses finish under the unchanged auto-player with zero deaths; the report shows 20/20 completed and 0 dead-band violations.
-- Regenerated signatures, design hooks and `LEVEL_DESIGN_PLAN.md` from the composed layouts, and added level regression tests for completion, input rate, curve, variety, compounds and apex shards.
+- Recomposed all twenty courses with `tools/compose-levels.mjs`: deliberate two-in-one beats sit at or below 0.80 jump reach and every other interval is a full 1.35-reach reaction rest, so no authored beat lands in the unfair 0.80–1.35 dead band.
+- Made every gap real: bridges are optional and capped per tier, every course from the fifth on keeps at least two open gaps, and the auto-player now jumps at least 75% of jump-triggering beats (Eclipse Crown jumps 12 of 16).
+- Raised the campaign from **0.55 to 0.82 average inputs/s** (+49%) and made the curve climb in every five-course block: 0.67, 0.76, 0.86, 0.97; Neon Run now runs at 0.63 and Eclipse Crown at 1.02.
+- All twenty courses finish under the unchanged auto-player with zero deaths; the report shows 20/20 completed, 0 dead-band violations, 0 first-beat telegraph violations and a tightest jump margin of 0.51 units.
+- Added level regression tests for jump ratio, bridge caps and open gaps, landing margin, first-beat telegraph, ±5% input-rate accuracy, curve, variety, compounds and apex shards.
 
 ### v0.3.1
 

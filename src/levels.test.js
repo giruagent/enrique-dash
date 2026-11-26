@@ -73,20 +73,22 @@ function featureTypes(level) {
 }
 
 function compoundBeats(level) {
+  // A compound beat is a deliberate two-in-one: the following beat stays
+  // inside the combo band instead of becoming a separate landing.
   const beats = inputBeats(level);
   let count = 0;
-  beats.forEach((beat, index) => {
-    if (beat.kind !== 'gap') return;
-    const bridged = level.platforms.some((platform) => (
-      platform.height <= platformTuning.maxStepHeight
-      && platform.at <= beat.at
-      && platform.at + platform.width >= beat.at + beat.width
-    ));
-    const next = beats[index + 1];
-    const chained = next && next.at - beat.at <= .8 * next.reach;
-    if (bridged || chained) count++;
-  });
+  for (let index = 1; index < beats.length; index++) {
+    if (beats[index].at - beats[index - 1].at <= .8 * beats[index].reach) count++;
+  }
   return count;
+}
+
+function bridgedGaps(level) {
+  return level.gaps.filter((gap) => level.platforms.some((platform) => (
+    platform.height <= platformTuning.maxStepHeight
+    && platform.at <= gap.at
+    && platform.at + platform.width >= gap.at + gap.width
+  ))).length;
 }
 
 function averageRate(from, to) {
@@ -109,15 +111,73 @@ test('no composed course authors a beat inside the 0.80–1.35 reach dead band',
   }
 });
 
-test('every course lands within eight percent of its blueprint input rate', () => {
+test('every course lands within five percent of its blueprint input rate', () => {
   levels.forEach((level, index) => {
     const measured = analyzeLevel(level).inputsPerSecond;
     const target = blueprint[index].target;
     assert.ok(
-      Math.abs(measured / target - 1) <= .08,
+      Math.abs(measured / target - 1) <= .05,
       `${level.id} measured ${measured.toFixed(3)} inputs/s against a ${target.toFixed(2)} target`,
     );
   });
+});
+
+test('bridges stay a rare choice and every course from five on keeps two open gaps', () => {
+  levels.forEach((level, index) => {
+    const bridges = bridgedGaps(level);
+    const cap = index < 4 ? 0 : index < 10 ? 1 : 2;
+    assert.ok(bridges <= cap, `${level.id} carries ${bridges} bridges against a cap of ${cap}`);
+    assert.ok(bridges * 3 <= level.gaps.length, `${level.id} bridges too many of its gaps (${bridges}/${level.gaps.length})`);
+    if (index >= 4) {
+      assert.ok(level.gaps.length - bridges >= 2, `${level.id} needs at least two open gaps`);
+    }
+  });
+});
+
+test('the auto-player jumps at least three quarters of the jump-triggering beats', () => {
+  for (const level of levels) {
+    const result = playLevel(level);
+    const beats = inputBeats(level).length;
+    assert.ok(
+      result.jumps >= .75 * beats,
+      `${level.id} jumped ${result.jumps} times for ${beats} beats`,
+    );
+  }
+});
+
+test('every course leaves at least 0.35 units of jump tolerance', () => {
+  for (const level of levels) {
+    const metrics = analyzeLevel(level);
+    assert.ok(
+      metrics.tightestMargin >= .35,
+      `${level.id} has only ${metrics.tightestMargin?.toFixed(2)} units of margin`,
+    );
+  }
+});
+
+test('the first beat of each phrase has at least 0.6 seconds of telegraph', () => {
+  for (const level of levels) {
+    const metrics = analyzeLevel(level);
+    assert.deepEqual(metrics.telegraphViolations, [], `${level.id} has short first-beat telegraphs`);
+    assert.ok(metrics.minimumTelegraph >= .6, `${level.id} has only ${metrics.minimumTelegraph.toFixed(2)}s of telegraph`);
+  }
+});
+
+test('beats keep 0.75 units of end clearance and gaps keep half a reach of landing room', () => {
+  for (const level of levels) {
+    const beats = inputBeats(level);
+    for (let index = 1; index < beats.length; index++) {
+      const previous = beats[index - 1];
+      const beat = beats[index];
+      assert.ok(beat.at - previous.courseEnd >= .75, `${level.id} starts ${beat.id} too soon after ${previous.id}`);
+      if (previous.kind === 'gap') {
+        assert.ok(
+          beat.at - previous.courseEnd >= .5 * beat.reach,
+          `${level.id} leaves too little landing room after ${previous.id}`,
+        );
+      }
+    }
+  }
 });
 
 test('average inputs per second rises across each five-course block', () => {

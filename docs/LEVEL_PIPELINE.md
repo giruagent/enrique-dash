@@ -39,7 +39,7 @@ Compare the distance between consecutive beats with one jump reach at the applic
 
 A dash portal compresses following spacing because it increases reach while the authored distance stays fixed. The report resolves dash duration in the time/distance domain and uses the speed in effect at each beat.
 
-**Telegraph** is clear track before a beat divided by level speed. A beat with less than **0.6 s** of clear track is flagged. Low variety is descriptive rather than a playability failure: the report counts distinct feature categories and names categories used exactly once.
+**Telegraph** is clear track before the first beat of a phrase divided by level speed. Every phrase opener needs at least **0.6 s** of clear track. Beats that share the previous jump are already committed to, so they are counted separately as **combo beats** rather than flagged. Low variety is descriptive rather than a playability failure: the report counts distinct feature categories and names categories used exactly once.
 
 ## Run the tools
 
@@ -57,11 +57,11 @@ The auto-player advances at a fixed **1/120 s**, applies portals when they reach
 
 ## Read the report
 
-Each row contains inputs per second (hazard groups, gaps, and enemies divided by `finishTime`), individual obstacles per second, gap and enemy counts, the smallest jump margin, jump count, dead-band findings, short telegraphs, feature variety, and completion status. Platforms and portals are course features, not jump-triggering inputs, so they do not inflate the input rate.
+Each row contains inputs per second (hazard groups, gaps, and enemies divided by `finishTime`), individual obstacles per second, gap, bridge and enemy counts, the smallest jump margin, jump count and jumps per beat, combo-beat count, dead-band findings, short first-beat telegraphs, feature variety, and completion status. Platforms and portals are course features, not jump-triggering inputs, so they do not inflate the input rate.
 
 - **Margin** is course distance between the latest distance at which a jump had to start and where the auto-player actually started it. Smaller values mean less timing room; a negative value means the policy started after the ideal deadline.
 - **Dead band** shows both the number of violations and their authored beat-to-beat distances.
-- **Telegraph** lists every beat below 0.6 s; the minimum clear-track time is included for comparison.
+- **Telegraph** lists every phrase-opening beat below 0.6 s; the minimum clear-track time is included for comparison. Intra-phrase beats appear only in the combo count.
 - **Variety** counts obstacle, gap, platform, portal, enemy, and collectible categories when present. Single-use categories are named separately.
 
 The summary gives average inputs/s, auto-player completions, dead-band and telegraph totals, and failed level ids with the recorded death reason. A completed level can still have spacing or telegraph warnings; conversely, an auto-player failure is reported as a failure, never repaired by changing level data or relaxing the solver.

@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { getHazardProfile, jumpTuning, motionTuning, portalEffects } from '../src/game-logic.js';
+import { jumpTuning, motionTuning, portalEffects } from '../src/game-logic.js';
 import { levels, validateLevels } from '../src/levels.js';
 import { playLevel } from './auto-player.mjs';
 import { analyzeLevel } from './level-report.mjs';
@@ -10,7 +10,6 @@ const LEVELS_PATH = new URL('../src/levels.js', import.meta.url);
 const PLAN_PATH = new URL('../LEVEL_DESIGN_PLAN.md', import.meta.url);
 const INTRO_SECONDS = 1.2;
 const OUTRO_SECONDS = 1.2;
-const COMBO_MIN = .55;
 const COMBO_MAX = .8;
 const REST_MIN = 1.35;
 
@@ -161,7 +160,7 @@ function portalBoundaries(phraseCount, portalTypes) {
 }
 
 function minimumRest(portalType, reach, variant) {
-  const margin = 1.43 + (variant % 3) * .025;
+  const margin = 1.36 + (variant % 3) * .015;
   if (portalType === 'spring') return 1.78 * reach;
   if (portalType === 'dash') return margin * reach * portalEffects.dash.speedMultiplier;
   return margin * reach;
@@ -180,6 +179,10 @@ function addBeat(layout, beat) {
   }
 }
 
+function article(word) {
+  return /^[aeiou]/i.test(word) ? 'an' : 'a';
+}
+
 function phraseCopy(level) {
   const beats = beatWindows(level)
     .filter(({ kind }) => kind === 'hazard' || kind === 'gap' || kind === 'enemy')
@@ -191,31 +194,32 @@ function phraseCopy(level) {
       break;
     }
   }
-  if (!pair) return `${level.name} leaves a full rest between every beat.`;
-  const [previous, next] = pair;
   const style = level.hazardStyle.replaceAll('-', ' ');
+  if (!pair) return `A ${style} run of ${plural(level.obstacles.length, 'hazard group')} over ${plural(level.gaps.length, 'open gap')}, every landing clear.`;
+  const [previous, next] = pair;
   if (previous.kind === 'gap' && next.kind === 'hazard') {
-    return `Gap, then a ${next.count === 2 ? 'double ' : ''}${style} group in the same jump.`;
+    return `An open gap into ${article(next.count === 2 ? 'double' : style)} ${next.count === 2 ? 'double ' : ''}${style} group.`;
   }
   if (previous.kind === 'hazard' && next.kind === 'gap') {
-    return `A ${previous.count === 2 ? 'double ' : ''}${style} group into a gap in the same jump.`;
+    const opener = article(style) === 'an' ? 'An' : 'A';
+    return `${opener}${previous.count === 2 ? ' double' : ''} ${style} group into an open gap.`;
   }
   if (previous.kind === 'hazard' && next.kind === 'hazard') {
-    return `Two ${style} groups in one jump.`;
+    return `Two ${style} groups on one arc.`;
   }
   if (previous.kind === 'gap' && next.kind === 'enemy') {
-    return `Gap, then a ${next.type} in the same jump.`;
+    return `An open gap into ${article(next.type)} ${next.type}.`;
   }
   if (previous.kind === 'hazard' && next.kind === 'enemy') {
-    return `A ${style} group into a ${next.type} in the same jump.`;
+    return `A ${style} group into ${article(next.type)} ${next.type}.`;
   }
   if (previous.kind === 'enemy' && next.kind === 'gap') {
-    return `A ${previous.type} into a gap in one arc.`;
+    return `${article(previous.type) === 'an' ? 'An' : 'A'} ${previous.type} into an open gap.`;
   }
   if (previous.kind === 'enemy' && next.kind === 'hazard') {
-    return `A ${previous.type} into a ${style} group in one arc.`;
+    return `${article(previous.type) === 'an' ? 'An' : 'A'} ${previous.type} into a ${style} group.`;
   }
-  return `${level.name} joins two gaps in one jump.`;
+  return `A gap and a following beat in one committed arc.`;
 }
 
 function plural(count, singular) {
@@ -228,18 +232,20 @@ function listPhrase(items) {
 }
 
 function designCopy(level) {
-  const parts = [`${level.obstacles.length} ${level.hazardStyle.replaceAll('-', ' ')} groups`];
-  if (level.gaps.length) parts.push(plural(level.gaps.length, 'gap'));
-  if (level.platforms.length) parts.push(`${level.platforms.length} low ${level.platforms[0].kind} ${level.platforms.length === 1 ? 'bridge' : 'bridges'}`);
+  const style = level.hazardStyle.replaceAll('-', ' ');
+  const parts = [plural(level.obstacles.length, `${style} group`)];
+  if (level.gaps.length) parts.push(plural(level.gaps.length, 'open gap'));
+  if (level.platforms.length) parts.push(`${plural(level.platforms.length, `low ${level.platforms[0].kind} bridge`)}`);
   if (level.portals.length) {
     const types = [...new Set(level.portals.map(({ type }) => type))];
     parts.push(`${plural(level.portals.length, 'portal')} (${listPhrase(types)})`);
   }
   if (level.enemies.length) {
-    const types = [...new Set(level.enemies.map(({ type }) => type))];
-    parts.push(`${level.enemies.length} ${listPhrase(types)}`);
+    const byType = new Map();
+    for (const { type } of level.enemies) byType.set(type, (byType.get(type) ?? 0) + 1);
+    parts.push(listPhrase([...byType].map(([type, count]) => plural(count, type))));
   }
-  if (level.collectibles.length) parts.push(`${level.collectibles.length} apex ${level.collectibles.length === 1 ? 'shard' : 'shards'}`);
+  if (level.collectibles.length) parts.push(plural(level.collectibles.length, 'shard'));
   return `${level.name} lays out ${listPhrase(parts)}.`;
 }
 
@@ -257,7 +263,16 @@ function featureTypes(level) {
 function placeShards(level, brief) {
   if (brief.shards === 0) return true;
   const result = playLevel(level);
-  if (!result.completed) return false;
+  if (!result.completed) {
+    if (process.env.COMPOSE_DEBUG) {
+      console.log(level.id, 'pre-shard completion rejection', result.events.findLast(({ type }) => type === 'death')?.reason);
+      if (process.env.COMPOSE_JSON === level.id) {
+        console.log('LAYOUT', JSON.stringify({ obstacles: level.obstacles, gaps: level.gaps, platforms: level.platforms, portals: level.portals, enemies: level.enemies }));
+        console.log('EVENTS', result.events.filter(({ type }) => type === 'jump' || type === 'land' || type === 'death' || type === 'portal').map((event) => `${event.type}@${event.at?.toFixed(2)}/${event.time?.toFixed(2)}${event.portal ? `:${event.portal}` : ''}`).join(' '));
+      }
+    }
+    return false;
+  }
   const movementPortals = new Set(['spring', 'dash', 'float']);
   const firstMovement = result.events.find(({ type, portal }) => type === 'portal' && movementPortals.has(portal));
   const cutoff = firstMovement?.time ?? Infinity;
@@ -281,18 +296,29 @@ function placeShards(level, brief) {
     if (shard) candidates.push({ at: round(shard.at), height: round(shard.height, 2) });
     if (candidates.length === brief.shards) break;
   }
-  if (candidates.length !== brief.shards) return false;
+  if (candidates.length !== brief.shards) {
+    if (process.env.COMPOSE_DEBUG) console.log(level.id, 'shard candidates', candidates.length, 'wanted', brief.shards, 'jumps before cutoff', result.events.filter(({ type, time }) => type === 'jump' && time < cutoff).length);
+    return false;
+  }
   level.collectibles = candidates;
   return true;
 }
 
+function bridgedGapCount(level) {
+  return level.gaps.filter((gap) => level.platforms.some((platform) => (
+    platform.height <= .6
+    && platform.at <= gap.at
+    && platform.at + platform.width >= gap.at + gap.width
+  ))).length;
+}
+
 function compoundCount(level) {
+  const beats = beatWindows(level)
+    .filter(({ kind }) => kind === 'hazard' || kind === 'gap' || kind === 'enemy')
+    .sort((a, b) => a.at - b.at);
   let count = 0;
-  for (const gap of level.gaps) {
-    const bridged = level.platforms.some((platform) => (
-      platform.at <= gap.at && platform.at + platform.width >= gap.at + gap.width
-    ));
-    if (bridged) count++;
+  for (let index = 1; index < beats.length; index++) {
+    if (beats[index].at - beats[index - 1].at <= .8 * beats[index].reach) count++;
   }
   return count;
 }
@@ -300,7 +326,8 @@ function compoundCount(level) {
 export function buildCandidate(base, brief, index, totalBeats, variant) {
   const random = seededRandom(base.id, variant);
   const tier = tierFor(index);
-  const requiredBridges = tier === 2 ? 1 : tier === 3 ? 2 : tier === 4 ? 3 : 0;
+  // Bridges are an optional accent, never the default cover for a gap.
+  const requiredBridges = 0;
   const phrases = partitionBeats(totalBeats, brief.phrase, random);
   const kinds = beatKinds(totalBeats, tier, random, phrases);
   const hasEnemy = tier >= 3 || (tier === 2 && index >= 6);
@@ -335,7 +362,7 @@ export function buildCandidate(base, brief, index, totalBeats, variant) {
       if (floatCourse) {
         floatOpenPhrases.push({ phraseStart, open });
       } else {
-        const gapCount = open.length <= 1 ? 0 : Math.max(1, open.length - 2);
+        const gapCount = open.length >= 2 ? 1 : 0;
         open.forEach((within, openIndex) => {
           kinds[phraseStart + within] = openIndex < gapCount ? 'gap' : 'hazard';
         });
@@ -371,16 +398,45 @@ export function buildCandidate(base, brief, index, totalBeats, variant) {
     const target = candidates[0] ?? kindIndex;
     kinds[target] = replacement;
   }
-  if (tier > 1 && brief.portals.some((type) => type === 'float' || type === 'dash')) {
-    let phraseStart = 0;
-    for (const phraseLength of phrases) {
-      for (let within = 1; within < phraseLength; within++) {
-        const kindIndex = phraseStart + within;
-        if (kinds[kindIndex] === 'gap' && kinds[kindIndex - 1] === 'hazard') bridgeBeatIndices.add(kindIndex);
-      }
-      phraseStart += phraseLength;
+  // Keep gaps rare enough that every one is a real decision. Extra gaps are
+  // folded back into hazard beats rather than becoming bridge filler.
+  const gapIndices = kinds.map((kind, index) => (kind === 'gap' ? index : -1)).filter((index) => index >= 0);
+  const maximumGaps = tier === 1 ? 3 : 4;
+  let excessGaps = gapIndices.length - maximumGaps;
+  for (let gapIndex = gapIndices.length - 1; gapIndex >= 0 && excessGaps > 0; gapIndex--) {
+    const index = gapIndices[gapIndex];
+    if (fixedIndices.has(index)) continue;
+    kinds[index] = 'hazard';
+    const triple = (index >= 2 && kinds[index - 1] === 'hazard' && kinds[index - 2] === 'hazard')
+      || (index >= 1 && index + 1 < kinds.length && kinds[index - 1] === 'hazard' && kinds[index + 1] === 'hazard')
+      || (index + 2 < kinds.length && kinds[index + 1] === 'hazard' && kinds[index + 2] === 'hazard');
+    if (triple) {
+      kinds[index] = 'gap';
+    } else {
+      excessGaps--;
     }
   }
+
+  const phraseOf = [];
+  phrases.forEach((length, phraseIndex) => {
+    for (let within = 0; within < length; within++) phraseOf.push(phraseIndex);
+  });
+  const comboBeatCandidates = [];
+  for (let index = 0; index < kinds.length - 1; index++) {
+    if (kinds[index + 1] === 'gap') continue;
+    if (phraseOf[index] === phraseOf[index + 1]) comboBeatCandidates.push(index);
+  }
+  // At most a quarter of the beats may share a jump (a deliberate two-in-one);
+  // every other interval is a full land-and-react rest.
+  const maxCombos = Math.floor(totalBeats * .25);
+  const minimumCombos = tier >= 3 ? 1 : 0;
+  const comboTarget = Math.min(maxCombos, Math.max(minimumCombos, variant % (maxCombos + 1)));
+  const comboIndices = new Set();
+  const comboOffset = comboBeatCandidates.length ? variant % comboBeatCandidates.length : 0;
+  for (let combo = 0; combo < comboTarget; combo++) {
+    comboIndices.add(comboBeatCandidates[(comboOffset + combo) % comboBeatCandidates.length]);
+  }
+
   const boundaries = portalBoundaries(phrases.length, brief.portals);
   const layout = {
     ...base,
@@ -402,12 +458,13 @@ export function buildCandidate(base, brief, index, totalBeats, variant) {
       let at = base.speed * INTRO_SECONDS;
       if (previous && withinPhrase === 0) {
         const portal = boundaries.get(phraseIndex);
-        const fraction = .34 + (variant % 4) * .055;
+        const fraction = .12 + (variant % 8) * .05;
         let rest = minimumRest(portal?.type, baseReach, variant);
         let portalAt = previous.at + rest * fraction;
         const workingPortals = portal ? [...layout.portals, { at: portalAt, type: portal.type }] : layout.portals;
         const reach = speedAt({ ...layout, portals: workingPortals }, previous.at + rest).reach;
-        rest = Math.max(rest, REST_MIN * 1.055 * reach);
+        rest = Math.max(rest, REST_MIN * 1.005 * reach);
+        if (previous.kind === 'gap') rest = Math.max(rest, 1.352 * reach, previous.width + .62 * base.speed);
         if (portal) {
           portalAt = previous.at + rest * fraction;
           layout.portals.push({ at: round(portalAt), type: portal.type });
@@ -415,24 +472,43 @@ export function buildCandidate(base, brief, index, totalBeats, variant) {
         }
         at = previous.at + rest;
       } else if (previous) {
-        const ratio = previous.kind === 'gap'
-          ? .565 + Math.floor(random() * 4) * .018
-          : .75 + Math.floor(random() * 4) * .0125;
-        let distance = ratio * speedAt(layout, previous.at).reach;
-        for (let iteration = 0; iteration < 3; iteration++) {
-          distance = ratio * speedAt(layout, previous.at + distance).reach;
-          if (previous.kind !== 'gap') distance = Math.min(distance, .775 * baseReach);
-        }
+        const timing = speedAt(layout, previous.at);
+        const combo = comboIndices.has(globalIndex - 1)
+          && previous.count !== 2
+          && kinds[globalIndex] !== 'gap';
         if (previous.kind === 'gap') {
-          const radius = kinds[globalIndex] === 'enemy' ? .8 : getHazardProfile(base.hazardStyle).width / 2 + .15;
-          const separateLanding = previous.separate || previous.bridge || kinds[globalIndex] === 'gap' || distance > 5 + radius;
-          if (separateLanding) {
-            for (let iteration = 0; iteration < 3; iteration++) {
-              distance = Math.min(.78 * speedAt(layout, previous.at + distance).reach, .775 * baseReach);
-            }
+          const minimumCombo = Math.max(previous.width + .5 * timing.reach, previous.width + .76);
+          const maximumCombo = .8 * timing.reach;
+          if (combo && minimumCombo < maximumCombo - .01) {
+            // Deliberate two-in-one: clear the gap and the following beat in
+            // one arc, with clearance beyond the far edge. Use the far end of
+            // the band so the second window stays near the top of the arc.
+            at = previous.at + maximumCombo - .01;
+          } else {
+            // A gap is a real hole: land beyond its far edge and react before
+            // the next beat. This keeps every open gap worth its own jump.
+            const rest = Math.max(1.352 * timing.reach, previous.width + .62 * timing.speed);
+            at = previous.at + rest;
           }
+        } else if (kinds[globalIndex] === 'gap') {
+          // A hazard or enemy followed by a gap: stay inside the combo band,
+          // but leave enough track to land before the gap and take off again.
+          const ratio = .62 + Math.floor(random() * 6) * .0125;
+          let distance = ratio * timing.reach;
+          for (let iteration = 0; iteration < 3; iteration++) {
+            distance = ratio * speedAt(layout, previous.at + distance).reach;
+            distance = Math.min(distance, .70 * baseReach);
+          }
+          at = previous.at + distance;
+        } else if (combo) {
+          // A true two-in-one: keep the two collision windows overlapping so
+          // the solver commits to one arc instead of landing between them.
+          at = previous.at + 1;
+        } else {
+          // Full rest: land, read the next beat and jump again. The fair-spacing
+          // rule only allows the combo band or this reaction distance.
+          at = previous.at + 1.352 * timing.reach;
         }
-        at = previous.at + distance;
       }
       const hazardIndex = layout.obstacles.length + beats.filter((beat) => beat.kind === 'hazard').length;
       const double = kinds[globalIndex] === 'hazard'
@@ -498,20 +574,6 @@ export function buildCandidate(base, brief, index, totalBeats, variant) {
   layout.portals.sort((a, b) => a.at - b.at || a.index - b.index);
   layout.portals = layout.portals.map(({ at, type }) => ({ at, type }));
 
-  for (let index = 0; index < beats.length; index++) {
-    const beat = beats[index];
-    const next = beats[index + 1];
-    if (beat.kind === 'gap' && !beat.bridge && !beat.separate && next?.phrase === beat.phrase && next.kind !== 'gap') {
-      // Join collision windows when the five-unit gap limit permits it. At
-      // dash speed a wider combo instead retains a narrow gap and a supported
-      // landing lane for a second takeoff.
-      const distance = next.at - beat.at;
-      const radius = next.kind === 'enemy' ? .8 : getHazardProfile(base.hazardStyle).width / 2 + .15;
-      beat.width = distance <= 5 + radius
-        ? round(Math.min(5, Math.max(2.5, distance - .1)), 1)
-        : 2.5;
-    }
-  }
   for (const beat of beats) addBeat(layout, beat);
 
   if (layout.gaps.length < requiredBridges) return null;
@@ -539,24 +601,43 @@ export function buildCandidate(base, brief, index, totalBeats, variant) {
   return { level: layout, phrases, result, metrics };
 }
 
-function acceptable(candidate, brief, tier) {
+function acceptable(candidate, brief, index) {
   if (!candidate) return false;
   const { level, result, metrics } = candidate;
+  const tier = tierFor(index);
   if (!result.completed || result.deaths !== 0) return false;
   if (metrics.deadBandViolations.length !== 0) return false;
-  if (Math.abs(metrics.inputsPerSecond / brief.target - 1) > .08) return false;
+  if (metrics.telegraphViolations.length !== 0) return false;
+  if (Math.abs(metrics.inputsPerSecond / brief.target - 1) > .05) return false;
   if (level.collectibles.length !== brief.shards) return false;
-  const requiredCompounds = tier === 3 ? 2 : tier === 4 ? 3 : 0;
-  if (compoundCount(level) < requiredCompounds) return false;
+  if (metrics.jumps < .75 * metrics.beats) return false;
+  if (!(metrics.tightestMargin >= .35)) return false;
+  if (tier >= 3 && compoundCount(level) < 1) return false;
   if (featureTypes(level).size < 3) return false;
-  const inputs = beatWindows(level).filter(({ kind }) => kind === 'hazard' || kind === 'gap' || kind === 'enemy');
+
+  const bridgeCap = index < 4 ? 0 : index < 10 ? 1 : 2;
+  const bridges = bridgedGapCount(level);
+  if (bridges > bridgeCap || bridges * 3 > level.gaps.length) return false;
+  if (index >= 4 && level.gaps.length - bridges < 2) return false;
+
+  const inputs = beatWindows(level)
+    .filter(({ kind }) => kind === 'hazard' || kind === 'gap' || kind === 'enemy')
+    .sort((a, b) => a.at - b.at);
   if (inputs[0].at < level.speed * (INTRO_SECONDS - .02)) return false;
   const final = inputs.at(-1);
   if (final.courseEnd > level.length - level.speed * (OUTRO_SECONDS - .03)) return false;
-  for (let index = 1; index < inputs.length; index++) {
-    const distance = inputs[index].at - inputs[index - 1].at;
-    const reach = inputs[index].reach;
+  for (let beatIndex = 1; beatIndex < inputs.length; beatIndex++) {
+    const previous = inputs[beatIndex - 1];
+    const beat = inputs[beatIndex];
+    const distance = beat.at - previous.at;
+    const reach = beat.reach;
     if (distance <= 0 || (distance > COMBO_MAX * reach && distance < REST_MIN * reach)) return false;
+    if (beat.at - previous.courseEnd < .75) return false;
+    if (previous.kind === 'gap' && beat.at - previous.courseEnd < .5 * reach) return false;
+  }
+  for (const gap of level.gaps) {
+    const beat = inputs.find(({ kind, at }) => kind === 'gap' && at === gap.at);
+    if (beat && gap.width > .75 * beat.reach) return false;
   }
   return true;
 }
@@ -567,13 +648,13 @@ export function composeLevel(base, brief, index) {
   const estimatedTime = base.length / base.speed - dashSaving;
   const expected = Math.round(brief.target * estimatedTime);
   const totals = [expected];
-  for (let offset = 1; offset <= 3; offset++) totals.push(expected + offset, expected - offset);
+  for (let offset = 1; offset <= 5; offset++) totals.push(expected + offset, expected - offset);
   let bestFailure = null;
   for (const total of totals) {
     if (total < 3) continue;
     for (let variant = 0; variant < 48; variant++) {
       const candidate = buildCandidate(base, brief, index, total, variant);
-      if (acceptable(candidate, brief, tierFor(index))) return candidate;
+      if (acceptable(candidate, brief, index)) return candidate;
       if (candidate && !bestFailure) bestFailure = candidate;
     }
   }
@@ -640,7 +721,7 @@ export function renderDesignPlan(composed, checklist) {
     '',
     '## How the courses are composed',
     '',
-    'Run `npm run levels:compose` to deterministically rebuild every layout from its level-id seed and the v0.6.0 blueprint. The composer preserves course identity, art, music, speed and length; lays combo phrases and fair rests against the real portal speed profile; places low bridges and apex shards; and rejects any layout that the unchanged auto-player cannot finish without a death or dead-band violation. See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the shared physics and checks.',
+    'Run `npm run levels:compose` to deterministically rebuild every layout from its level-id seed and the v0.6.0 blueprint. The composer preserves course identity, art, music, speed and length; lays deliberate combo beats and full reaction rests against the real portal speed profile; keeps bridges optional, places apex shards, and writes each signature and design hook from the layout it actually built. It rejects any layout that the unchanged auto-player cannot finish without a death, a dead-band violation or a short first-beat telegraph. See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the shared physics and checks.',
     '',
     '## Individual designs',
     '',
@@ -649,7 +730,7 @@ export function renderDesignPlan(composed, checklist) {
     output.push(
       `### ${String(index + 1).padStart(2, '0')} — ${level.name} (${level.length} units)`,
       `- **Signature:** ${level.signature}`,
-      `- **Rhythm:** ${phrases.join(' + ')} input beats; target ${blueprint[index].target.toFixed(2)} inputs/s, measured ${metrics.inputsPerSecond.toFixed(2)}; ${plural(level.gaps.length, 'gap')} and ${plural(level.platforms.length, 'compound bridge')}.`,
+      `- **Rhythm:** ${phrases.join(' + ')} input beats; target ${blueprint[index].target.toFixed(2)} inputs/s, measured ${metrics.inputsPerSecond.toFixed(2)}; ${plural(level.gaps.length - bridgedGapCount(level), 'open gap')} and ${plural(level.platforms.length, 'bridge')}.`,
       `- **Design hook:** ${level.designHook}`,
       featureLine(level),
       `- **Audio:** ${level.music.bpm} BPM with the existing sixteen-step procedural motif.`,
