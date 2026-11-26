@@ -9,6 +9,12 @@ export function levelProgressPercent(distance, length) {
   return Math.max(0, Math.min(100, (distance / length) * 100));
 }
 
+// The finish gate is authored at the same course distance as the run-ending check, so the
+// player reaches it exactly when `distance` reaches `level.length`.
+export function finishGateDistance(level) {
+  return level.length;
+}
+
 export const platformTuning = Object.freeze({ maxStepHeight: .6, landingTolerance: .08 });
 
 export const motionTuning = Object.freeze({
@@ -65,6 +71,18 @@ export const portalEffects = Object.freeze({
   shield: Object.freeze({ shieldCharges: 1 }),
   phase: Object.freeze({ duration: 2.4 }),
 });
+
+export const portalCopy = Object.freeze({
+  spring: Object.freeze({ name: 'SPRING', effect: 'HIGHER JUMP', announcement: 'Spring: higher jump.' }),
+  dash: Object.freeze({ name: 'DASH', effect: 'FASTER FOR 2 s', announcement: 'Dash: faster for two seconds.' }),
+  float: Object.freeze({ name: 'FLOAT', effect: 'LOW GRAVITY', announcement: 'Float: low gravity.' }),
+  shield: Object.freeze({ name: 'SHIELD', effect: 'BLOCKS ONE HIT', announcement: 'Shield: blocks one hit.' }),
+  phase: Object.freeze({ name: 'PHASE', effect: 'PASS THROUGH', announcement: 'Phase: pass through hazards.' }),
+});
+
+export function portalLabel(type) {
+  return Object.hasOwn(portalCopy, type) ? portalCopy[type] : portalCopy.phase;
+}
 
 export const jumpTuning = Object.freeze({
   initialVelocity: 10,

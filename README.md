@@ -1,6 +1,6 @@
 # Enrique Dash
 
-**Current test version: 0.7.0** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
+**Current test version: 0.8.0** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
 
 ## Play locally
 
@@ -48,6 +48,12 @@ See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the auto-playe
 - Added a mute toggle and start audio only following a user gesture.
 - Deferred loading Three.js and the 2.6 MB character atlas until the first play action, retaining a static preview and cube fallback.
 - Added Node's built-in test runner for level validation, collision/progress rules, and music theory helpers.
+
+### v0.8.0
+
+- Every course now ends at a visible finish gate: two white pillars, a top beam with lime emissive trim, a checkered banner and a four-segment checkered strip on the lane. It spawns at `level.length` through `finishGateDistance()`, scrolls with the world and never collides.
+- Added a remaining-distance HUD chip: `⚑ FINISH 30` counts down through the last 30 units, switches to `⚑ FINISH!` under three, and stays hidden otherwise.
+- Every power-up now carries a camera-facing label above its ring with the portal name and effect, and announces the effect through the HUD and `#game-status` for 1.6 seconds.
 
 ### v0.7.0
 
