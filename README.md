@@ -1,6 +1,6 @@
 # Enrique Dash
 
-**Current test version: 0.5.3** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
+**Current test version: 0.5.4** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
 
 ## Play locally
 
@@ -50,6 +50,11 @@ Each level has its own speed, obstacle sequence, color palette, tempo, scale, ch
 ### v0.3.1
 
 - Keep the exact app version visible inside the game HUD, including fullscreen mode.
+
+### v0.5.4
+
+- The music scheduler no longer replays a backlog: if the audio context was suspended long enough for the cursor to fall behind, it resyncs to the present instead of firing every missed step at once (which could be hundreds of oscillators in a single tick).
+- Added a per-tick burst guard of eight steps and four tests for the scheduling window, the stale-cursor resync and the guard.
 
 ### v0.5.3
 

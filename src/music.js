@@ -14,6 +14,38 @@ export function beatDurationSeconds(bpm) {
 
 const lookaheadMs = 25;
 const scheduleAheadSeconds = .12;
+const maxScheduledStepsPerTick = 8;
+const resyncThresholdSeconds = .1;
+const resyncLeadSeconds = .05;
+
+/**
+ * Decide which steps to schedule for this tick.
+ *
+ * After a suspended AudioContext (system interruption, iOS call, pause) `nextStepAt`
+ * sits in the past. Scheduling the whole backlog at once would emit every missed
+ * note simultaneously, so a stale cursor resyncs to "now" instead.
+ *
+ * @param {{ currentTime:number, nextStepAt:number, bpm:number,
+ *           lookAhead?:number, maxSteps?:number }} input
+ * @returns {{ times:number[], nextStepAt:number, resynced:boolean }}
+ */
+export function planScheduleWindow({
+  currentTime,
+  nextStepAt,
+  bpm,
+  lookAhead = scheduleAheadSeconds,
+  maxSteps = maxScheduledStepsPerTick,
+}) {
+  const beat = beatDurationSeconds(bpm);
+  const resynced = nextStepAt < currentTime - resyncThresholdSeconds;
+  let cursor = resynced ? currentTime + resyncLeadSeconds : nextStepAt;
+  const times = [];
+  while (cursor < currentTime + lookAhead && times.length < maxSteps) {
+    times.push(cursor);
+    cursor += beat;
+  }
+  return { times, nextStepAt: cursor, resynced };
+}
 
 export class MusicEngine {
   constructor() {
@@ -89,12 +121,16 @@ export class MusicEngine {
 
   scheduleAhead() {
     if (!this.context || !this.track || this.context.state !== 'running') return;
-    const horizon = this.context.currentTime + scheduleAheadSeconds;
-    while (this.nextStepAt < horizon) {
-      this.scheduleStep(this.step, this.nextStepAt);
-      this.nextStepAt += beatDurationSeconds(this.track.bpm);
+    const plan = planScheduleWindow({
+      currentTime: this.context.currentTime,
+      nextStepAt: this.nextStepAt,
+      bpm: this.track.bpm,
+    });
+    for (const time of plan.times) {
+      this.scheduleStep(this.step, time);
       this.step++;
     }
+    this.nextStepAt = plan.nextStepAt;
   }
 
   scheduleStep(step, time) {
