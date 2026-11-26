@@ -12,7 +12,7 @@
 .legend-glyph{font-size:10px;line-height:1}
 .legend-danger{color:#ff3b57}
 .legend-shard{color:#ffe066}
-.legend-power{color:#eaf2ff}
+.legend-power{color:#52eaff}
 .legend-platform{color:#9fb4d6}
 @media(max-width:480px){.game-legend{left:9px;right:9px;bottom:68px;gap:3px 10px;padding:2px 4px;font-size:8px;letter-spacing:.55px}.legend-glyph{font-size:9px}}
 @media(forced-colors:active){.game-legend{color:CanvasText;background:none;text-shadow:none}.legend-danger,.legend-shard,.legend-power,.legend-platform{color:CanvasText}}

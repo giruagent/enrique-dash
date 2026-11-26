@@ -349,10 +349,7 @@ function moveFeatureGroup(group, dt, speed, removeFeature) {
       if (feature.type === 'drone') feature.mesh.position.y = feature.baseY + Math.sin(simulationTime * 2.2 + feature.phase) * .16;
     }
     if (!reducedMotion && group === portals && feature.spin) feature.spin.rotation.z += dt * 1.2;
-    if (!reducedMotion && group === collectibles) {
-      feature.mesh.rotation.y += dt * .6;
-      if (feature.halo) feature.halo.rotation.z += dt * .9;
-    }
+    if (!reducedMotion && group === collectibles) feature.mesh.rotation.y += dt * .6;
     if (feature.center + (feature.width ?? 0) / 2 < -9) {
       if (removeFeature === removeMeshFeature) removeFeature(feature, index, group);
       else removeFeature(feature, index);
@@ -659,7 +656,7 @@ function spawnCourseFeatures() {
     const group = new THREE.Group();
     group.position.set(center, laneY + height, -.02);
     const crystal = new THREE.Mesh(
-      new THREE.OctahedronGeometry(.3, 0),
+      new THREE.OctahedronGeometry(.38, 0),
       new THREE.MeshStandardMaterial({
         color: GAMEPLAY_COLORS.shard,
         emissive: GAMEPLAY_COLORS.shard,
@@ -668,21 +665,10 @@ function spawnCourseFeatures() {
         roughness: .2,
       }),
     );
-    const halo = new THREE.Mesh(
-      new THREE.TorusGeometry(.42, .03, 6, 24),
-      new THREE.MeshStandardMaterial({
-        color: GAMEPLAY_COLORS.shard,
-        emissive: GAMEPLAY_COLORS.shard,
-        emissiveIntensity: .7,
-        metalness: .2,
-        roughness: .3,
-      }),
-    );
-    halo.rotation.x = Math.PI / 2;
-    halo.rotation.y = .2;
-    group.add(crystal, halo);
+    crystal.scale.y = 1.35;
+    group.add(crystal);
     scene.add(group);
-    collectibles.push({ center, height, mesh: group, halo });
+    collectibles.push({ center, height, mesh: group });
   }
   updateCollectibleHud();
 }
