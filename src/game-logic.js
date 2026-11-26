@@ -11,6 +11,14 @@ export function levelProgressPercent(distance, length) {
 
 export const platformTuning = Object.freeze({ maxStepHeight: .6, landingTolerance: .08 });
 
+export const motionTuning = Object.freeze({
+  gravity: 19,
+  fallLimit: 1.65,
+  groundSnapTolerance: .05,
+  groundLostThreshold: .05,
+  landingTolerance: platformTuning.landingTolerance,
+});
+
 // Returns the surface the player should step up onto, or null.
 export function findStepSurface(playerX, playerY, grounded, baseHeight, platforms, maxStepHeight = platformTuning.maxStepHeight) {
   if (!grounded) return null;
@@ -90,6 +98,68 @@ export function integrateVerticalMotion(position, velocity, gravity, deltaSecond
   return {
     position: position + velocity * deltaSeconds - .5 * gravity * deltaSeconds ** 2,
     velocity: velocity - gravity * deltaSeconds,
+  };
+}
+
+/**
+ * @param {{ x:number, y:number, velocityY:number, grounded:boolean, coyoteTimer:number }} player
+ * @param {number} dt
+ * @param {{ baseHeight:number, gaps:Array, platforms:Array }} course
+ * @param {{ gravityMultiplier?:number }} [options]
+ * @returns {{ y:number, velocityY:number, grounded:boolean, coyoteTimer:number,
+ *             supportY:number, steppedUp:boolean, landed:boolean, fell:boolean }}
+ */
+export function stepPlayerMotion(player, dt, course, options = {}) {
+  let { y, velocityY, grounded, coyoteTimer } = player;
+  const { baseHeight, gaps, platforms } = course;
+  const wasGrounded = grounded;
+  let steppedUp = false;
+  let landed = false;
+
+  const stepSurface = findStepSurface(player.x, y, grounded, baseHeight, platforms);
+  if (stepSurface !== null) {
+    y = stepSurface;
+    velocityY = 0;
+    grounded = true;
+    coyoteTimer = jumpTuning.coyoteSeconds;
+    steppedUp = true;
+  }
+  const supportHeight = getTrackSupportHeight(player.x, y, baseHeight, gaps, platforms);
+  const supportY = supportHeight ?? baseHeight;
+  const previousY = y;
+
+  if (grounded && supportHeight !== null && y <= supportHeight + motionTuning.groundSnapTolerance) {
+    y = supportHeight;
+    velocityY = 0;
+    coyoteTimer = jumpTuning.coyoteSeconds;
+  } else {
+    if (wasGrounded && (supportHeight === null || supportHeight < y - motionTuning.groundLostThreshold)) {
+      coyoteTimer = jumpTuning.coyoteSeconds;
+    }
+    if (grounded && (supportHeight === null || supportHeight < y - motionTuning.groundLostThreshold)) grounded = false;
+    const gravity = motionTuning.gravity * (options.gravityMultiplier ?? 1);
+    const nextMotion = integrateVerticalMotion(y, velocityY, gravity, dt);
+    y = nextMotion.position;
+    velocityY = nextMotion.velocity;
+    if (supportHeight !== null && velocityY <= 0 && y <= supportHeight && previousY >= supportHeight - motionTuning.landingTolerance) {
+      y = supportHeight;
+      velocityY = 0;
+      grounded = true;
+      coyoteTimer = jumpTuning.coyoteSeconds;
+      landed = true;
+    }
+  }
+  if (supportHeight === null) grounded = false;
+
+  return {
+    y,
+    velocityY,
+    grounded,
+    coyoteTimer,
+    supportY,
+    steppedUp,
+    landed,
+    fell: y < baseHeight - motionTuning.fallLimit,
   };
 }
 

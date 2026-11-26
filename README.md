@@ -1,6 +1,6 @@
 # Enrique Dash
 
-**Current test version: 0.5.2** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
+**Current test version: 0.5.3** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
 
 ## Play locally
 
@@ -50,6 +50,12 @@ Each level has its own speed, obstacle sequence, color palette, tempo, scale, ch
 ### v0.3.1
 
 - Keep the exact app version visible inside the game HUD, including fullscreen mode.
+
+### v0.5.3
+
+- Moved the vertical physics (platform step-up, support lookup, coyote time, gravity, landing and the fall limit) out of the render loop into `stepPlayerMotion()` in `game-logic.js`, with `motionTuning` for its constants.
+- Added `src/motion.test.js`: eight tests covering a full jump arc, air time, platform crossing, an unclimbable platform, a gap fall, landing from above and the float portal.
+- Behaviour is unchanged: 6 000 simulated steps match the previous inline block exactly, and the Mosslight Hollow browser trace is identical.
 
 ### v0.5.2
 
