@@ -72,6 +72,12 @@ export function shouldAcceptJumpInput(repeat) {
   return !repeat;
 }
 
+export function shouldHandleGameplayKey({ code, repeat, running, gameFocused, interactiveTarget }) {
+  return ['Space', 'ArrowUp', 'KeyW'].includes(code)
+    && !interactiveTarget
+    && Boolean(running || gameFocused);
+}
+
 export function mergeJumpRequest(pending, requested) {
   return pending || requested;
 }

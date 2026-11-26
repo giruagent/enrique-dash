@@ -2,7 +2,7 @@ let THREE;
 import packageInfo from '../package.json';
 import { getLevel, levels } from './levels.js';
 import { createLossCue, playOneShot, primeOneShot, stopOneShot } from './audio-cues.js';
-import { canConsumeJumpBuffer, findStepSurface, getHazardProfile, getTrackSupportHeight, integrateVerticalMotion, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, portalEffects, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldSpawnCourseFeatures, shouldStompEnemy } from './game-logic.js';
+import { canConsumeJumpBuffer, findStepSurface, getHazardProfile, getTrackSupportHeight, integrateVerticalMotion, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, portalEffects, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy } from './game-logic.js';
 import { MusicEngine } from './music.js';
 import './style.css';
 
@@ -18,6 +18,7 @@ const attemptDisplay = document.querySelector('#attempt');
 const collectibleHud = document.querySelector('#collectible-hud');
 const collectibleCountDisplay = document.querySelector('#collectible-count');
 const message = document.querySelector('#game-message');
+const gameStatus = document.querySelector('#game-status');
 const levelName = document.querySelector('#level-name');
 const fullscreenButton = document.querySelector('#fullscreen-toggle');
 const musicButton = document.querySelector('#music-toggle');
@@ -479,9 +480,11 @@ function updateCollectibleHud() {
 }
 
 function updateProgress(percent) {
-  const rounded = Math.round(percent);
+  const progressStep = Math.floor(percent / 5) * 5;
   progressFill.style.width = `${percent}%`;
-  progressTrack.setAttribute('aria-valuenow', String(rounded));
+  if (progressTrack.getAttribute('aria-valuenow') !== String(progressStep)) {
+    progressTrack.setAttribute('aria-valuenow', String(progressStep));
+  }
 }
 
 function spawnObstacles() {
@@ -741,6 +744,7 @@ function selectLevel(index) {
 async function start({ jumpAfterLoad = false } = {}) {
   if (graphicsUnavailable) return false;
   if (running) return true;
+  const resuming = isGamePaused({ started, running, dead, completed });
   if (dead || completed) reset();
   pendingStartJump = mergeJumpRequest(pendingStartJump, jumpAfterLoad);
   primeOneShot(lossCue);
@@ -757,6 +761,8 @@ async function start({ jumpAfterLoad = false } = {}) {
   running = true;
   gameWrap.classList.remove('is-paused');
   overlay.hidden = true;
+  stage.focus({ preventScroll: true });
+  gameStatus.textContent = resuming ? 'Game resumed.' : `${level.name} started.`;
   message.textContent = 'TAP / CLICK / SPACE TO JUMP · P TO PAUSE';
   playButton.innerHTML = '<span class="play-icon" aria-hidden="true">↻</span> RESTART LEVEL';
   if (initializeCourse) {
@@ -791,6 +797,7 @@ function pauseGame() {
   stopRenderLoop();
   showOverlay('Paused.', 'Select Resume, tap the playfield, or press P/Space to continue. Your run is frozen.');
   message.textContent = 'GAME PAUSED · PRESS P, SPACE OR RESUME';
+  gameStatus.textContent = 'Game paused.';
   void musicEngine.stop();
   syncPauseButton();
   return true;
@@ -832,6 +839,7 @@ function crash(reason = 'Tap or press Space to try this level again.') {
   attemptDisplay.textContent = String(attempt).padStart(2, '0');
   showOverlay('One more try.', reason);
   message.textContent = 'RUN ENDED — TRY AGAIN';
+  gameStatus.textContent = `Run ended. ${reason}`;
   syncPauseButton();
   void playOneShot(lossCue);
   void musicEngine.stop();
@@ -849,6 +857,7 @@ function finish() {
   const shardSummary = totalShards ? ` You found ${collectedCount} of ${totalShards} shards.` : '';
   showOverlay(`${level.name} cleared!`, `Course ${selectedLevelIndex + 1} of ${levels.length} complete.${shardSummary}`, selectedLevelIndex < levels.length - 1);
   message.textContent = totalShards ? `LEVEL COMPLETE · SHARDS ${collectedCount}/${totalShards}` : 'LEVEL COMPLETE';
+  gameStatus.textContent = `${level.name} complete.`;
   syncPauseButton();
   void musicEngine.stop();
 }
@@ -923,7 +932,6 @@ function syncFullscreenUI() {
   gameWrap.classList.toggle('fullscreen-mode', isFullscreen);
   document.body.classList.toggle('fullscreen-active', isFullscreen);
   fullscreenButton.textContent = isFullscreen ? 'EXIT FULLSCREEN' : 'FULLSCREEN';
-  fullscreenButton.setAttribute('aria-label', isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen');
   fullscreenButton.setAttribute('aria-pressed', String(isFullscreen));
   requestAnimationFrame(resize);
 }
@@ -955,7 +963,6 @@ async function toggleFullscreen() {
 function toggleMusic() {
   musicEnabled = !musicEnabled;
   musicButton.textContent = musicEnabled ? 'MUSIC ON' : 'MUSIC OFF';
-  musicButton.setAttribute('aria-label', musicEnabled ? 'Mute music' : 'Enable music');
   musicButton.setAttribute('aria-pressed', String(musicEnabled));
   if (musicEnabled && running) musicEngine.start(level.music).catch((error) => console.warn('Music could not start.', error));
   else if (!musicEnabled) void musicEngine.stop();
@@ -966,23 +973,33 @@ playButton.addEventListener('click', () => {
   void start();
 });
 pauseButton.addEventListener('click', togglePause);
-stage.addEventListener('pointerdown', (event) => { event.preventDefault(); jump(); });
-overlay.addEventListener('pointerdown', (event) => { if (event.target === overlay) jump(); });
+gameWrap.addEventListener('pointerdown', (event) => {
+  if (event.target.closest('button, a, input, select, textarea')) return;
+  event.preventDefault();
+  jump();
+});
 document.addEventListener('keydown', (event) => {
   const interactiveTarget = event.target instanceof Element
     && event.target.closest('button, a, input, select, textarea, [contenteditable="true"]');
+  const gameFocused = gameWrap.contains(document.activeElement);
   if (event.key === 'Escape' && pseudoFullscreen) {
     pseudoFullscreen = false;
     syncFullscreenUI();
     return;
   }
   if (event.code === 'KeyP') {
-    if (interactiveTarget) return;
+    if (interactiveTarget || (!running && !gameFocused)) return;
     event.preventDefault();
     if (!event.repeat) togglePause();
     return;
   }
-  if (!['Space', 'ArrowUp', 'KeyW'].includes(event.code) || interactiveTarget) return;
+  if (!shouldHandleGameplayKey({
+    code: event.code,
+    repeat: event.repeat,
+    running,
+    gameFocused,
+    interactiveTarget,
+  })) return;
   event.preventDefault();
   if (!shouldAcceptJumpInput(event.repeat)) return;
   if (isGamePaused({ started, running, dead, completed })) {
