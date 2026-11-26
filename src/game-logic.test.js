@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { canConsumeJumpBuffer, findStepSurface, finishGateDistance, getHazardProfile, getTrackSupportHeight, integrateVerticalMotion, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, portalCopy, portalEffects, portalLabel, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy } from './game-logic.js';
+import { canConsumeJumpBuffer, courseMedal, emptyProgress, findStepSurface, finishGateDistance, getHazardProfile, getTrackSupportHeight, integrateVerticalMotion, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, mergeRunProgress, parseProgress, portalCopy, portalEffects, portalLabel, PROGRESS_VERSION, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy } from './game-logic.js';
 
 function sourceFiles(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => (
@@ -222,4 +222,84 @@ test('vertical motion stays consistent across common render rates', () => {
     assert.ok(Math.abs(outcome.position - outcomes[0].position) < 1e-10);
     assert.ok(Math.abs(outcome.velocity - outcomes[0].velocity) < 1e-10);
   }
+});
+
+test('progress parsing tolerates junk and normalizes empty state', () => {
+  assert.equal(PROGRESS_VERSION, 2);
+  assert.deepEqual(emptyProgress(), { version: 2, courses: {} });
+  for (const junk of [null, undefined, '', '{', 'null', '42', 'true', '"text"', JSON.stringify({ version: 2 })]) {
+    assert.deepEqual(parseProgress(junk), { version: 2, courses: {} });
+  }
+});
+
+test('progress parsing migrates the legacy completed-id array', () => {
+  assert.deepEqual(parseProgress('["neon-run","candy-comet"]'), {
+    version: 2,
+    courses: {
+      'neon-run': { cleared: true },
+      'candy-comet': { cleared: true },
+    },
+  });
+  assert.deepEqual(parseProgress(['neon-run', 7, null]), {
+    version: 2,
+    courses: { 'neon-run': { cleared: true } },
+  });
+});
+
+test('progress parsing keeps unknown ids for render-time filtering and normalizes v2 fields', () => {
+  const parsed = parseProgress(JSON.stringify({
+    version: 99,
+    courses: {
+      'neon-run': { best: .4, shards: 2, cleared: true },
+      'gone-level': { best: 2, shards: -3, cleared: 'yes' },
+      broken: 'nope',
+    },
+  }));
+  assert.deepEqual(parsed, {
+    version: 2,
+    courses: {
+      'neon-run': { best: .4, shards: 2, cleared: true },
+      'gone-level': { best: 1, shards: 0, cleared: false },
+    },
+  });
+});
+
+test('progress parsing never mutates the raw v2 object', () => {
+  const raw = { version: 2, courses: { 'neon-run': { best: .4, shards: 1, cleared: false } } };
+  const snapshot = structuredClone(raw);
+  parseProgress(raw);
+  assert.deepEqual(raw, snapshot);
+});
+
+test('a worse run never lowers best or shards and never clears a clear flag', () => {
+  const progress = { version: 2, courses: { 'neon-run': { best: .8, shards: 2, cleared: true } } };
+  const output = mergeRunProgress(progress, 'neon-run', { reached: .3, shards: 1, cleared: false });
+  assert.deepEqual(output.courses['neon-run'], { best: .8, shards: 2, cleared: true });
+  assert.equal(output.version, 2);
+});
+
+test('mergeRunProgress takes maxima, ORs cleared and stays immutable', () => {
+  const progress = { version: 2, courses: { 'neon-run': { best: .8, shards: 2, cleared: false } } };
+  const snapshot = structuredClone(progress);
+  const output = mergeRunProgress(progress, 'neon-run', { reached: .55, shards: 1, cleared: true });
+  assert.deepEqual(progress, snapshot);
+  assert.notEqual(output, progress);
+  assert.notEqual(output.courses, progress.courses);
+  assert.deepEqual(output.courses['neon-run'], { best: .8, shards: 2, cleared: true });
+  assert.deepEqual(
+    mergeRunProgress(emptyProgress(), 'candy-comet', { reached: .82, shards: 1.9, cleared: false }).courses['candy-comet'],
+    { best: .82, shards: 1, cleared: false },
+  );
+});
+
+test('course medals are bronze for a clear, silver for every shard, and none before clearing', () => {
+  const withShards = { collectibles: [{}, {}, {}] };
+  assert.equal(courseMedal(null, withShards), null);
+  assert.equal(courseMedal({ cleared: false, shards: 3 }, withShards), null);
+  assert.equal(courseMedal({ cleared: true, shards: 0 }, withShards), 'bronze');
+  assert.equal(courseMedal({ cleared: true, shards: 2 }, withShards), 'bronze');
+  assert.equal(courseMedal({ cleared: true, shards: 3 }, withShards), 'silver');
+  assert.equal(courseMedal({ cleared: true, shards: 0 }, { collectibles: [] }), 'bronze');
+  assert.equal(courseMedal({ cleared: true, shards: 3 }, { collectibles: [] }), 'bronze');
+  assert.equal(courseMedal({ cleared: true, shards: 3 }, {}), 'bronze');
 });

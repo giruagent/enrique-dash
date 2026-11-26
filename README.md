@@ -1,6 +1,6 @@
 # Enrique Dash
 
-**Current test version: 0.8.0** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
+**Current test version: 0.8.1** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
 
 ## Play locally
 
@@ -48,6 +48,12 @@ See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the auto-playe
 - Added a mute toggle and start audio only following a user gesture.
 - Deferred loading Three.js and the 2.6 MB character atlas until the first play action, retaining a static preview and cube fallback.
 - Added Node's built-in test runner for level validation, collision/progress rules, and music theory helpers.
+
+### v0.8.1
+
+- Course progress is now remembered per level in `enrique-dash.progress.v2`: the furthest distance reached, the best shard count and whether the course was cleared. Old completion saves migrate automatically and both formats are written, so downgrading keeps working.
+- Every selector card shows a thin progress bar with its percent, gold shard pips (`◆ 2/3`) when the course has shards, and a bronze or silver medal dot for a clear or a full-shard clear. The accessible name now reads, for example, “Play level 7: Candy Comet, best 82 percent, 2 of 3 shards, bronze medal”.
+- Runs record progress once when they end, on a crash or a finish; pausing never writes.
 
 ### v0.8.0
 
