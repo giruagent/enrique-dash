@@ -75,12 +75,10 @@ export class MusicEngine {
     const generation = ++this.generation;
     if (!this.context) this.createAudioGraph();
     if (!this.context) return false;
+    // Never block arming on resume(): some browsers leave that promise pending until the
+    // next user gesture, and awaiting it here meant the scheduler was never installed.
     if (this.context.state !== 'running') {
-      try {
-        await this.context.resume();
-      } catch {
-        // The scheduler keeps retrying if the browser rejects a resume attempt.
-      }
+      void this.context.resume().catch(() => {});
     }
     if (generation !== this.generation || !this.desired) return false;
     const running = this.context.state === 'running';
