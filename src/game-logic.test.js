@@ -398,8 +398,7 @@ test('a course shorter than the checkpoint minimum gets no flag', () => {
   assert.equal(safeCheckpointDistance(null), null);
 });
 
-test('every long course gets a past-half checkpoint clear of gaps, hazards, enemies and portals', () => {
-  const clearance = checkpointTuning.clearance * jumpApexHeight();
+test('every long course gets a mid-course checkpoint with a real reaction window', () => {
   for (const level of levels) {
     const distance = safeCheckpointDistance(level);
     if (level.length < checkpointTuning.minimumLength) {
@@ -409,16 +408,20 @@ test('every long course gets a past-half checkpoint clear of gaps, hazards, enem
     assert.ok(Number.isFinite(distance), `${level.id} is long enough for a checkpoint`);
     assert.ok(distance >= level.length * checkpointTuning.windowStart, `${level.id} checkpoint is before the window`);
     assert.ok(distance <= level.length * checkpointTuning.windowEnd, `${level.id} checkpoint is after the window`);
-    for (const beat of beatWindows(level)) {
-      if (!['hazard', 'gap', 'enemy'].includes(beat.kind)) continue;
-      const clear = distance <= beat.start - clearance + 1e-9 || distance >= beat.end + clearance - 1e-9;
-      assert.ok(clear, `${level.id} checkpoint sits too close to ${beat.id}`);
-    }
-    for (const gap of level.gaps) {
-      assert.ok(distance <= gap.at || distance >= gap.at + gap.width, `${level.id} checkpoint sits in a gap`);
-    }
-    for (const portal of level.portals) {
-      assert.ok(Math.abs(distance - portal.at) >= clearance - 1e-9, `${level.id} checkpoint sits on a portal`);
+    const spans = [
+      ...beatWindows(level).filter(({ kind }) => ['hazard', 'gap', 'enemy'].includes(kind)).map(({ start: from, end: to }) => [from, to]),
+      ...level.gaps.map(({ at, width }) => [at, at + width]),
+      ...level.portals.map(({ at }) => [at, at]),
+    ];
+    for (const [from, to] of spans) {
+      if (distance > from && distance < to) assert.fail(`${level.id} checkpoint sits inside a feature at ${from}`);
+      if (distance <= from) {
+        const seconds = (from - distance) / level.speed;
+        assert.ok(seconds >= checkpointTuning.beforeSeconds - 1e-9, `${level.id} checkpoint leaves only ${seconds.toFixed(2)}s before the next feature`);
+      } else {
+        const seconds = (distance - to) / level.speed;
+        assert.ok(seconds >= checkpointTuning.behindSeconds - 1e-9, `${level.id} checkpoint is only ${seconds.toFixed(2)}s past a feature`);
+      }
     }
   }
 });
@@ -428,8 +431,9 @@ test('the checkpoint scan is deterministic and returns null when the window is c
   assert.equal(safeCheckpointDistance(level), safeCheckpointDistance(level));
   const crowded = {
     length: 120,
+    speed: 9,
     hazardStyle: 'spike',
-    obstacles: Array.from({ length: 60 }, (_, index) => [3 + index * 1.2, 1]),
+    obstacles: Array.from({ length: 75 }, (_, index) => [18 + index * 1.2, 1]),
     gaps: [],
     platforms: [],
     portals: [],

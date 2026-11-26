@@ -100,14 +100,17 @@ export function finishGateDistance(level) {
   return level.length;
 }
 
-export const checkpointTuning = Object.freeze({ minimumLength: 120, windowStart: .38, windowEnd: .62, clearance: 1.6 });
+export const checkpointTuning = Object.freeze({
+  minimumLength: 120,
+  windowStart: .30,
+  windowEnd: .70,
+  // Clear track measured in TIME, not distance: what matters after a respawn is how long the
+  // player has before the next beat, and how far behind the previous one. A distance measured
+  // in jump reaches made the pocket unusably wide and every long course fell back to null.
+  beforeSeconds: .75,
+  behindSeconds: .35,
+});
 
-// The composed courses pack a jump-triggering beat across most of the middle third, so there
-// is never a full horizontal jump reach (about six units) of empty track there. Measuring the
-// safe pocket in jump heights (1.6 × the 1.85-unit apex, about three units) still keeps the
-// flag clear of every hazard, gap, enemy and portal without leaving the long courses without
-// a checkpoint at all.
-const checkpointClearance = () => checkpointTuning.clearance * jumpApexHeight();
 
 // Deterministic: scan outwards from the midpoint in half-unit steps and take the first clear
 // distance inside the authored window. Returns null when the course has no room for a flag.
@@ -117,15 +120,23 @@ export function safeCheckpointDistance(level) {
   const midpoint = length / 2;
   const earliest = length * checkpointTuning.windowStart;
   const latest = length * checkpointTuning.windowEnd;
-  const margin = checkpointClearance();
+  const speed = Number.isFinite(level.speed) && level.speed > 0 ? level.speed : 9;
+  const ahead = checkpointTuning.beforeSeconds * speed;
+  const behind = checkpointTuning.behindSeconds * speed;
   const beats = beatWindows(level).filter(({ kind }) => kind === 'hazard' || kind === 'gap' || kind === 'enemy');
   const gaps = Array.isArray(level.gaps) ? level.gaps : [];
   const portals = Array.isArray(level.portals) ? level.portals : [];
+  // A feature ahead of the flag needs the full reaction window before it; a feature behind only
+  // needs enough room that the player does not respawn on top of it.
   const isClear = (distance) => {
     if (distance < earliest || distance > latest) return false;
-    if (gaps.some(({ at, width }) => distance > at && distance < at + width)) return false;
-    if (beats.some(({ start, end }) => distance > start - margin && distance < end + margin)) return false;
-    if (portals.some(({ at }) => Math.abs(distance - at) < margin)) return false;
+    const clearOfSpan = (start, end) => {
+      if (distance > start - ahead && distance < end + behind) return false;
+      return true;
+    };
+    if (beats.some(({ start, end }) => !clearOfSpan(start, end))) return false;
+    if (gaps.some(({ at, width }) => !clearOfSpan(at, at + width))) return false;
+    if (portals.some(({ at }) => !clearOfSpan(at, at))) return false;
     return true;
   };
   const radius = Math.max(midpoint - earliest, latest - midpoint);
