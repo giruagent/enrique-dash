@@ -67,3 +67,24 @@ Each row contains inputs per second (hazard groups, gaps, and enemies divided by
 The summary gives average inputs/s, auto-player completions, dead-band and telegraph totals, and failed level ids with the recorded death reason. A completed level can still have spacing or telegraph warnings; conversely, an auto-player failure is reported as a failure, never repaired by changing level data or relaxing the solver.
 
 The unit tests in `src/levels.tools.test.js` use only synthetic levels. They cover normal jumping, dead-band detection, impossible gaps, bridge support, dash spacing, and tightening a second beat.
+
+## Two stages: rhythm, then mix
+
+`npm run levels:compose` runs two deterministic stages:
+
+1. **`tools/compose-levels.mjs` owns the rhythm** — how many input beats, where they sit, how they are
+   spaced against the real portal speed profile, and the first-beat telegraph. It rejects any layout
+   the auto-player cannot finish cleanly.
+2. **`tools/apply-feature-quotas.mjs` owns the mix** — it converts a few hazard slots into enemies and
+   drops raised kerbs with a shard on plain track, per tier. Every single change is replayed through the
+   auto-player and reverted if the course stops being completable, so the mix can never cost solvability.
+
+Course copy (`signature`, `designHook`) is hand-written in the feature pass, keyed by level id, and
+checked for uniqueness by the validator. If you add a course, add its copy there too.
+
+### Gates enforced by `npm test`
+
+inputs/s within 5 0f the blueprint · average rate rising across each five-course block · zero
+spacing in the 0.80–1.35 × reach dead band · at most one third of gaps bridged · jumps ≥ 75 0f input
+beats · tightest margin ≥ 0.35 units · first-beat telegraph ≥ 0.6 s · shards inside the apex band ·
+no three beats of the same kind in a row · tier quotas for platforms, enemies, portals and shards.

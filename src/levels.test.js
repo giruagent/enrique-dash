@@ -201,6 +201,10 @@ test('every course uses three feature types, compounds from T3 and never repeats
   });
 });
 
+// Shards come in two kinds: those sitting on a mandatory jump arc (collected by the auto-player)
+// and those above a raised kerb (a deliberate optional jump from the kerb surface). Both must be
+// reachable, clear of gaps and hazards, and inside the ballistic apex band measured from their
+// own launch surface.
 test('every shard sits in the reachable apex band above a jump, clear of gaps and hazards', () => {
   const apexHeight = jumpTuning.initialVelocity ** 2 / (2 * motionTuning.gravity);
   for (const level of levels) {
@@ -210,15 +214,25 @@ test('every shard sits in the reachable apex band above a jump, clear of gaps an
     const hazards = beatWindows(level).filter(({ kind }) => kind === 'gap' || kind === 'hazard');
     const timeline = courseSpeedTimeline(level);
     level.collectibles.forEach((shard, index) => {
-      assert.ok(shard.height >= 1.2 && shard.height <= apexHeight + .05, `${level.id} shard ${index} is outside the apex band`);
-      const reachable = jumps.some(({ at }) => {
-        const time = (shard.at - at) / timeline.advance(shard.at).speed;
-        if (time <= 0) return false;
-        const height = jumpTuning.initialVelocity * time - .5 * motionTuning.gravity * time ** 2;
-        return height >= 1.2 && height <= apexHeight + .05 && Math.abs(height - shard.height) <= .1;
-      });
-      assert.ok(reachable, `${level.id} shard ${index} is not above a jump arc`);
-      assert.ok(collected.has(`collectible-${index}`), `${level.id} shard ${index} was not collected by the jump`);
+      const kerb = level.platforms.find(({ at, width }) => shard.at >= at - .15 && shard.at <= at + width + .15);
+      const launchHeight = kerb ? kerb.height : 0;
+      const rise = shard.height - launchHeight;
+      assert.ok(rise >= .6 && rise <= apexHeight + .05, `${level.id} shard ${index} is outside the apex band`);
+      assert.ok(shard.height >= 1.2, `${level.id} shard ${index} hangs too low to be a shard`);
+      if (kerb) {
+        // Optional shard: a jump from the kerb surface reaches it. The auto-player only jumps for
+        // hazards, so this one is proven analytically instead of against the run trace.
+        assert.ok(shard.at > kerb.at && shard.at < kerb.at + kerb.width, `${level.id} shard ${index} is off its kerb`);
+      } else {
+        const reachable = jumps.some(({ at }) => {
+          const time = (shard.at - at) / timeline.advance(shard.at).speed;
+          if (time <= 0) return false;
+          const height = jumpTuning.initialVelocity * time - .5 * motionTuning.gravity * time ** 2;
+          return height >= 1.2 && height <= apexHeight + .05 && Math.abs(height - shard.height) <= .1;
+        });
+        assert.ok(reachable, `${level.id} shard ${index} is not above a jump arc`);
+        assert.ok(collected.has(`collectible-${index}`), `${level.id} shard ${index} was not collected by the jump`);
+      }
       assert.equal(hazards.some(({ start, end }) => shard.at > start && shard.at < end), false, `${level.id} shard ${index} sits inside a gap or hazard window`);
     });
   }

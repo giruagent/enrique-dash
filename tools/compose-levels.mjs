@@ -684,7 +684,7 @@ function formatValue(value) {
   return String(value);
 }
 
-function rewriteLevels(source, composed) {
+export function rewriteLevels(source, composed) {
   const replacements = composed.map(({ level }) => {
     const idIndex = source.indexOf(`id: '${level.id}'`);
     if (idIndex < 0) throw new Error(`Cannot find ${level.id} in src/levels.js`);
