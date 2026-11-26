@@ -1184,7 +1184,10 @@ function renderLevelCards() {
     percentLabel.className = 'level-card-percent';
     percentLabel.textContent = `${percent}%`;
     percentLabel.setAttribute('aria-hidden', 'true');
-    stats.append(bar, percentLabel);
+    stats.append(bar);
+    // An untouched course shows the shard pips and an empty bar; a "0%" label on all twenty cards
+    // is noise, and the accessible name already omits a zero best.
+    if (percent > 0) stats.append(percentLabel);
     if (totalShards > 0) {
       const pips = document.createElement('span');
       pips.className = 'level-card-shards';
