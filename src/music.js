@@ -59,27 +59,36 @@ export class MusicEngine {
     this.timer = null;
     this.suspendTimer = null;
     this.track = null;
+    this.desired = false;
+    this.resumeAttempts = 0;
     this.step = 0;
     this.nextStepAt = 0;
     this.generation = 0;
   }
 
   async start(track) {
+    clearTimeout(this.suspendTimer);
+    this.suspendTimer = null;
+    this.desired = true;
+    this.resumeAttempts = 0;
     this.track = track;
     const generation = ++this.generation;
     if (!this.context) this.createAudioGraph();
     if (!this.context) return false;
-    clearTimeout(this.suspendTimer);
-    this.suspendTimer = null;
-    if (this.context.state !== 'running') await this.context.resume();
-    if (generation !== this.generation) return false;
+    // Never block arming on resume(): some browsers leave that promise pending until the
+    // next user gesture, and awaiting it here meant the scheduler was never installed.
+    if (this.context.state !== 'running') {
+      void this.context.resume().catch(() => {});
+    }
+    if (generation !== this.generation || !this.desired) return false;
+    const running = this.context.state === 'running';
     this.master.gain.cancelScheduledValues(this.context.currentTime);
     this.master.gain.setTargetAtTime(.72, this.context.currentTime, .08);
     if (this.timer) clearInterval(this.timer);
     this.step = 0;
     this.nextStepAt = this.context.currentTime + .08;
     this.timer = setInterval(() => this.scheduleAhead(), lookaheadMs);
-    return true;
+    return running;
   }
 
   createAudioGraph() {
@@ -87,6 +96,11 @@ export class MusicEngine {
     if (!AudioContextConstructor) return;
     try {
       this.context = new AudioContextConstructor();
+      this.context.addEventListener('statechange', () => {
+        if (this.context.state !== 'running' || !this.track || !this.desired) return;
+        this.nextStepAt = this.context.currentTime + .08;
+        if (!this.timer) this.timer = setInterval(() => this.scheduleAhead(), lookaheadMs);
+      });
       this.master = this.context.createGain();
       this.master.gain.value = 0;
       this.compressor = this.context.createDynamicsCompressor();
@@ -120,7 +134,17 @@ export class MusicEngine {
   }
 
   scheduleAhead() {
-    if (!this.context || !this.track || this.context.state !== 'running') return;
+    if (!this.context || !this.track || !this.desired) return;
+    if (this.context.state !== 'running') {
+      // Retry eagerly at first, then back off: a suspended context would otherwise get
+      // forty resume() calls a second, each one logging a browser warning.
+      this.resumeAttempts++;
+      if (this.resumeAttempts <= 3 || this.resumeAttempts % 20 === 0) {
+        void this.context.resume().catch(() => {});
+      }
+      return;
+    }
+    this.resumeAttempts = 0;
     const plan = planScheduleWindow({
       currentTime: this.context.currentTime,
       nextStepAt: this.nextStepAt,
@@ -250,6 +274,9 @@ export class MusicEngine {
   }
 
   async stop() {
+    clearTimeout(this.suspendTimer);
+    this.suspendTimer = null;
+    this.desired = false;
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
     if (!this.context || this.context.state === 'closed') return;
@@ -257,9 +284,10 @@ export class MusicEngine {
     const generation = ++this.generation;
     this.master.gain.cancelScheduledValues(context.currentTime);
     this.master.gain.setTargetAtTime(.0001, context.currentTime, .07);
-    clearTimeout(this.suspendTimer);
     this.suspendTimer = setTimeout(() => {
-      if (generation === this.generation && !this.timer && context.state === 'running') context.suspend();
+      if (generation !== this.generation) return;
+      this.suspendTimer = null;
+      if (!this.desired && !this.timer && context.state === 'running') void context.suspend();
     }, 450);
   }
 }
