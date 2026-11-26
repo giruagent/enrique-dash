@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { canConsumeJumpBuffer, findStepSurface, getHazardProfile, getTrackSupportHeight, integrateVerticalMotion, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, portalEffects, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy } from './game-logic.js';
+import { canConsumeJumpBuffer, findStepSurface, finishGateDistance, getHazardProfile, getTrackSupportHeight, integrateVerticalMotion, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, portalCopy, portalEffects, portalLabel, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy } from './game-logic.js';
 
 function sourceFiles(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => (
@@ -115,6 +115,31 @@ test('portals expose distinct supported effects for movement and hazard defense'
   assert.ok(portalEffects.float.gravityMultiplier < 1);
   assert.equal(portalEffects.shield.shieldCharges, 1);
   assert.ok(portalEffects.phase.duration > 0);
+});
+
+test('portal labels name and explain all five power-ups', () => {
+  const expected = {
+    spring: { name: 'SPRING', effect: 'HIGHER JUMP', announcement: 'Spring: higher jump.' },
+    dash: { name: 'DASH', effect: 'FASTER FOR 2 s', announcement: 'Dash: faster for two seconds.' },
+    float: { name: 'FLOAT', effect: 'LOW GRAVITY', announcement: 'Float: low gravity.' },
+    shield: { name: 'SHIELD', effect: 'BLOCKS ONE HIT', announcement: 'Shield: blocks one hit.' },
+    phase: { name: 'PHASE', effect: 'PASS THROUGH', announcement: 'Phase: pass through hazards.' },
+  };
+  assert.deepEqual(Object.keys(portalCopy), Object.keys(expected));
+  for (const [type, copy] of Object.entries(expected)) {
+    assert.equal(portalLabel(type), portalCopy[type]);
+    assert.deepEqual(portalCopy[type], copy);
+  }
+});
+
+test('an unknown portal type falls back to the phase label without throwing', () => {
+  assert.equal(portalLabel('unknown-portal'), portalCopy.phase);
+  assert.equal(portalLabel(), portalCopy.phase);
+  assert.equal(portalLabel('toString'), portalCopy.phase);
+});
+
+test('the finish gate helper returns the authored course length', () => {
+  assert.equal(finishGateDistance({ length: 78 }), 78);
 });
 
 test('crawler stomps accept a small apex grace but reject high-speed upward contacts', () => {

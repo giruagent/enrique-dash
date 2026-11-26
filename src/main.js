@@ -2,7 +2,7 @@ let THREE;
 import packageInfo from '../package.json';
 import { getLevel, levelValidationError, levels } from './levels.js';
 import { createLossCue, playOneShot, primeOneShot, stopOneShot } from './audio-cues.js';
-import { canConsumeJumpBuffer, getHazardProfile, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, portalEffects, shouldAcceptJumpInput, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy, stepPlayerMotion } from './game-logic.js';
+import { canConsumeJumpBuffer, finishGateDistance, getHazardProfile, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, portalEffects, portalLabel, shouldAcceptJumpInput, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy, stepPlayerMotion } from './game-logic.js';
 import { MusicEngine } from './music.js';
 import './style.css';
 
@@ -17,6 +17,7 @@ const progressTrack = document.querySelector('#progress-track');
 const attemptDisplay = document.querySelector('#attempt');
 const collectibleHud = document.querySelector('#collectible-hud');
 const collectibleCountDisplay = document.querySelector('#collectible-count');
+const finishChip = document.querySelector('#finish-chip');
 const message = document.querySelector('#game-message');
 const gameStatus = document.querySelector('#game-status');
 const levelName = document.querySelector('#level-name');
@@ -55,7 +56,12 @@ const platforms = [];
 const portals = [];
 const enemies = [];
 const collectibles = [];
+const finishGates = [];
 let collectedCount = 0;
+const DEFAULT_RUN_MESSAGE = 'TAP / CLICK / SPACE TO JUMP · P TO PAUSE';
+const PORTAL_ANNOUNCEMENT_SECONDS = 1.6;
+let finishChipLabel = '';
+let portalAnnouncementTime = 0;
 const completionKey = 'enrique-dash.completed-levels.v1';
 let completedLevelIds = readCompletedLevels();
 
@@ -281,6 +287,7 @@ function update(dt) {
   moveFeatureGroup(portals, dt, speed, removeMeshFeature);
   moveFeatureGroup(enemies, dt, speed, removeMeshFeature);
   moveFeatureGroup(collectibles, dt, speed, removeMeshFeature);
+  moveFeatureGroup(finishGates, dt, speed, removeMeshFeature);
   triggerPortals();
   const result = stepPlayerMotion({
     x: player.position.x,
@@ -329,6 +336,8 @@ function update(dt) {
   handleCollectibleCollisions();
 
   updateProgress(levelProgressPercent(distance, level.length));
+  updateFinishChip();
+  updatePortalAnnouncement(dt);
   if (distance >= level.length) finish();
 }
 
@@ -376,16 +385,20 @@ function removeMeshFeature(feature, index, group) {
 function disposeMesh(mesh) {
   if (!mesh || !scene) return;
   scene.remove(mesh);
+  const disposeMaterial = (material) => {
+    material.map?.dispose();
+    material.dispose();
+  };
   // Feature meshes may be groups (portals, shards, hover and island platforms).
   mesh.traverse?.((child) => {
     child.geometry?.dispose();
-    if (Array.isArray(child.material)) child.material.forEach((material) => material.dispose());
-    else child.material?.dispose();
+    if (Array.isArray(child.material)) child.material.forEach(disposeMaterial);
+    else if (child.material) disposeMaterial(child.material);
   });
   if (typeof mesh.traverse !== 'function') {
     mesh.geometry?.dispose();
-    if (Array.isArray(mesh.material)) mesh.material.forEach((material) => material.dispose());
-    else mesh.material?.dispose();
+    if (Array.isArray(mesh.material)) mesh.material.forEach(disposeMaterial);
+    else if (mesh.material) disposeMaterial(mesh.material);
   }
 }
 
@@ -395,29 +408,29 @@ function triggerPortals() {
     portal.triggered = true;
     portal.mesh.visible = false;
     const effects = player.userData.effects;
+    // One announcement per portal: the entry is shared by the label, the HUD and the live region.
+    const copy = portalLabel(portal.type);
+    message.textContent = copy.announcement;
+    gameStatus.textContent = copy.announcement;
+    portalAnnouncementTime = PORTAL_ANNOUNCEMENT_SECONDS;
     switch (portal.type) {
       case 'spring':
         player.userData.vy = Math.max(player.userData.vy, portalEffects.spring.jumpVelocity);
         player.userData.grounded = false;
         player.userData.coyoteTimer = 0;
         player.userData.jumpBufferTimer = 0;
-        message.textContent = 'SPRING PORTAL';
         break;
       case 'dash':
         effects.dashTimer = portalEffects.dash.duration;
-        message.textContent = 'DASH BOOST';
         break;
       case 'float':
         effects.gravityTimer = portalEffects.float.duration;
-        message.textContent = 'LOW GRAVITY';
         break;
       case 'shield':
         effects.shieldCharges = portalEffects.shield.shieldCharges;
-        message.textContent = 'SHIELD READY';
         break;
       case 'phase':
         effects.phaseTimer = portalEffects.phase.duration;
-        message.textContent = 'PHASE ON';
         break;
       default:
         console.warn(`Unknown portal type: ${portal.type}`);
@@ -479,6 +492,28 @@ function updateProgress(percent) {
   }
 }
 
+// The chip is decorative feedback for a sighted player: the live region already announces the
+// finish, so it stays out of the accessibility tree and only touches the DOM when its text changes.
+function updateFinishChip() {
+  const remaining = level.length - distance;
+  if (remaining > 30) {
+    if (!finishChip.hidden) finishChip.hidden = true;
+    finishChipLabel = '';
+    return;
+  }
+  const label = remaining < 3 ? '⚑ FINISH!' : `⚑ FINISH ${Math.ceil(remaining)}`;
+  if (finishChip.hidden) finishChip.hidden = false;
+  if (label === finishChipLabel) return;
+  finishChipLabel = label;
+  finishChip.textContent = label;
+}
+
+function updatePortalAnnouncement(dt) {
+  if (portalAnnouncementTime <= 0) return;
+  portalAnnouncementTime = Math.max(0, portalAnnouncementTime - dt);
+  if (portalAnnouncementTime === 0) message.textContent = DEFAULT_RUN_MESSAGE;
+}
+
 
 function spawnObstacles() {
   const profile = getHazardProfile(level.hazardStyle);
@@ -533,6 +568,104 @@ function spawnObstacles() {
       obstacles.push({ mesh, center, width: profile.width, clearanceHeight: profile.clearanceHeight });
     }
   }
+}
+
+function createPortalLabelSprite(type, color) {
+  const copy = portalLabel(type);
+  const canvas = document.createElement('canvas');
+  canvas.width = 768;
+  canvas.height = 236;
+  const context = canvas.getContext('2d');
+  const inset = 12;
+  const radius = 34;
+  const left = inset;
+  const top = inset;
+  const width = canvas.width - inset * 2;
+  const height = canvas.height - inset * 2;
+  // Soft, dark backing keeps the two text lines readable over any course scenery.
+  context.save();
+  context.shadowColor = 'rgba(0,0,0,.6)';
+  context.shadowBlur = 20;
+  context.fillStyle = 'rgba(7,11,22,.82)';
+  context.beginPath();
+  context.roundRect(left, top, width, height, radius);
+  context.fill();
+  context.restore();
+  context.lineWidth = 3;
+  context.strokeStyle = 'rgba(255,255,255,.16)';
+  context.beginPath();
+  context.roundRect(left, top, width, height, radius);
+  context.stroke();
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.fillStyle = `#${color.toString(16).padStart(6, '0')}`;
+  context.font = '800 130px "Barlow Condensed", "Arial Narrow", sans-serif';
+  context.fillText(copy.name, canvas.width / 2, 78);
+  context.fillStyle = '#ffffff';
+  context.font = '700 80px "DM Sans", "Helvetica Neue", Arial, sans-serif';
+  context.fillText(copy.effect, canvas.width / 2, 182);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.anisotropy = Math.min(4, renderer?.capabilities?.getMaxAnisotropy?.() ?? 1);
+  const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false, toneMapped: false });
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(3.6, 1.1, 1);
+  return sprite;
+}
+
+function spawnFinishGate() {
+  const gateWidth = 4.2;
+  const pillarWidth = .35;
+  const pillarHeight = 2.6;
+  const group = new THREE.Group();
+  group.position.set(finishGateDistance(level) - 3, laneY, 0);
+  const whiteMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: .2, roughness: .42 });
+  const trimMaterial = new THREE.MeshStandardMaterial({
+    color: 0xc8ff52,
+    emissive: 0xc8ff52,
+    emissiveIntensity: .85,
+    metalness: .1,
+    roughness: .35,
+  });
+  const darkMaterial = new THREE.MeshStandardMaterial({ color: 0x141a2a, metalness: .15, roughness: .6 });
+  const stripMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const stripDarkMaterial = new THREE.MeshBasicMaterial({ color: 0x0a0f1c });
+  for (const side of [-1, 1]) {
+    const pillar = new THREE.Mesh(new THREE.BoxGeometry(pillarWidth, pillarHeight, .35), whiteMaterial);
+    pillar.position.set(side * (gateWidth / 2 - pillarWidth / 2), pillarHeight / 2, 0);
+    const trim = new THREE.Mesh(new THREE.BoxGeometry(.06, pillarHeight - .3, .38), trimMaterial);
+    trim.position.set(side * (gateWidth / 2 - pillarWidth), pillarHeight / 2, 0);
+    group.add(pillar, trim);
+  }
+  const beam = new THREE.Mesh(new THREE.BoxGeometry(gateWidth, .22, .35), whiteMaterial);
+  beam.position.y = pillarHeight - .11;
+  const beamTrim = new THREE.Mesh(new THREE.BoxGeometry(gateWidth, .05, .38), trimMaterial);
+  beamTrim.position.y = pillarHeight - .24;
+  group.add(beam, beamTrim);
+  const bannerSegments = 7;
+  const segmentWidth = gateWidth / bannerSegments;
+  for (let index = 0; index < bannerSegments; index++) {
+    const segment = new THREE.Mesh(
+      new THREE.BoxGeometry(segmentWidth - .01, .38, .08),
+      index % 2 === 0 ? whiteMaterial : darkMaterial,
+    );
+    segment.position.set(-gateWidth / 2 + segmentWidth * (index + .5), 2.19, .06);
+    group.add(segment);
+  }
+  const laneSegments = 4;
+  const laneSegmentWidth = gateWidth / laneSegments;
+  for (let index = 0; index < laneSegments; index++) {
+    const segment = new THREE.Mesh(
+      new THREE.BoxGeometry(laneSegmentWidth - .01, .035, 1.7),
+      index % 2 === 0 ? stripMaterial : stripDarkMaterial,
+    );
+    segment.position.set(-gateWidth / 2 + laneSegmentWidth * (index + .5), .035, 0);
+    group.add(segment);
+  }
+  scene.add(group);
+  finishGates.push({ center: group.position.x, width: gateWidth, mesh: group });
 }
 
 function spawnCourseFeatures() {
@@ -625,7 +758,9 @@ function spawnCourseFeatures() {
       new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: .65, metalness: .15, roughness: .4 }),
     );
     strip.position.y = .06;
-    group.add(ring, disc, strip);
+    const label = createPortalLabelSprite(definition.type, color);
+    label.position.set(0, 2.4, .04);
+    group.add(ring, disc, strip, label);
     scene.add(group);
     portals.push({ center, type: definition.type, triggered: false, mesh: group, spin: ring });
   }
@@ -670,6 +805,7 @@ function spawnCourseFeatures() {
     scene.add(group);
     collectibles.push({ center, height, mesh: group });
   }
+  spawnFinishGate();
   updateCollectibleHud();
 }
 
@@ -829,9 +965,8 @@ async function start() {
   overlay.hidden = true;
   stage.focus({ preventScroll: true });
   gameStatus.textContent = resuming ? 'Game resumed.' : `${level.name} started.`;
-  message.textContent = 'TAP / CLICK / SPACE TO JUMP · P TO PAUSE';
-  playButton.innerHTML = '<span class="play-icon" aria-hidden="true">↻</span> RESTART LEVEL';
-  if (initializeCourse) {
+  message.textContent = DEFAULT_RUN_MESSAGE;
+  playButton.innerHTML = '<span class="play-icon" aria-hidden="true">↻</span> RESTART LEVEL';  if (initializeCourse) {
     spawnObstacles();
     spawnCourseFeatures();
   }
@@ -949,8 +1084,12 @@ function reset() {
   while (portals.length) removeMeshFeature(portals[portals.length - 1], portals.length - 1, portals);
   while (enemies.length) removeMeshFeature(enemies[enemies.length - 1], enemies.length - 1, enemies);
   while (collectibles.length) removeMeshFeature(collectibles[collectibles.length - 1], collectibles.length - 1, collectibles);
+  while (finishGates.length) removeMeshFeature(finishGates[finishGates.length - 1], finishGates.length - 1, finishGates);
   collectedCount = 0;
   updateCollectibleHud();
+  if (finishChip) finishChip.hidden = true;
+  finishChipLabel = '';
+  portalAnnouncementTime = 0;
   attemptDisplay.textContent = '01';
   updateProgress(0);
   message.textContent = 'TAP / CLICK / SPACE TO JUMP';
@@ -1100,6 +1239,7 @@ if (import.meta.env.DEV) {
       portals: portals.length,
       enemies: enemies.length,
       collectibles: collectibles.length,
+      finishGates: finishGates.length,
     },
     playerY: player?.position.y ?? null,
     verticalVelocity: player?.userData.vy ?? null,

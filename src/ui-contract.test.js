@@ -43,6 +43,26 @@ test('the course legend names all four gameplay roles', () => {
   assert.match(styles, /\.game-legend\s*\{[^}]*font-size:\s*9px/);
 });
 
+test('the HUD keeps a hidden finish chip until the course is close', () => {
+  const chip = html.match(/<div[^>]*id="finish-chip"[^>]*>/)?.[0] ?? '';
+  assert.notEqual(chip, '');
+  assert.match(chip, /\bhidden\b/);
+  assert.match(chip, /aria-hidden="true"/);
+  const hudStart = html.indexOf('<div class="game-hud">');
+  const canvasStart = html.indexOf('<div id="game-canvas"');
+  const chipStart = html.indexOf('id="finish-chip"');
+  assert.ok(hudStart !== -1 && chipStart > hudStart && chipStart < canvasStart, 'the finish chip belongs inside the game HUD');
+  assert.match(styles, /\.finish-chip\[hidden\]\s*\{[^}]*display:\s*none/);
+  assert.match(styles, /\.finish-chip\s*\{[^}]*position:\s*absolute[^}]*font-size:\s*10px/);
+});
+
+test('power-up labels come from the shared copy and announce on activation', async () => {
+  const main = await readFile(new URL('./main.js', import.meta.url), 'utf8');
+  assert.match(main, /portalLabel\(/);
+  assert.match(main, /message\.textContent\s*=\s*copy\.announcement/);
+  assert.match(main, /gameStatus\.textContent\s*=\s*copy\.announcement/);
+});
+
 test('starting a run never consumes a jump', async () => {
   const main = await readFile(new URL('./main.js', import.meta.url), 'utf8');
   // The tap that starts or restarts a run must only start it. Applying it as a jump dropped the

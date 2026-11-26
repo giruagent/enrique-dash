@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getLevel, levelValidationError, levels, validateLevels } from './levels.js';
-import { jumpTuning, motionTuning, platformTuning } from './game-logic.js';
+import { finishGateDistance, jumpTuning, motionTuning, platformTuning } from './game-logic.js';
 import { playLevel } from '../tools/auto-player.mjs';
 import { analyzeLevel } from '../tools/level-report.mjs';
 import { beatWindows, courseSpeedTimeline, jumpHeightAt, jumpReach } from '../tools/level-physics.mjs';
@@ -22,6 +22,16 @@ test('each course has validated rhythm, length, and obstacle groups', () => {
   for (const level of levels) {
     assert.ok(level.obstacles.length >= 3, `${level.name} needs a playable hazard rhythm`);
     assert.ok(level.music.motif.length === 16, `${level.name} needs a one-bar motif`);
+  }
+});
+
+test('every course ends at the finish gate after its last beat', () => {
+  for (const level of levels) {
+    const gate = finishGateDistance(level);
+    assert.equal(gate, level.length, `${level.id} finish gate drifted from the course length`);
+    for (const beat of beatWindows(level)) {
+      assert.ok(gate > beat.end, `${level.id} ${beat.id} ends at ${beat.end}, at or past the gate ${gate}`);
+    }
   }
 });
 
