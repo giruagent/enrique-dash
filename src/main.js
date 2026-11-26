@@ -2,7 +2,7 @@ let THREE;
 import packageInfo from '../package.json';
 import { getLevel, levelValidationError, levels } from './levels.js';
 import { createLossCue, playOneShot, primeOneShot, stopOneShot } from './audio-cues.js';
-import { activeEffects, canConsumeJumpBuffer, courseMedal, effectCopy, emptyProgress, finishGateDistance, getHazardProfile, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeRunProgress, parseProgress, portalEffects, portalLabel, shouldAcceptJumpInput, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy, stepPlayerMotion } from './game-logic.js';
+import { activeEffects, canConsumeJumpBuffer, courseMedal, effectCopy, emptyProgress, finishGateDistance, getHazardProfile, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeRunProgress, parseProgress, portalEffects, portalLabel, safeCheckpointDistance, shouldAcceptJumpInput, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy, stepPlayerMotion } from './game-logic.js';
 import { MusicEngine } from './music.js';
 import './style.css';
 
@@ -50,6 +50,7 @@ let sceneStarted = false;
 let scenePromise = null;
 let floor, floorMaterial, trackEdgeMaterial, sceneryGroup;
 let running = false, started = false, dead = false, completed = false, distance = 0, runBestDistance = 0, attempt = 1;
+let checkpointDistance = null, checkpointPassed = false, attemptStart = 0;
 let simulationTime = 0, graphicsUnavailable = false;
 let musicEnabled = true, pseudoFullscreen = false, activeAnimation = '', animationTime = 0;
 const obstacles = [];
@@ -59,6 +60,7 @@ const portals = [];
 const enemies = [];
 const collectibles = [];
 const finishGates = [];
+const checkpointFlags = [];
 let collectedCount = 0;
 const DEFAULT_RUN_MESSAGE = 'TAP / CLICK / SPACE TO JUMP · P TO PAUSE';
 const PORTAL_ANNOUNCEMENT_SECONDS = 1.6;
@@ -94,6 +96,7 @@ function readProgress() {
         best: Math.max(current.best, entry.best ?? 0),
         shards: Math.max(current.shards, entry.shards ?? 0),
         cleared: current.cleared || entry.cleared,
+        ...(current.noCheckpoint === true || entry.noCheckpoint === true ? { noCheckpoint: true } : {}),
       }
       : entry;
   }
@@ -331,7 +334,9 @@ function update(dt) {
   moveFeatureGroup(enemies, dt, speed, removeMeshFeature);
   moveFeatureGroup(collectibles, dt, speed, removeMeshFeature);
   moveFeatureGroup(finishGates, dt, speed, removeMeshFeature);
+  moveFeatureGroup(checkpointFlags, dt, speed, removeMeshFeature);
   triggerPortals();
+  updateCheckpoint();
   const result = stepPlayerMotion({
     x: player.position.x,
     y: player.position.y,
@@ -445,6 +450,16 @@ function disposeMesh(mesh) {
     if (Array.isArray(mesh.material)) mesh.material.forEach(disposeMaterial);
     else if (mesh.material) disposeMaterial(mesh.material);
   }
+}
+
+// A passed checkpoint is a one-way door for the rest of the level: it never un-passes on a
+// retry, and a manual restart clears it in reset(). The run keeps moving on the same frame.
+function updateCheckpoint() {
+  if (checkpointPassed || checkpointDistance === null) return;
+  if (distance < checkpointDistance) return;
+  checkpointPassed = true;
+  message.textContent = 'Checkpoint.';
+  gameStatus.textContent = 'Checkpoint.';
 }
 
 function triggerPortals() {
@@ -808,6 +823,42 @@ function spawnFinishGate() {
   finishGates.push({ center: group.position.x, width: gateWidth, mesh: group });
 }
 
+function spawnCheckpointFlag(distanceAlongTrack) {
+  const near = 0x52eaff;
+  const group = new THREE.Group();
+  group.position.set(distanceAlongTrack - 3, laneY, 0);
+  const whiteMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: .2, roughness: .4 });
+  const cyanMaterial = new THREE.MeshStandardMaterial({
+    color: near,
+    emissive: near,
+    emissiveIntensity: .75,
+    metalness: .1,
+    roughness: .35,
+    side: THREE.DoubleSide,
+  });
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(.045, .055, 2.2, 8), whiteMaterial);
+  pole.position.y = 1.1;
+  group.add(pole);
+  // Two cyan triangles share the pole edge and the tip, forming a pennant.
+  const triangle = (points) => {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
+    geometry.computeVertexNormals();
+    return new THREE.Mesh(geometry, cyanMaterial);
+  };
+  const upper = triangle([0, 2.2, .02, .95, 1.95, .02, 0, 1.72, .02]);
+  const lower = triangle([0, 1.72, .02, .95, 1.95, .02, 0, 1.44, .02]);
+  group.add(upper, lower);
+  const strip = new THREE.Mesh(
+    new THREE.BoxGeometry(2, .035, 1.5),
+    new THREE.MeshBasicMaterial({ color: near }),
+  );
+  strip.position.y = .035;
+  group.add(strip);
+  scene.add(group);
+  checkpointFlags.push({ center: group.position.x, width: 2, height: 2.2, mesh: group });
+}
+
 function spawnCourseFeatures() {
   for (const definition of level.gaps ?? []) {
     const center = definition.at - 3 + definition.width / 2;
@@ -946,9 +997,51 @@ function spawnCourseFeatures() {
     collectibles.push({ center, height, mesh: group });
   }
   spawnFinishGate();
+  checkpointDistance = safeCheckpointDistance(level);
+  if (checkpointDistance !== null) spawnCheckpointFlag(checkpointDistance);
   updateCollectibleHud();
 }
 
+// Rebuild the world for a retry that starts at the checkpoint: every feature is shifted back
+// by the resumed distance, anything at or behind the player is removed, and the runner is put
+// back on the lane with a clean effect state. The finish gate keeps triggering at level.length
+// because distance starts at attemptStart and advances from there.
+function resumeCourseFromCheckpoint() {
+  const shift = attemptStart;
+  if (!(shift > 0)) return;
+  const drop = (feature, index, group) => {
+    if (group === obstacles) removeObstacle(feature, index);
+    else if (group === gaps) removeGap(feature, index);
+    else removeMeshFeature(feature, index, group);
+  };
+  const shiftGroup = (group) => {
+    for (let index = group.length - 1; index >= 0; index--) {
+      const feature = group[index];
+      feature.mesh.position.x -= shift;
+      feature.center = feature.mesh.position.x;
+      if (feature.decorations) {
+        for (const decoration of feature.decorations) decoration.position.x = feature.center;
+      }
+      if (feature.center <= player.position.x + 1e-6) drop(feature, index, group);
+    }
+  };
+  for (const group of [obstacles, gaps, platforms, portals, enemies, collectibles, finishGates, checkpointFlags]) {
+    shiftGroup(group);
+  }
+  distance = shift;
+  runBestDistance = shift;
+  updateProgress(levelProgressPercent(distance, level.length));
+  updateFinishChip();
+  player.position.set(-3, laneY, 0);
+  player.userData.vy = 0;
+  player.userData.grounded = true;
+  player.userData.coyoteTimer = 0;
+  player.userData.jumpBufferTimer = 0;
+  player.userData.supportY = laneY;
+  player.userData.effects = { dashTimer: 0, gravityTimer: 0, shieldCharges: 0, phaseTimer: 0 };
+  updateEffectHud(0);
+  updateEffectVisuals();
+}
 
 function renderScenery() {
   if (!sceneryGroup) return;
@@ -1089,7 +1182,7 @@ async function start() {
   if (graphicsUnavailable) return false;
   if (running) return true;
   const resuming = isGamePaused({ started, running, dead, completed });
-  if (dead || completed) reset();
+  if (dead || completed) reset({ keepAttempt: true });
   primeOneShot(lossCue);
   if (musicEnabled) musicEngine.start(level.music).catch((error) => console.warn('Music could not start.', error));
   const ready = await ensureScene();
@@ -1106,9 +1199,11 @@ async function start() {
   stage.focus({ preventScroll: true });
   gameStatus.textContent = resuming ? 'Game resumed.' : `${level.name} started.`;
   message.textContent = DEFAULT_RUN_MESSAGE;
-  playButton.innerHTML = '<span class="play-icon" aria-hidden="true">↻</span> RESTART LEVEL';  if (initializeCourse) {
+  playButton.innerHTML = '<span class="play-icon" aria-hidden="true">↻</span> RESTART LEVEL';
+  if (initializeCourse) {
     spawnObstacles();
     spawnCourseFeatures();
+    if (attemptStart > 0) resumeCourseFromCheckpoint();
   }
   // A tap that starts a run must never be spent as a jump: with the composed courses an
   // unavoidable jump at distance 0 lands the player straight into the first gap.
@@ -1159,7 +1254,7 @@ function consumeBufferedJump() {
 
 function jump() {
   if (graphicsUnavailable) return;
-  if (dead || completed) reset();
+  if (dead || completed) reset({ keepAttempt: true });
   if (!sceneStarted || !running) {
     void start();
     return;
@@ -1173,10 +1268,13 @@ function crash(reason = 'Tap or press Space to try this level again.') {
   dead = true;
   attempt++;
   attemptDisplay.textContent = String(attempt).padStart(2, '0');
+  attemptStart = checkpointPassed && checkpointDistance !== null ? checkpointDistance : 0;
   recordRunEnd(false);
-  showOverlay('One more try.', reason);
-  message.textContent = 'RUN ENDED — TRY AGAIN';
-  gameStatus.textContent = `Run ended. ${reason}`;
+  const fromCheckpoint = attemptStart > 0;
+  const overlayReason = fromCheckpoint ? 'One more try — from the checkpoint.' : reason;
+  showOverlay('One more try.', overlayReason);
+  message.textContent = fromCheckpoint ? 'RUN ENDED — RETRY FROM THE CHECKPOINT' : 'RUN ENDED — TRY AGAIN';
+  gameStatus.textContent = fromCheckpoint ? `Run ended. ${overlayReason}` : `Run ended. ${reason}`;
   syncPauseButton();
   void playOneShot(lossCue);
   void musicEngine.stop();
@@ -1198,7 +1296,10 @@ function finish() {
   void musicEngine.stop();
 }
 
-function reset() {
+// A retry after a crash keeps the pending attempt start (and the passed flag) so it can
+// rebuild at the checkpoint; selecting a course, or pressing the Play button, clears both and
+// always starts from zero.
+function reset({ keepAttempt = false } = {}) {
   stopRenderLoop();
   stopOneShot(lossCue);
   gameWrap.classList.remove('is-paused');
@@ -1211,6 +1312,11 @@ function reset() {
   runBestDistance = 0;
   runRecorded = false;
   attempt = 1;
+  if (!keepAttempt) {
+    attemptStart = 0;
+    checkpointPassed = false;
+  }
+  checkpointDistance = null;
   if (player) {
     player.position.set(-3, laneY, 0);
     player.userData.vy = 0;
@@ -1229,6 +1335,7 @@ function reset() {
   while (enemies.length) removeMeshFeature(enemies[enemies.length - 1], enemies.length - 1, enemies);
   while (collectibles.length) removeMeshFeature(collectibles[collectibles.length - 1], collectibles.length - 1, collectibles);
   while (finishGates.length) removeMeshFeature(finishGates[finishGates.length - 1], finishGates.length - 1, finishGates);
+  while (checkpointFlags.length) removeMeshFeature(checkpointFlags[checkpointFlags.length - 1], checkpointFlags.length - 1, checkpointFlags);
   collectedCount = 0;
   updateCollectibleHud();
   if (finishChip) finishChip.hidden = true;
@@ -1255,6 +1362,7 @@ function recordRunEnd(cleared) {
     reached,
     shards: collectedCount,
     cleared,
+    usedCheckpoint: attemptStart > 0,
   });
   const clearedIds = Object.entries(progress.courses)
     .filter(([id, entry]) => entry.cleared && levels.some((item) => item.id === id))
@@ -1445,7 +1553,24 @@ if (import.meta.env.DEV) {
       enemies: enemies.length,
       collectibles: collectibles.length,
       finishGates: finishGates.length,
+      checkpointFlags: checkpointFlags.length,
     },
+    checkpoint: {
+      distance: checkpointDistance,
+      passed: checkpointPassed,
+      attemptStart,
+    },
+    featureCenters: {
+      obstacles: obstacles.map(({ center }) => center),
+      gaps: gaps.map(({ center, width }) => ({ center, width })),
+      platforms: platforms.map(({ center, width }) => ({ center, width })),
+      portals: portals.map(({ center }) => center),
+      enemies: enemies.map(({ center }) => center),
+      collectibles: collectibles.map(({ center }) => center),
+      finishGates: finishGates.map(({ center }) => center),
+      checkpointFlags: checkpointFlags.map(({ center }) => center),
+    },
+    playerX: player?.position.x ?? null,
     playerY: player?.position.y ?? null,
     verticalVelocity: player?.userData.vy ?? null,
     jumpBufferTimer: player?.userData.jumpBufferTimer ?? null,

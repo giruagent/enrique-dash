@@ -1,3 +1,5 @@
+import { beatWindows, jumpApexHeight } from '../tools/level-physics.mjs';
+
 export function isObstacleCollision(playerX, obstacleX, jumpHeight, options = {}) {
   const { horizontalRadius = .72, clearanceHeight = .95, verticalForgiveness = 0 } = options;
   const effectiveClearance = Math.max(0, clearanceHeight - verticalForgiveness);
@@ -52,12 +54,16 @@ export function parseProgress(raw) {
         shards: clampShards(entry.shards),
         cleared: entry.cleared === true,
       };
+      // Gold is earned once and never taken away; keep the flag only when it is set so old
+      // saves (and the existing shape) stay byte-for-byte compatible.
+      if (entry.noCheckpoint === true) courses[id].noCheckpoint = true;
     }
   }
   return { version: PROGRESS_VERSION, courses };
 }
 
-// Runs only get better: the best distance, the shard count and the clear flag never regress.
+// Runs only get better: the best distance, the shard count, the clear flag and the gold flag
+// never regress. A clear that did not touch the checkpoint earns gold for good.
 export function mergeRunProgress(progress, levelId, run = {}) {
   const source = progress && typeof progress === 'object' && progress.courses && typeof progress.courses === 'object'
     ? progress.courses
@@ -68,6 +74,9 @@ export function mergeRunProgress(progress, levelId, run = {}) {
     shards: Math.max(clampShards(current.shards), clampShards(run.shards)),
     cleared: current.cleared === true || run.cleared === true,
   };
+  if (current.noCheckpoint === true || (entry.cleared && run.usedCheckpoint !== true)) {
+    entry.noCheckpoint = true;
+  }
   return {
     ...(progress && typeof progress === 'object' ? progress : {}),
     version: PROGRESS_VERSION,
@@ -75,8 +84,11 @@ export function mergeRunProgress(progress, levelId, run = {}) {
   };
 }
 
+// Gold beats silver, silver beats bronze. A course without a checkpoint still earns gold: a
+// clear never used one.
 export function courseMedal(entry, level) {
   if (!entry || entry.cleared !== true) return null;
+  if (entry.noCheckpoint === true) return 'gold';
   const totalShards = Array.isArray(level?.collectibles) ? level.collectibles.length : 0;
   if (totalShards > 0 && clampShards(entry.shards) >= totalShards) return 'silver';
   return 'bronze';
@@ -86,6 +98,55 @@ export function courseMedal(entry, level) {
 // player reaches it exactly when `distance` reaches `level.length`.
 export function finishGateDistance(level) {
   return level.length;
+}
+
+export const checkpointTuning = Object.freeze({
+  minimumLength: 120,
+  windowStart: .30,
+  windowEnd: .70,
+  // Clear track measured in TIME, not distance: what matters after a respawn is how long the
+  // player has before the next beat, and how far behind the previous one. A distance measured
+  // in jump reaches made the pocket unusably wide and every long course fell back to null.
+  beforeSeconds: .75,
+  behindSeconds: .35,
+});
+
+
+// Deterministic: scan outwards from the midpoint in half-unit steps and take the first clear
+// distance inside the authored window. Returns null when the course has no room for a flag.
+export function safeCheckpointDistance(level) {
+  const length = level?.length;
+  if (!Number.isFinite(length) || length < checkpointTuning.minimumLength) return null;
+  const midpoint = length / 2;
+  const earliest = length * checkpointTuning.windowStart;
+  const latest = length * checkpointTuning.windowEnd;
+  const speed = Number.isFinite(level.speed) && level.speed > 0 ? level.speed : 9;
+  const ahead = checkpointTuning.beforeSeconds * speed;
+  const behind = checkpointTuning.behindSeconds * speed;
+  const beats = beatWindows(level).filter(({ kind }) => kind === 'hazard' || kind === 'gap' || kind === 'enemy');
+  const gaps = Array.isArray(level.gaps) ? level.gaps : [];
+  const portals = Array.isArray(level.portals) ? level.portals : [];
+  // A feature ahead of the flag needs the full reaction window before it; a feature behind only
+  // needs enough room that the player does not respawn on top of it.
+  const isClear = (distance) => {
+    if (distance < earliest || distance > latest) return false;
+    const clearOfSpan = (start, end) => {
+      if (distance > start - ahead && distance < end + behind) return false;
+      return true;
+    };
+    if (beats.some(({ start, end }) => !clearOfSpan(start, end))) return false;
+    if (gaps.some(({ at, width }) => !clearOfSpan(at, at + width))) return false;
+    if (portals.some(({ at }) => !clearOfSpan(at, at))) return false;
+    return true;
+  };
+  const radius = Math.max(midpoint - earliest, latest - midpoint);
+  for (let offset = 0; offset <= radius + 1e-9; offset += .5) {
+    const candidates = offset === 0 ? [midpoint] : [midpoint - offset, midpoint + offset];
+    for (const distance of candidates) {
+      if (isClear(distance)) return distance;
+    }
+  }
+  return null;
 }
 
 export const platformTuning = Object.freeze({ maxStepHeight: .6, landingTolerance: .08 });

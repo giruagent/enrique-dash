@@ -113,3 +113,11 @@ test('the active effect ring and shield halo use the authored geometry', async (
   assert.match(main, /effectCopy\.shield\.color/);
   assert.match(main, /reducedMotion \? 0 : Math\.sin\(simulationTime/);
 });
+
+test('long courses use safeCheckpointDistance and resume attempts from the checkpoint', async () => {
+  const main = await readFile(new URL('./main.js', import.meta.url), 'utf8');
+  assert.match(main, /safeCheckpointDistance\(/);
+  assert.match(main, /attemptStart/);
+  assert.match(main, /One more try — from the checkpoint\./);
+  assert.match(main, /checkpointPassed/);
+});

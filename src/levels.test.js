@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getLevel, levelValidationError, levels, validateLevels } from './levels.js';
-import { finishGateDistance, jumpTuning, motionTuning, platformTuning } from './game-logic.js';
+import { finishGateDistance, jumpTuning, motionTuning, platformTuning, safeCheckpointDistance } from './game-logic.js';
 import { playLevel } from '../tools/auto-player.mjs';
 import { analyzeLevel } from '../tools/level-report.mjs';
 import { beatWindows, courseSpeedTimeline, jumpHeightAt, jumpReach } from '../tools/level-physics.mjs';
@@ -35,8 +35,15 @@ test('every course ends at the finish gate after its last beat', () => {
   }
 });
 
-test('course lengths rise gradually to a maximum of 150 track units', () => {
-  for (let index = 1; index < levels.length; index++) {
+test('every course of 120 units or more has a checkpoint and no shorter course gets one', () => {
+  for (const level of levels) {
+    const checkpoint = safeCheckpointDistance(level);
+    if (level.length >= 120) assert.ok(Number.isFinite(checkpoint), `${level.id} has no checkpoint`);
+    else assert.equal(checkpoint, null, `${level.id} is too short for a checkpoint`);
+  }
+});
+
+test('course lengths rise gradually to a maximum of 150 track units', () => {  for (let index = 1; index < levels.length; index++) {
     assert.ok(levels[index].length > levels[index - 1].length, `${levels[index].name} should be longer than the previous course`);
   }
   assert.ok(levels.at(-1).length <= 150);
