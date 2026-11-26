@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { canConsumeJumpBuffer, findStepSurface, getHazardProfile, getTrackSupportHeight, integrateVerticalMotion, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, portalEffects, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldSpawnCourseFeatures, shouldStompEnemy } from './game-logic.js';
+import { canConsumeJumpBuffer, findStepSurface, getHazardProfile, getTrackSupportHeight, integrateVerticalMotion, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, portalEffects, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy } from './game-logic.js';
 
 function sourceFiles(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => (
@@ -147,6 +147,32 @@ test('an initialized course is not spawned again when a run resumes', () => {
 test('keyboard jump ignores repeated keydown events', () => {
   assert.equal(shouldAcceptJumpInput(false), true);
   assert.equal(shouldAcceptJumpInput(true), false);
+});
+
+test('gameplay keys are ignored before a run when the game is unfocused', () => {
+  for (const code of ['Space', 'ArrowUp', 'KeyW']) {
+    assert.equal(shouldHandleGameplayKey({ code, repeat: false, running: false, gameFocused: false, interactiveTarget: false }), false);
+  }
+});
+
+test('gameplay keys are handled during a run without game focus', () => {
+  assert.equal(shouldHandleGameplayKey({ code: 'Space', repeat: false, running: true, gameFocused: false, interactiveTarget: false }), true);
+});
+
+test('gameplay keys are handled while paused when the game has focus', () => {
+  assert.equal(shouldHandleGameplayKey({ code: 'ArrowUp', repeat: false, running: false, gameFocused: true, interactiveTarget: false }), true);
+});
+
+test('gameplay keys are ignored for interactive targets', () => {
+  assert.equal(shouldHandleGameplayKey({ code: 'KeyW', repeat: false, running: true, gameFocused: true, interactiveTarget: true }), false);
+});
+
+test('unrelated keys are not handled as gameplay input', () => {
+  assert.equal(shouldHandleGameplayKey({ code: 'KeyM', repeat: false, running: true, gameFocused: true, interactiveTarget: false }), false);
+});
+
+test('repeated gameplay keydown events still pass the gameplay key guard', () => {
+  assert.equal(shouldHandleGameplayKey({ code: 'Space', repeat: true, running: true, gameFocused: false, interactiveTarget: false }), true);
 });
 
 test('jump intent received during deferred scene initialization is retained', () => {
