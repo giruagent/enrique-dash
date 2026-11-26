@@ -152,7 +152,7 @@ async function loadCharacter() {
     const base = import.meta.env.BASE_URL;
     const [mappingResponse, texture] = await Promise.all([
       fetch(`${base}character/sprite_map.json`),
-      new THREE.TextureLoader().loadAsync(`${base}character/atlas_all.png`),
+      new THREE.TextureLoader().loadAsync(`${base}character/atlas_game.webp`),
     ]);
     if (!mappingResponse.ok) throw new Error(`Sprite map returned ${mappingResponse.status}`);
     spriteMap = await mappingResponse.json();
@@ -184,10 +184,10 @@ function playAnimation(name) {
 }
 
 function setSpriteFrame(frameId) {
-  const rect = spriteMap?.frames?.[frameId]?.rects?.['atlas_all.png'];
+  const rect = spriteMap?.frames?.[frameId]?.rects?.['atlas_game.webp'];
   if (!rect || !atlasTexture) return;
-  const width = spriteMap.atlas.all.width;
-  const height = spriteMap.atlas.all.height;
+  const width = spriteMap.atlas.game.width;
+  const height = spriteMap.atlas.game.height;
   atlasTexture.repeat.set(rect.w / width, rect.h / height);
   atlasTexture.offset.set(rect.x / width, 1 - (rect.y + rect.h) / height);
 }

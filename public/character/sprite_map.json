@@ -1,3099 +1,521 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "format": "enrique-platformer-characters/v1",
-  "character": "Enrique",
-  "description": "Sprites de un personaje de plataformas 2D basado en las fotografías proporcionadas",
-  "cell": {
-    "width": 256,
-    "height": 256,
-    "unit": "px",
-    "background": "transparent",
-    "channels": "RGBA"
-  },
-  "coordinate_system": {
-    "origin": "top-left",
-    "frame_indices_start_at": 0,
-    "rect_units": "pixels"
-  },
-  "atlas": {
-    "all": {
-      "file": "atlas_all.png",
-      "width": 2304,
-      "height": 2304,
-      "columns": 9,
-      "rows": 9,
-      "cell_width": 256,
-      "cell_height": 256,
-      "alpha": true
-    },
-    "main": {
-      "file": "atlas_main.png",
-      "width": 3328,
-      "height": 1024,
-      "columns": 13,
-      "rows": 4,
-      "cell_width": 256,
-      "cell_height": 256,
-      "alpha": true
-    },
-    "extra": {
-      "file": "atlas_extra.png",
-      "width": 2048,
-      "height": 1024,
-      "columns": 8,
-      "rows": 4,
-      "cell_width": 256,
-      "cell_height": 256,
-      "alpha": true
-    }
-  },
-  "total_animations": 26,
-  "total_frames": 81,
-  "animations": {
-    "idle": {
-      "name_es": "Reposo",
-      "frame_count": 4,
-      "fps": 5,
-      "loop": true,
-      "frames": [
-        "idle_00",
-        "idle_01",
-        "idle_02",
-        "idle_03"
-      ]
-    },
-    "walk": {
-      "name_es": "Caminar",
-      "frame_count": 8,
-      "fps": 10,
-      "loop": true,
-      "frames": [
-        "walk_00",
-        "walk_01",
-        "walk_02",
-        "walk_03",
-        "walk_04",
-        "walk_05",
-        "walk_06",
-        "walk_07"
-      ]
-    },
-    "run": {
-      "name_es": "Correr",
-      "frame_count": 8,
-      "fps": 12,
-      "loop": true,
-      "frames": [
-        "run_00",
-        "run_01",
-        "run_02",
-        "run_03",
-        "run_04",
-        "run_05",
-        "run_06",
-        "run_07"
-      ]
-    },
-    "turn": {
-      "name_es": "Girar",
-      "frame_count": 2,
-      "fps": 8,
-      "loop": false,
-      "frames": [
-        "turn_00",
-        "turn_01"
-      ]
-    },
-    "skid": {
-      "name_es": "Frenar",
-      "frame_count": 2,
-      "fps": 10,
-      "loop": false,
-      "frames": [
-        "skid_00",
-        "skid_01"
-      ]
-    },
-    "crouch": {
-      "name_es": "Agacharse",
-      "frame_count": 2,
-      "fps": 4,
-      "loop": false,
-      "frames": [
-        "crouch_00",
-        "crouch_01"
-      ]
-    },
-    "look_up": {
-      "name_es": "Mirar arriba",
-      "frame_count": 2,
-      "fps": 4,
-      "loop": false,
-      "frames": [
-        "look_up_00",
-        "look_up_01"
-      ]
-    },
-    "jump_start": {
-      "name_es": "Inicio de salto",
-      "frame_count": 2,
-      "fps": 10,
-      "loop": false,
-      "frames": [
-        "jump_start_00",
-        "jump_start_01"
-      ]
-    },
-    "jump_rise": {
-      "name_es": "Ascenso del salto",
-      "frame_count": 2,
-      "fps": 10,
-      "loop": false,
-      "frames": [
-        "jump_rise_00",
-        "jump_rise_01"
-      ]
-    },
-    "jump_apex": {
-      "name_es": "Punto más alto del salto",
-      "frame_count": 1,
-      "fps": 10,
-      "loop": false,
-      "frames": [
-        "jump_apex_00"
-      ]
-    },
-    "fall": {
-      "name_es": "Caída",
-      "frame_count": 2,
-      "fps": 10,
-      "loop": false,
-      "frames": [
-        "fall_00",
-        "fall_01"
-      ]
-    },
-    "land": {
-      "name_es": "Aterrizaje",
-      "frame_count": 2,
-      "fps": 10,
-      "loop": false,
-      "frames": [
-        "land_00",
-        "land_01"
-      ]
-    },
-    "wall_slide": {
-      "name_es": "Deslizarse por pared",
-      "frame_count": 2,
-      "fps": 8,
-      "loop": true,
-      "frames": [
-        "wall_slide_00",
-        "wall_slide_01"
-      ]
-    },
-    "hurt": {
-      "name_es": "Recibir daño",
-      "frame_count": 2,
-      "fps": 8,
-      "loop": false,
-      "frames": [
-        "hurt_00",
-        "hurt_01"
-      ]
-    },
-    "victory": {
-      "name_es": "Victoria",
-      "frame_count": 4,
-      "fps": 8,
-      "loop": false,
-      "frames": [
-        "victory_00",
-        "victory_01",
-        "victory_02",
-        "victory_03"
-      ]
-    },
-    "push": {
-      "name_es": "Empujar",
-      "frame_count": 4,
-      "fps": 8,
-      "loop": true,
-      "frames": [
-        "push_00",
-        "push_01",
-        "push_02",
-        "push_03"
-      ]
-    },
-    "ladder_climb": {
-      "name_es": "Escalar escalera",
-      "frame_count": 4,
-      "fps": 8,
-      "loop": true,
-      "frames": [
-        "ladder_climb_00",
-        "ladder_climb_01",
-        "ladder_climb_02",
-        "ladder_climb_03"
-      ]
-    },
-    "ladder_idle": {
-      "name_es": "Quieto en escalera",
-      "frame_count": 2,
-      "fps": 3,
-      "loop": true,
-      "frames": [
-        "ladder_idle_00",
-        "ladder_idle_01"
-      ]
-    },
-    "ledge_grab": {
-      "name_es": "Agarrar borde",
-      "frame_count": 2,
-      "fps": 4,
-      "loop": true,
-      "frames": [
-        "ledge_grab_00",
-        "ledge_grab_01"
-      ]
-    },
-    "ledge_climb": {
-      "name_es": "Subir al borde",
-      "frame_count": 4,
-      "fps": 8,
-      "loop": false,
-      "frames": [
-        "ledge_climb_00",
-        "ledge_climb_01",
-        "ledge_climb_02",
-        "ledge_climb_03"
-      ]
-    },
-    "attack": {
-      "name_es": "Golpe / ataque",
-      "frame_count": 4,
-      "fps": 12,
-      "loop": false,
-      "frames": [
-        "attack_00",
-        "attack_01",
-        "attack_02",
-        "attack_03"
-      ]
-    },
-    "interact": {
-      "name_es": "Interactuar / recoger",
-      "frame_count": 4,
-      "fps": 7,
-      "loop": false,
-      "frames": [
-        "interact_00",
-        "interact_01",
-        "interact_02",
-        "interact_03"
-      ]
-    },
-    "dash": {
-      "name_es": "Deslizamiento rápido / dash",
-      "frame_count": 4,
-      "fps": 12,
-      "loop": false,
-      "frames": [
-        "dash_00",
-        "dash_01",
-        "dash_02",
-        "dash_03"
-      ]
-    },
-    "wave": {
-      "name_es": "Saludar",
-      "frame_count": 2,
-      "fps": 4,
-      "loop": true,
-      "frames": [
-        "wave_00",
-        "wave_01"
-      ]
-    },
-    "sneak": {
-      "name_es": "Caminar de puntitas",
-      "frame_count": 4,
-      "fps": 7,
-      "loop": true,
-      "frames": [
-        "sneak_00",
-        "sneak_01",
-        "sneak_02",
-        "sneak_03"
-      ]
-    },
-    "sleep": {
-      "name_es": "Dormir / KO",
-      "frame_count": 2,
-      "fps": 2,
-      "loop": true,
-      "frames": [
-        "sleep_00",
-        "sleep_01"
-      ]
-    }
-  },
-  "frames": {
-    "idle_00": {
-      "action": "idle",
-      "frame_index": 0,
-      "image": "sprites/idle/idle_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 0,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 0,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 0,
-        "column": 0
-      },
-      "nontransparent_bounds": {
-        "x": 95,
-        "y": 37,
-        "w": 82,
-        "h": 193
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "idle_01": {
-      "action": "idle",
-      "frame_index": 1,
-      "image": "sprites/idle/idle_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 256,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 256,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 0,
-        "column": 1
-      },
-      "nontransparent_bounds": {
-        "x": 94,
-        "y": 37,
-        "w": 84,
-        "h": 193
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "idle_02": {
-      "action": "idle",
-      "frame_index": 2,
-      "image": "sprites/idle/idle_02.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 512,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 512,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 0,
-        "column": 2
-      },
-      "nontransparent_bounds": {
-        "x": 94,
-        "y": 39,
-        "w": 84,
-        "h": 191
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "idle_03": {
-      "action": "idle",
-      "frame_index": 3,
-      "image": "sprites/idle/idle_03.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 768,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 768,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 0,
-        "column": 3
-      },
-      "nontransparent_bounds": {
-        "x": 94,
-        "y": 37,
-        "w": 83,
-        "h": 193
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "walk_00": {
-      "action": "walk",
-      "frame_index": 0,
-      "image": "sprites/walk/walk_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1024,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 1024,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 0,
-        "column": 4
-      },
-      "nontransparent_bounds": {
-        "x": 85,
-        "y": 39,
-        "w": 92,
-        "h": 188
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "walk_01": {
-      "action": "walk",
-      "frame_index": 1,
-      "image": "sprites/walk/walk_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1280,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 1280,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 0,
-        "column": 5
-      },
-      "nontransparent_bounds": {
-        "x": 88,
-        "y": 39,
-        "w": 89,
-        "h": 188
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "walk_02": {
-      "action": "walk",
-      "frame_index": 2,
-      "image": "sprites/walk/walk_02.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1536,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 1536,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 0,
-        "column": 6
-      },
-      "nontransparent_bounds": {
-        "x": 90,
-        "y": 40,
-        "w": 86,
-        "h": 187
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "walk_03": {
-      "action": "walk",
-      "frame_index": 3,
-      "image": "sprites/walk/walk_03.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1792,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 1792,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 0,
-        "column": 7
-      },
-      "nontransparent_bounds": {
-        "x": 88,
-        "y": 40,
-        "w": 88,
-        "h": 187
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "walk_04": {
-      "action": "walk",
-      "frame_index": 4,
-      "image": "sprites/walk/walk_04.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 2048,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 2048,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 0,
-        "column": 8
-      },
-      "nontransparent_bounds": {
-        "x": 94,
-        "y": 40,
-        "w": 82,
-        "h": 188
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "walk_05": {
-      "action": "walk",
-      "frame_index": 5,
-      "image": "sprites/walk/walk_05.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 0,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 2304,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 0,
-        "column": 9
-      },
-      "nontransparent_bounds": {
-        "x": 81,
-        "y": 40,
-        "w": 95,
-        "h": 185
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "walk_06": {
-      "action": "walk",
-      "frame_index": 6,
-      "image": "sprites/walk/walk_06.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 256,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 2560,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 0,
-        "column": 10
-      },
-      "nontransparent_bounds": {
-        "x": 90,
-        "y": 40,
-        "w": 86,
-        "h": 185
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "walk_07": {
-      "action": "walk",
-      "frame_index": 7,
-      "image": "sprites/walk/walk_07.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 512,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 2816,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 0,
-        "column": 11
-      },
-      "nontransparent_bounds": {
-        "x": 94,
-        "y": 39,
-        "w": 82,
-        "h": 186
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "run_00": {
-      "action": "run",
-      "frame_index": 0,
-      "image": "sprites/run/run_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 768,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 3072,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 1,
-        "column": 0
-      },
-      "nontransparent_bounds": {
-        "x": 70,
-        "y": 41,
-        "w": 118,
-        "h": 178
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "run_01": {
-      "action": "run",
-      "frame_index": 1,
-      "image": "sprites/run/run_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1024,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 0,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 1,
-        "column": 1
-      },
-      "nontransparent_bounds": {
-        "x": 66,
-        "y": 43,
-        "w": 121,
-        "h": 175
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "run_02": {
-      "action": "run",
-      "frame_index": 2,
-      "image": "sprites/run/run_02.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1280,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 256,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 1,
-        "column": 2
-      },
-      "nontransparent_bounds": {
-        "x": 70,
-        "y": 44,
-        "w": 119,
-        "h": 170
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "run_03": {
-      "action": "run",
-      "frame_index": 3,
-      "image": "sprites/run/run_03.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1536,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 512,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 1,
-        "column": 3
-      },
-      "nontransparent_bounds": {
-        "x": 65,
-        "y": 42,
-        "w": 123,
-        "h": 157
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "run_04": {
-      "action": "run",
-      "frame_index": 4,
-      "image": "sprites/run/run_04.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1792,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 768,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 1,
-        "column": 4
-      },
-      "nontransparent_bounds": {
-        "x": 75,
-        "y": 42,
-        "w": 112,
-        "h": 174
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "run_05": {
-      "action": "run",
-      "frame_index": 5,
-      "image": "sprites/run/run_05.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 2048,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 1024,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 1,
-        "column": 5
-      },
-      "nontransparent_bounds": {
-        "x": 70,
-        "y": 44,
-        "w": 118,
-        "h": 173
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "run_06": {
-      "action": "run",
-      "frame_index": 6,
-      "image": "sprites/run/run_06.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 0,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 1280,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 1,
-        "column": 6
-      },
-      "nontransparent_bounds": {
-        "x": 83,
-        "y": 43,
-        "w": 104,
-        "h": 177
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "run_07": {
-      "action": "run",
-      "frame_index": 7,
-      "image": "sprites/run/run_07.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 256,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 1536,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 1,
-        "column": 7
-      },
-      "nontransparent_bounds": {
-        "x": 75,
-        "y": 39,
-        "w": 113,
-        "h": 179
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "turn_00": {
-      "action": "turn",
-      "frame_index": 0,
-      "image": "sprites/turn/turn_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 512,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 1792,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 1,
-        "column": 8
-      },
-      "nontransparent_bounds": {
-        "x": 93,
-        "y": 33,
-        "w": 84,
-        "h": 196
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "turn_01": {
-      "action": "turn",
-      "frame_index": 1,
-      "image": "sprites/turn/turn_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 768,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 2048,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 1,
-        "column": 9
-      },
-      "nontransparent_bounds": {
-        "x": 90,
-        "y": 31,
-        "w": 77,
-        "h": 197
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "skid_00": {
-      "action": "skid",
-      "frame_index": 0,
-      "image": "sprites/skid/skid_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1024,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 2304,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 1,
-        "column": 10
-      },
-      "nontransparent_bounds": {
-        "x": 69,
-        "y": 47,
-        "w": 114,
-        "h": 178
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "skid_01": {
-      "action": "skid",
-      "frame_index": 1,
-      "image": "sprites/skid/skid_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1280,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 2560,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 1,
-        "column": 11
-      },
-      "nontransparent_bounds": {
-        "x": 71,
-        "y": 61,
-        "w": 108,
-        "h": 164
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "crouch_00": {
-      "action": "crouch",
-      "frame_index": 0,
-      "image": "sprites/crouch/crouch_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1536,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 2816,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 2,
-        "column": 0
-      },
-      "nontransparent_bounds": {
-        "x": 84,
-        "y": 54,
-        "w": 102,
-        "h": 177
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "crouch_01": {
-      "action": "crouch",
-      "frame_index": 1,
-      "image": "sprites/crouch/crouch_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1792,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 3072,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 2,
-        "column": 1
-      },
-      "nontransparent_bounds": {
-        "x": 80,
-        "y": 94,
-        "w": 106,
-        "h": 136
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "look_up_00": {
-      "action": "look_up",
-      "frame_index": 0,
-      "image": "sprites/look_up/look_up_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 2048,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 0,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 2,
-        "column": 2
-      },
-      "nontransparent_bounds": {
-        "x": 90,
-        "y": 39,
-        "w": 82,
-        "h": 192
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "look_up_01": {
-      "action": "look_up",
-      "frame_index": 1,
-      "image": "sprites/look_up/look_up_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 0,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 256,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 2,
-        "column": 3
-      },
-      "nontransparent_bounds": {
-        "x": 82,
-        "y": 35,
-        "w": 81,
-        "h": 196
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "jump_start_00": {
-      "action": "jump_start",
-      "frame_index": 0,
-      "image": "sprites/jump_start/jump_start_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 256,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 512,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 2,
-        "column": 4
-      },
-      "nontransparent_bounds": {
-        "x": 71,
-        "y": 92,
-        "w": 107,
-        "h": 139
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "jump_start_01": {
-      "action": "jump_start",
-      "frame_index": 1,
-      "image": "sprites/jump_start/jump_start_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 512,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 768,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 2,
-        "column": 5
-      },
-      "nontransparent_bounds": {
-        "x": 72,
-        "y": 59,
-        "w": 99,
-        "h": 171
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "jump_rise_00": {
-      "action": "jump_rise",
-      "frame_index": 0,
-      "image": "sprites/jump_rise/jump_rise_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 768,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 1024,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 2,
-        "column": 6
-      },
-      "nontransparent_bounds": {
-        "x": 78,
-        "y": 36,
-        "w": 82,
-        "h": 179
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "jump_rise_01": {
-      "action": "jump_rise",
-      "frame_index": 1,
-      "image": "sprites/jump_rise/jump_rise_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1024,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 1280,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 2,
-        "column": 7
-      },
-      "nontransparent_bounds": {
-        "x": 69,
-        "y": 13,
-        "w": 90,
-        "h": 170
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "jump_apex_00": {
-      "action": "jump_apex",
-      "frame_index": 0,
-      "image": "sprites/jump_apex/jump_apex_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1280,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 1536,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 2,
-        "column": 8
-      },
-      "nontransparent_bounds": {
-        "x": 69,
-        "y": 9,
-        "w": 95,
-        "h": 166
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "fall_00": {
-      "action": "fall",
-      "frame_index": 0,
-      "image": "sprites/fall/fall_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1536,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 1792,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 2,
-        "column": 9
-      },
-      "nontransparent_bounds": {
-        "x": 68,
-        "y": 47,
-        "w": 91,
-        "h": 162
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "fall_01": {
-      "action": "fall",
-      "frame_index": 1,
-      "image": "sprites/fall/fall_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1792,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 2048,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 2,
-        "column": 10
-      },
-      "nontransparent_bounds": {
-        "x": 71,
-        "y": 65,
-        "w": 91,
-        "h": 164
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "land_00": {
-      "action": "land",
-      "frame_index": 0,
-      "image": "sprites/land/land_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 2048,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 2304,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 2,
-        "column": 11
-      },
-      "nontransparent_bounds": {
-        "x": 78,
-        "y": 71,
-        "w": 99,
-        "h": 159
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "land_01": {
-      "action": "land",
-      "frame_index": 1,
-      "image": "sprites/land/land_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 0,
-          "y": 1024,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 2560,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 2,
-        "column": 12
-      },
-      "nontransparent_bounds": {
-        "x": 87,
-        "y": 50,
-        "w": 86,
-        "h": 180
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "wall_slide_00": {
-      "action": "wall_slide",
-      "frame_index": 0,
-      "image": "sprites/wall_slide/wall_slide_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 256,
-          "y": 1024,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 2816,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 3,
-        "column": 0
-      },
-      "nontransparent_bounds": {
-        "x": 73,
-        "y": 31,
-        "w": 105,
-        "h": 191
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "wall_slide_01": {
-      "action": "wall_slide",
-      "frame_index": 1,
-      "image": "sprites/wall_slide/wall_slide_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 512,
-          "y": 1024,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 3072,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 3,
-        "column": 1
-      },
-      "nontransparent_bounds": {
-        "x": 70,
-        "y": 81,
-        "w": 102,
-        "h": 162
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "hurt_00": {
-      "action": "hurt",
-      "frame_index": 0,
-      "image": "sprites/hurt/hurt_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 768,
-          "y": 1024,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 0,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 3,
-        "column": 2
-      },
-      "nontransparent_bounds": {
-        "x": 64,
-        "y": 40,
-        "w": 115,
-        "h": 188
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "hurt_01": {
-      "action": "hurt",
-      "frame_index": 1,
-      "image": "sprites/hurt/hurt_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1024,
-          "y": 1024,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 256,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 3,
-        "column": 3
-      },
-      "nontransparent_bounds": {
-        "x": 73,
-        "y": 70,
-        "w": 106,
-        "h": 161
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "victory_00": {
-      "action": "victory",
-      "frame_index": 0,
-      "image": "sprites/victory/victory_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1280,
-          "y": 1024,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 512,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 3,
-        "column": 4
-      },
-      "nontransparent_bounds": {
-        "x": 72,
-        "y": 41,
-        "w": 90,
-        "h": 191
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "victory_01": {
-      "action": "victory",
-      "frame_index": 1,
-      "image": "sprites/victory/victory_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1536,
-          "y": 1024,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 768,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 3,
-        "column": 5
-      },
-      "nontransparent_bounds": {
-        "x": 66,
-        "y": 35,
-        "w": 101,
-        "h": 197
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "victory_02": {
-      "action": "victory",
-      "frame_index": 2,
-      "image": "sprites/victory/victory_02.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1792,
-          "y": 1024,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 1024,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 3,
-        "column": 6
-      },
-      "nontransparent_bounds": {
-        "x": 64,
-        "y": 29,
-        "w": 100,
-        "h": 194
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "victory_03": {
-      "action": "victory",
-      "frame_index": 3,
-      "image": "sprites/victory/victory_03.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 2048,
-          "y": 1024,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 1280,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 3,
-        "column": 7
-      },
-      "nontransparent_bounds": {
-        "x": 64,
-        "y": 11,
-        "w": 92,
-        "h": 172
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "push_00": {
-      "action": "push",
-      "frame_index": 0,
-      "image": "sprites/push/push_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 0,
-          "y": 1280,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 1536,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 3,
-        "column": 8
-      },
-      "nontransparent_bounds": {
-        "x": 64,
-        "y": 56,
-        "w": 97,
-        "h": 175
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "push_01": {
-      "action": "push",
-      "frame_index": 1,
-      "image": "sprites/push/push_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 256,
-          "y": 1280,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 1792,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 3,
-        "column": 9
-      },
-      "nontransparent_bounds": {
-        "x": 64,
-        "y": 64,
-        "w": 111,
-        "h": 167
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "push_02": {
-      "action": "push",
-      "frame_index": 2,
-      "image": "sprites/push/push_02.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 512,
-          "y": 1280,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 2048,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 3,
-        "column": 10
-      },
-      "nontransparent_bounds": {
-        "x": 64,
-        "y": 64,
-        "w": 117,
-        "h": 166
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "push_03": {
-      "action": "push",
-      "frame_index": 3,
-      "image": "sprites/push/push_03.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 768,
-          "y": 1280,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_main.png": {
-          "x": 2304,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "main",
-        "row": 3,
-        "column": 11
-      },
-      "nontransparent_bounds": {
-        "x": 64,
-        "y": 56,
-        "w": 122,
-        "h": 174
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "ladder_climb_00": {
-      "action": "ladder_climb",
-      "frame_index": 0,
-      "image": "sprites/ladder_climb/ladder_climb_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1024,
-          "y": 1280,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 0,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 0,
-        "column": 0
-      },
-      "nontransparent_bounds": {
-        "x": 70,
-        "y": 45,
-        "w": 110,
-        "h": 192
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "ladder_climb_01": {
-      "action": "ladder_climb",
-      "frame_index": 1,
-      "image": "sprites/ladder_climb/ladder_climb_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1280,
-          "y": 1280,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 256,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 0,
-        "column": 1
-      },
-      "nontransparent_bounds": {
-        "x": 73,
-        "y": 42,
-        "w": 116,
-        "h": 193
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "ladder_climb_02": {
-      "action": "ladder_climb",
-      "frame_index": 2,
-      "image": "sprites/ladder_climb/ladder_climb_02.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1536,
-          "y": 1280,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 512,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 0,
-        "column": 2
-      },
-      "nontransparent_bounds": {
-        "x": 72,
-        "y": 33,
-        "w": 116,
-        "h": 204
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "ladder_climb_03": {
-      "action": "ladder_climb",
-      "frame_index": 3,
-      "image": "sprites/ladder_climb/ladder_climb_03.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1792,
-          "y": 1280,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 768,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 0,
-        "column": 3
-      },
-      "nontransparent_bounds": {
-        "x": 72,
-        "y": 22,
-        "w": 112,
-        "h": 212
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "ladder_idle_00": {
-      "action": "ladder_idle",
-      "frame_index": 0,
-      "image": "sprites/ladder_idle/ladder_idle_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 2048,
-          "y": 1280,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 1024,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 0,
-        "column": 4
-      },
-      "nontransparent_bounds": {
-        "x": 78,
-        "y": 38,
-        "w": 87,
-        "h": 194
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "ladder_idle_01": {
-      "action": "ladder_idle",
-      "frame_index": 1,
-      "image": "sprites/ladder_idle/ladder_idle_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 0,
-          "y": 1536,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 1280,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 0,
-        "column": 5
-      },
-      "nontransparent_bounds": {
-        "x": 79,
-        "y": 38,
-        "w": 89,
-        "h": 194
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "ledge_grab_00": {
-      "action": "ledge_grab",
-      "frame_index": 0,
-      "image": "sprites/ledge_grab/ledge_grab_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 256,
-          "y": 1536,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 1536,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 0,
-        "column": 6
-      },
-      "nontransparent_bounds": {
-        "x": 72,
-        "y": 47,
-        "w": 103,
-        "h": 188
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "ledge_grab_01": {
-      "action": "ledge_grab",
-      "frame_index": 1,
-      "image": "sprites/ledge_grab/ledge_grab_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 512,
-          "y": 1536,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 1792,
-          "y": 0,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 0,
-        "column": 7
-      },
-      "nontransparent_bounds": {
-        "x": 66,
-        "y": 48,
-        "w": 108,
-        "h": 184
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "ledge_climb_00": {
-      "action": "ledge_climb",
-      "frame_index": 0,
-      "image": "sprites/ledge_climb/ledge_climb_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 768,
-          "y": 1536,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 0,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 1,
-        "column": 0
-      },
-      "nontransparent_bounds": {
-        "x": 69,
-        "y": 40,
-        "w": 109,
-        "h": 193
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "ledge_climb_01": {
-      "action": "ledge_climb",
-      "frame_index": 1,
-      "image": "sprites/ledge_climb/ledge_climb_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1024,
-          "y": 1536,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 256,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 1,
-        "column": 1
-      },
-      "nontransparent_bounds": {
-        "x": 63,
-        "y": 51,
-        "w": 124,
-        "h": 175
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "ledge_climb_02": {
-      "action": "ledge_climb",
-      "frame_index": 2,
-      "image": "sprites/ledge_climb/ledge_climb_02.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1280,
-          "y": 1536,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 512,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 1,
-        "column": 2
-      },
-      "nontransparent_bounds": {
-        "x": 62,
-        "y": 48,
-        "w": 139,
-        "h": 143
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "ledge_climb_03": {
-      "action": "ledge_climb",
-      "frame_index": 3,
-      "image": "sprites/ledge_climb/ledge_climb_03.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1536,
-          "y": 1536,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 768,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 1,
-        "column": 3
-      },
-      "nontransparent_bounds": {
-        "x": 74,
-        "y": 25,
-        "w": 123,
-        "h": 162
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "attack_00": {
-      "action": "attack",
-      "frame_index": 0,
-      "image": "sprites/attack/attack_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1792,
-          "y": 1536,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 1024,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 1,
-        "column": 4
-      },
-      "nontransparent_bounds": {
-        "x": 57,
-        "y": 32,
-        "w": 105,
-        "h": 198
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "attack_01": {
-      "action": "attack",
-      "frame_index": 1,
-      "image": "sprites/attack/attack_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 2048,
-          "y": 1536,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 1280,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 1,
-        "column": 5
-      },
-      "nontransparent_bounds": {
-        "x": 49,
-        "y": 38,
-        "w": 142,
-        "h": 191
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "attack_02": {
-      "action": "attack",
-      "frame_index": 2,
-      "image": "sprites/attack/attack_02.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 0,
-          "y": 1792,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 1536,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 1,
-        "column": 6
-      },
-      "nontransparent_bounds": {
-        "x": 47,
-        "y": 40,
-        "w": 150,
-        "h": 190
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "attack_03": {
-      "action": "attack",
-      "frame_index": 3,
-      "image": "sprites/attack/attack_03.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 256,
-          "y": 1792,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 1792,
-          "y": 256,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 1,
-        "column": 7
-      },
-      "nontransparent_bounds": {
-        "x": 71,
-        "y": 35,
-        "w": 105,
-        "h": 195
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "interact_00": {
-      "action": "interact",
-      "frame_index": 0,
-      "image": "sprites/interact/interact_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 512,
-          "y": 1792,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 0,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 2,
-        "column": 0
-      },
-      "nontransparent_bounds": {
-        "x": 81,
-        "y": 31,
-        "w": 94,
-        "h": 205
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "interact_01": {
-      "action": "interact",
-      "frame_index": 1,
-      "image": "sprites/interact/interact_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 768,
-          "y": 1792,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 256,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 2,
-        "column": 1
-      },
-      "nontransparent_bounds": {
-        "x": 65,
-        "y": 61,
-        "w": 118,
-        "h": 174
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "interact_02": {
-      "action": "interact",
-      "frame_index": 2,
-      "image": "sprites/interact/interact_02.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1024,
-          "y": 1792,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 512,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 2,
-        "column": 2
-      },
-      "nontransparent_bounds": {
-        "x": 65,
-        "y": 64,
-        "w": 117,
-        "h": 169
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "interact_03": {
-      "action": "interact",
-      "frame_index": 3,
-      "image": "sprites/interact/interact_03.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1280,
-          "y": 1792,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 768,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 2,
-        "column": 3
-      },
-      "nontransparent_bounds": {
-        "x": 68,
-        "y": 26,
-        "w": 91,
-        "h": 205
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "dash_00": {
-      "action": "dash",
-      "frame_index": 0,
-      "image": "sprites/dash/dash_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1536,
-          "y": 1792,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 1024,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 2,
-        "column": 4
-      },
-      "nontransparent_bounds": {
-        "x": 44,
-        "y": 62,
-        "w": 161,
-        "h": 156
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "dash_01": {
-      "action": "dash",
-      "frame_index": 1,
-      "image": "sprites/dash/dash_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1792,
-          "y": 1792,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 1280,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 2,
-        "column": 5
-      },
-      "nontransparent_bounds": {
-        "x": 45,
-        "y": 67,
-        "w": 164,
-        "h": 151
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "dash_02": {
-      "action": "dash",
-      "frame_index": 2,
-      "image": "sprites/dash/dash_02.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 2048,
-          "y": 1792,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 1536,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 2,
-        "column": 6
-      },
-      "nontransparent_bounds": {
-        "x": 49,
-        "y": 68,
-        "w": 155,
-        "h": 149
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "dash_03": {
-      "action": "dash",
-      "frame_index": 3,
-      "image": "sprites/dash/dash_03.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 0,
-          "y": 2048,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 1792,
-          "y": 512,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 2,
-        "column": 7
-      },
-      "nontransparent_bounds": {
-        "x": 66,
-        "y": 46,
-        "w": 121,
-        "h": 169
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "wave_00": {
-      "action": "wave",
-      "frame_index": 0,
-      "image": "sprites/wave/wave_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 256,
-          "y": 2048,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 0,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 3,
-        "column": 0
-      },
-      "nontransparent_bounds": {
-        "x": 72,
-        "y": 19,
-        "w": 113,
-        "h": 214
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "wave_01": {
-      "action": "wave",
-      "frame_index": 1,
-      "image": "sprites/wave/wave_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 512,
-          "y": 2048,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 256,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 3,
-        "column": 1
-      },
-      "nontransparent_bounds": {
-        "x": 73,
-        "y": 22,
-        "w": 118,
-        "h": 211
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "sneak_00": {
-      "action": "sneak",
-      "frame_index": 0,
-      "image": "sprites/sneak/sneak_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 768,
-          "y": 2048,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 512,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 3,
-        "column": 2
-      },
-      "nontransparent_bounds": {
-        "x": 67,
-        "y": 40,
-        "w": 121,
-        "h": 178
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "sneak_01": {
-      "action": "sneak",
-      "frame_index": 1,
-      "image": "sprites/sneak/sneak_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1024,
-          "y": 2048,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 768,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 3,
-        "column": 3
-      },
-      "nontransparent_bounds": {
-        "x": 66,
-        "y": 46,
-        "w": 124,
-        "h": 167
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "sneak_02": {
-      "action": "sneak",
-      "frame_index": 2,
-      "image": "sprites/sneak/sneak_02.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1280,
-          "y": 2048,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 1024,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 3,
-        "column": 4
-      },
-      "nontransparent_bounds": {
-        "x": 76,
-        "y": 41,
-        "w": 116,
-        "h": 173
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "sneak_03": {
-      "action": "sneak",
-      "frame_index": 3,
-      "image": "sprites/sneak/sneak_03.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1536,
-          "y": 2048,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 1280,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 3,
-        "column": 5
-      },
-      "nontransparent_bounds": {
-        "x": 63,
-        "y": 41,
-        "w": 130,
-        "h": 172
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "sleep_00": {
-      "action": "sleep",
-      "frame_index": 0,
-      "image": "sprites/sleep/sleep_00.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 1792,
-          "y": 2048,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 1536,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 3,
-        "column": 6
-      },
-      "nontransparent_bounds": {
-        "x": 56,
-        "y": 61,
-        "w": 131,
-        "h": 169
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    },
-    "sleep_01": {
-      "action": "sleep",
-      "frame_index": 1,
-      "image": "sprites/sleep/sleep_01.png",
-      "rects": {
-        "atlas_all.png": {
-          "x": 2048,
-          "y": 2048,
-          "w": 256,
-          "h": 256
-        },
-        "atlas_extra.png": {
-          "x": 1792,
-          "y": 768,
-          "w": 256,
-          "h": 256
-        }
-      },
-      "source": {
-        "sheet": "extra",
-        "row": 3,
-        "column": 7
-      },
-      "nontransparent_bounds": {
-        "x": 61,
-        "y": 68,
-        "w": 118,
-        "h": 163
-      },
-      "anchor": {
-        "x": 128,
-        "y": 232
-      }
-    }
+ "format": "enrique-platformer-characters/v1",
+ "cell": {
+  "width": 256,
+  "height": 256,
+  "unit": "px",
+  "background": "transparent",
+  "channels": "RGBA"
+ },
+ "atlas": {
+  "game": {
+   "file": "atlas_game.webp",
+   "width": 1280,
+   "height": 1280,
+   "columns": 5,
+   "rows": 5,
+   "cell_width": 256,
+   "cell_height": 256,
+   "alpha": true
   }
+ },
+ "total_animations": 7,
+ "total_frames": 23,
+ "animations": {
+  "idle": {
+   "name_es": "Reposo",
+   "frame_count": 4,
+   "fps": 5,
+   "loop": true,
+   "frames": [
+    "idle_00",
+    "idle_01",
+    "idle_02",
+    "idle_03"
+   ]
+  },
+  "run": {
+   "name_es": "Correr",
+   "frame_count": 8,
+   "fps": 12,
+   "loop": true,
+   "frames": [
+    "run_00",
+    "run_01",
+    "run_02",
+    "run_03",
+    "run_04",
+    "run_05",
+    "run_06",
+    "run_07"
+   ]
+  },
+  "jump_rise": {
+   "name_es": "Ascenso del salto",
+   "frame_count": 2,
+   "fps": 10,
+   "loop": false,
+   "frames": [
+    "jump_rise_00",
+    "jump_rise_01"
+   ]
+  },
+  "jump_apex": {
+   "name_es": "Punto más alto del salto",
+   "frame_count": 1,
+   "fps": 10,
+   "loop": false,
+   "frames": [
+    "jump_apex_00"
+   ]
+  },
+  "fall": {
+   "name_es": "Caída",
+   "frame_count": 2,
+   "fps": 10,
+   "loop": false,
+   "frames": [
+    "fall_00",
+    "fall_01"
+   ]
+  },
+  "hurt": {
+   "name_es": "Recibir daño",
+   "frame_count": 2,
+   "fps": 8,
+   "loop": false,
+   "frames": [
+    "hurt_00",
+    "hurt_01"
+   ]
+  },
+  "victory": {
+   "name_es": "Victoria",
+   "frame_count": 4,
+   "fps": 8,
+   "loop": false,
+   "frames": [
+    "victory_00",
+    "victory_01",
+    "victory_02",
+    "victory_03"
+   ]
+  }
+ },
+ "frames": {
+  "idle_00": {
+   "action": "idle",
+   "frame_index": 0,
+   "image": "sprites/idle/idle_00.png",
+   "rects": {
+    "atlas_game.webp": {
+     "x": 0,
+     "y": 0,
+     "w": 256,
+     "h": 256
+    }
+   },
+   "source": {
+    "sheet": "main",
+    "row": 0,
+    "column": 0
+   }
+  },
+  "idle_01": {
+   "action": "idle",
+   "frame_index": 1,
+   "image": "sprites/idle/idle_01.png",
+   "rects": {
+    "atlas_game.webp": {
+     "x": 256,
+     "y": 0,
+     "w": 256,
+     "h": 256
+    }
+   },
+   "source": {
+    "sheet": "main",
+    "row": 0,
+    "column": 1
+   }
+  },
+  "idle_02": {
+   "action": "idle",
+   "frame_index": 2,
+   "image": "sprites/idle/idle_02.png",
+   "rects": {
+    "atlas_game.webp": {
+     "x": 512,
+     "y": 0,
+     "w": 256,
+     "h": 256
+    }
+   },
+   "source": {
+    "sheet": "main",
+    "row": 0,
+    "column": 2
+   }
+  },
+  "idle_03": {
+   "action": "idle",
+   "frame_index": 3,
+   "image": "sprites/idle/idle_03.png",
+   "rects": {
+    "atlas_game.webp": {
+     "x": 768,
+     "y": 0,
+     "w": 256,
+     "h": 256
+    }
+   },
+   "source": {
+    "sheet": "main",
+    "row": 0,
+    "column": 3
+   }
+  },
+  "run_00": {
+   "action": "run",
+   "frame_index": 0,
+   "image": "sprites/run/run_00.png",
+   "rects": {
+    "atlas_game.webp": {
+     "x": 1024,
+     "y": 0,
+     "w": 256,
+     "h": 256
+    }
+   },
+   "source": {
+    "sheet": "main",
+    "row": 1,
+    "column": 0
+   }
+  },
+  "run_01": {
+   "action": "run",
+   "frame_index": 1,
+   "image": "sprites/run/run_01.png",
+   "rects": {
+    "atlas_game.webp": {
+     "x": 0,
+     "y": 256,
+     "w": 256,
+     "h": 256
+    }
+   },
+   "source": {
+    "sheet": "main",
+    "row": 1,
+    "column": 1
+   }
+  },
+  "run_02": {
+   "action": "run",
+   "frame_index": 2,
+   "image": "sprites/run/run_02.png",
+   "rects": {
+    "atlas_game.webp": {
+     "x": 256,
+     "y": 256,
+     "w": 256,
+     "h": 256
+    }
+   },
+   "source": {
+    "sheet": "main",
+    "row": 1,
+    "column": 2
+   }
+  },
+  "run_03": {
+   "action": "run",
+   "frame_index": 3,
+   "image": "sprites/run/run_03.png",
+   "rects": {
+    "atlas_game.webp": {
+     "x": 512,
+     "y": 256,
+     "w": 256,
+     "h": 256
+    }
+   },
+   "source": {
+    "sheet": "main",
+    "row": 1,
+    "column": 3
+   }
+  },
+  "run_04": {
+   "action": "run",
+   "frame_index": 4,
+   "image": "sprites/run/run_04.png",
+   "rects": {
+    "atlas_game.webp": {
+     "x": 768,
+     "y": 256,
+     "w": 256,
+     "h": 256
+    }
+   },
+   "source": {
+    "sheet": "main",
+    "row": 1,
+    "column": 4
+   }
+  },
+  "run_05": {
+   "action": "run",
+   "frame_index": 5,
+   "image": "sprites/run/run_05.png",
+   "rects": {
+    "atlas_game.webp": {
+     "x": 1024,
+     "y": 256,
+     "w": 256,
+     "h": 256
+    }
+   },
+   "source": {
+    "sheet": "main",
+    "row": 1,
+    "column": 5
+   }
+  },
+  "run_06": {
+   "action": "run",
+   "frame_index": 6,
+   "image": "sprites/run/run_06.png",
+   "rects": {
+    "atlas_game.webp": {
+     "x": 0,
+     "y": 512,
+     "w": 256,
+     "h": 256
+    }
+   },
+   "source": {
+    "sheet": "main",
+    "row": 1,
+    "column": 6
+   }
+  },
+  "run_07": {
+   "action": "run",
+   "frame_index": 7,
+   "image": "sprites/run/run_07.png",
+   "rects": {
+    "atlas_game.webp": {
+     "x": 256,
+     "y": 512,
+     "w": 256,
+     "h": 256
+    }
+   },
+   "source": {
+    "sheet": "main",
+    "row": 1,
+    "column": 7
+   }
+  },
+  "jump_rise_00": {
+   "action": "jump_rise",
+   "frame_index": 0,
+   "image": "sprites/jump_rise/jump_rise_00.png",
+   "rects": {
+    "atlas_game.webp": {
+     "x": 512,
+     "y": 512,
+     "w": 256,
+     "h": 256
+    }
+   },
+   "source": {
+    "sheet": "main",
+    "row": 2,
+    "column": 6
+   }
+  },
+  "jump_rise_01": {
+   "action": "jump_rise",
+   "frame_index": 1,
+   "image": "sprites/jump_rise/jump_rise_01.png",
+   "rects": {
+    "atlas_game.webp": {
+     "x": 768,
+     "y": 512,
+     "w": 256,
+     "h": 256
+    }
+   },
+   "source": {
+    "sheet": "main",
+    "row": 2,
+    "column": 7
+   }
+  },
+  "jump_apex_00": {
+   "action": "jump_apex",
+   "frame_index": 0,
+   "image": "sprites/jump_apex/jump_apex_00.png",
+   "rects": {
+    "atlas_game.webp": {
+     "x": 1024,
+     "y": 512,
+     "w": 256,
+     "h": 256
+    }
+   },
+   "source": {
+    "sheet": "main",
+    "row": 2,
+    "column": 8
+   }
+  },
+  "fall_00": {
+   "action": "fall",
+   "frame_index": 0,
+   "image": "sprites/fall/fall_00.png",
+   "rects": {
+    "atlas_game.webp": {
+     "x": 0,
+     "y": 768,
+     "w": 256,
+     "h": 256
+    }
+   },
+   "source": {
+    "sheet": "main",
+    "row": 2,
+    "column": 9
+   }
+  },
+  "fall_01": {
+   "action": "fall",
+   "frame_index": 1,
+   "image": "sprites/fall/fall_01.png",
+   "rects": {
+    "atlas_game.webp": {
+     "x": 256,
+     "y": 768,
+     "w": 256,
+     "h": 256
+    }
+   },
+   "source": {
+    "sheet": "main",
+    "row": 2,
+    "column": 10
+   }
+  },
+  "hurt_00": {
+   "action": "hurt",
+   "frame_index": 0,
+   "image": "sprites/hurt/hurt_00.png",
+   "rects": {
+    "atlas_game.webp": {
+     "x": 512,
+     "y": 768,
+     "w": 256,
+     "h": 256
+    }
+   },
+   "source": {
+    "sheet": "main",
+    "row": 3,
+    "column": 2
+   }
+  },
+  "hurt_01": {
+   "action": "hurt",
+   "frame_index": 1,
+   "image": "sprites/hurt/hurt_01.png",
+   "rects": {
+    "atlas_game.webp": {
+     "x": 768,
+     "y": 768,
+     "w": 256,
+     "h": 256
+    }
+   },
+   "source": {
+    "sheet": "main",
+    "row": 3,
+    "column": 3
+   }
+  },
+  "victory_00": {
+   "action": "victory",
+   "frame_index": 0,
+   "image": "sprites/victory/victory_00.png",
+   "rects": {
+    "atlas_game.webp": {
+     "x": 1024,
+     "y": 768,
+     "w": 256,
+     "h": 256
+    }
+   },
+   "source": {
+    "sheet": "main",
+    "row": 3,
+    "column": 4
+   }
+  },
+  "victory_01": {
+   "action": "victory",
+   "frame_index": 1,
+   "image": "sprites/victory/victory_01.png",
+   "rects": {
+    "atlas_game.webp": {
+     "x": 0,
+     "y": 1024,
+     "w": 256,
+     "h": 256
+    }
+   },
+   "source": {
+    "sheet": "main",
+    "row": 3,
+    "column": 5
+   }
+  },
+  "victory_02": {
+   "action": "victory",
+   "frame_index": 2,
+   "image": "sprites/victory/victory_02.png",
+   "rects": {
+    "atlas_game.webp": {
+     "x": 256,
+     "y": 1024,
+     "w": 256,
+     "h": 256
+    }
+   },
+   "source": {
+    "sheet": "main",
+    "row": 3,
+    "column": 6
+   }
+  },
+  "victory_03": {
+   "action": "victory",
+   "frame_index": 3,
+   "image": "sprites/victory/victory_03.png",
+   "rects": {
+    "atlas_game.webp": {
+     "x": 512,
+     "y": 1024,
+     "w": 256,
+     "h": 256
+    }
+   },
+   "source": {
+    "sheet": "main",
+    "row": 3,
+    "column": 7
+   }
+  }
+ }
 }
