@@ -1021,6 +1021,12 @@ if (import.meta.env.DEV) {
     grounded: player?.userData.grounded ?? false,
     supportY: player?.userData.supportY ?? null,
     lossCue: lossCue ? { src: lossCue.currentSrc || lossCue.src, paused: lossCue.paused, currentTime: lossCue.currentTime, readyState: lossCue.readyState } : null,
+    music: {
+      state: musicEngine.context?.state ?? null,
+      desired: musicEngine.desired,
+      timerActive: musicEngine.timer !== null,
+      step: musicEngine.step,
+    },
   });
 }
 document.addEventListener('visibilitychange', () => {
