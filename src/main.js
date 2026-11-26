@@ -1,6 +1,6 @@
 let THREE;
 import packageInfo from '../package.json';
-import { getLevel, levels } from './levels.js';
+import { getLevel, levelValidationError, levels } from './levels.js';
 import { createLossCue, playOneShot, primeOneShot, stopOneShot } from './audio-cues.js';
 import { canConsumeJumpBuffer, findStepSurface, getHazardProfile, getTrackSupportHeight, integrateVerticalMotion, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, portalEffects, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy } from './game-logic.js';
 import { MusicEngine } from './music.js';
@@ -23,6 +23,7 @@ const levelName = document.querySelector('#level-name');
 const fullscreenButton = document.querySelector('#fullscreen-toggle');
 const musicButton = document.querySelector('#music-toggle');
 const laneY = -1.7;
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const musicEngine = new MusicEngine();
 const lossCue = typeof Audio === 'function' ? createLossCue(import.meta.env.BASE_URL, Audio) : null;
 let selectedLevelIndex = 0;
@@ -353,7 +354,7 @@ function moveFeatureGroup(group, dt, speed, removeFeature) {
     if (feature.decorations) {
       for (const decoration of feature.decorations) decoration.position.x = feature.center;
     }
-    if (group === platforms && feature.bob > 0) {
+    if (!reducedMotion && group === platforms && feature.bob > 0) {
       feature.currentHeight = feature.height + Math.sin(simulationTime * 2 + feature.phase) * feature.bob;
       feature.mesh.position.y = laneY + feature.currentHeight - .14;
     }
@@ -361,8 +362,8 @@ function moveFeatureGroup(group, dt, speed, removeFeature) {
       feature.mesh.rotation.y += dt * (feature.type === 'drone' ? 1.7 : .8);
       if (feature.type === 'drone') feature.mesh.position.y = feature.baseY + Math.sin(simulationTime * 2.2 + feature.phase) * .16;
     }
-    if (group === portals) feature.mesh.rotation.z += dt * 1.2;
-    if (group === collectibles) {
+    if (!reducedMotion && group === portals) feature.mesh.rotation.z += dt * 1.2;
+    if (!reducedMotion && group === collectibles) {
       feature.mesh.rotation.x += dt * 1.8;
       feature.mesh.rotation.y += dt * 2.2;
     }
@@ -1065,6 +1066,10 @@ document.querySelector('#game-version').textContent = `v${packageInfo.version}`;
 musicButton.setAttribute('aria-pressed', String(musicEnabled));
 syncPauseButton();
 renderLevelCards();
+if (levelValidationError) {
+  showOverlay('Course data error', levelValidationError.message);
+  playButton.disabled = true;
+}
 window.addEventListener('pagehide', (event) => {
   if (running) pauseGame();
   else stopRenderLoop();

@@ -293,4 +293,5 @@ export function getLevel(id) {
   return levels.find((level) => level.id === id);
 }
 
-validateLevels(levels);
+export let levelValidationError = null;
+try { validateLevels(levels); } catch (error) { levelValidationError = error; console.error('Course data failed validation.', error); }

@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
 
-export default defineConfig({
-  base: process.env.GITHUB_ACTIONS === 'true' ? '/enrique-dash/' : '/',
-});
+export default defineConfig(({ command, isPreview }) => ({
+  base: process.env.BASE_PATH ?? (command === 'build' || isPreview ? '/enrique-dash/' : '/'),
+}));

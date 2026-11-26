@@ -1,6 +1,6 @@
 # Enrique Dash
 
-**Current test version: 0.5.1** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
+**Current test version: 0.5.2** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
 
 ## Play locally
 
@@ -21,6 +21,17 @@ npm run preview
 
 Tap/click the playfield, or press Space, Arrow Up, or W to jump; press P or the Pause button to pause. While paused, tap/click the playfield or press P, Space, or Resume to continue the same run without forcing a jump. The first user interaction loads the 3D engine and character atlas; until then a lightweight static preview is shown. Use **Fullscreen** to expand the game and **Exit fullscreen** or Escape to return. Browsers that do not allow the Fullscreen API use a fixed-viewport fallback. Music starts with play after a user gesture and can be muted at any time. The user-supplied scream effect plays when a run ends in a loss.
 
+## Performance budget
+
+- The character atlas is a 455 kB WebP (was a 2 628 kB PNG), sized 1280×1280 with 23 frames from the 7 animations used by the game.
+- First Play downloads the atlas, an 8 kB sprite map, and the Three.js chunk (~181 kB gzip).
+- After changing `assets/character/`, regenerate the atlas with `python3 scripts/pack_atlas.py`.
+
+## Known limits
+
+- The render delta-time is clamped to 40 ms on purpose, favoring fairness over wall-clock speed.
+- GitHub Pages serves no custom security headers, so the Content Security Policy is meta-only.
+
 ## Playable courses
 
 01 Neon Run · 02 Skyline Rush · 03 Solar Flare · 04 Gravity Garden · 05 Pixel Pier · 06 Midnight Circuit · 07 Candy Comet · 08 Aqua Pulse · 09 Crystal Cavern · 10 Stormbreaker · 11 Final Orbit · 12 Mosslight Hollow · 13 Clockwork Orchard · 14 Tidal Foundry · 15 Paper Moon Parade · 16 Verdant Relay · 17 Shatterglass Express · 18 Cloudbreaker Causeway · 19 Magnetar Foundry · 20 Eclipse Crown.
@@ -39,6 +50,12 @@ Each level has its own speed, obstacle sequence, color palette, tempo, scale, ch
 ### v0.3.1
 
 - Keep the exact app version visible inside the game HUD, including fullscreen mode.
+
+### v0.5.2
+
+- Shipped the 455 kB, 1280×1280 lossless WebP character atlas and documented the first-play payload budget.
+- Made production builds use the project base path independently of GitHub Actions, with `BASE_PATH` available as an override.
+- Added a Content Security Policy, recoverable course-validation errors, and reduced-motion handling for decorative rotations and platform bob.
 
 ### v0.5.1
 
@@ -102,7 +119,7 @@ Included: `platformer`, `game-feel`, `game-ui-ux`, `input-systems`, `physics-tun
 
 [https://giruagent.github.io/enrique-dash/](https://giruagent.github.io/enrique-dash/)
 
-GitHub Pages uses the `/enrique-dash/` project base path. Local Vite uses `/`.
+GitHub Pages and production builds use the `/enrique-dash/` project base path by default; set `BASE_PATH` to override it. The Vite dev server uses `/`.
 
 ## Project notes
 
