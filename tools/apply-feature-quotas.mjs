@@ -1,29 +1,37 @@
 // Feature pass: a second, gated stage of the course pipeline.
 //
 // tools/compose-levels.mjs owns the *rhythm* (how many beats, where, and how they are spaced).
-// This pass owns the *mix*: it converts some hazard slots into enemies, and adds raised kerbs
-// with a shard on plain track, so the courses use the whole feature vocabulary instead of only
-// hazards and gaps.
+// This pass owns the *mix*: it converts some hazard slots into enemies and builds the platform
+// archetypes (kerb, shelf, island, hover, perch) with their shards.
 //
-// Every individual change is verified with the auto-player before it is kept: a conversion that
-// makes a course uncompletable is reverted immediately. The pass is deterministic.
+// Every individual change is verified with the auto-player (and with the same fairness metrics the
+// test suite uses) before it is kept: a change that makes a course uncompletable or breaks a gate is
+// reverted immediately. The pass is deterministic.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { levels, validateLevels } from '../src/levels.js';
-import { composeLevels, rewriteLevels, renderDesignPlan } from './compose-levels.mjs';
+import { blueprint, composeLevels, rewriteLevels, renderDesignPlan } from './compose-levels.mjs';
 import { playLevel } from './auto-player.mjs';
 import { analyzeLevel } from './level-report.mjs';
+import {
+  airTime,
+  beatWindows,
+  courseSpeedTimeline,
+  jumpApexHeight,
+  jumpHeightAt,
+  jumpReach,
+  jumpRiseTime,
+} from './level-physics.mjs';
 
 const LEVELS_PATH = new URL('../src/levels.js', import.meta.url);
 const PLAN_PATH = new URL('../LEVEL_DESIGN_PLAN.md', import.meta.url);
-const AIR_TIME = 2 * 8.5 / 19;
 
 const QUOTAS = [
-  { platforms: 0, enemies: 0, drones: 0, portals: 0, shards: 0 },   // courses 1-4
-  { platforms: 1, enemies: 1, drones: 0, portals: 1, shards: 1 },   // 5-8
-  { platforms: 2, enemies: 2, drones: 1, portals: 2, shards: 2 },   // 9-14
-  { platforms: 2, enemies: 3, drones: 1, portals: 2, shards: 2 },   // 15-20
+  { enemies: 0, drones: 0, portals: 0, shards: 0 },   // courses 1-4
+  { enemies: 1, drones: 0, portals: 1, shards: 1 },   // 5-8
+  { enemies: 2, drones: 1, portals: 2, shards: 2 },   // 9-14
+  { enemies: 3, drones: 1, portals: 2, shards: 2 },   // 15-20
 ];
 
 
@@ -116,13 +124,40 @@ const COPY = {
 const tierOf = (index) => (index < 4 ? 0 : index < 8 ? 1 : index < 14 ? 2 : 3);
 
 const clone = (level) => JSON.parse(JSON.stringify(level));
+const round = (value, digits = 2) => {
+  const factor = 10 ** digits;
+  return Math.round(value * factor) / factor;
+};
 
-function plays(level) {
-  const result = playLevel(level);
-  return { ok: result.completed && result.deaths === 0, result };
+function featureTypes(level) {
+  const types = new Set();
+  for (const [, count] of level.obstacles) types.add(count === 2 ? 'double-hazard' : 'single-hazard');
+  if (level.gaps.length) types.add('gap');
+  if (level.platforms.length) types.add('bridge');
+  if (level.portals.length) types.add('portal');
+  if (level.enemies.length) types.add('enemy');
+  if (level.collectibles.length) types.add('shard');
+  return types;
 }
 
-// A change is only kept when the whole catalog still validates and the course still plays.
+// The same gates the test suite enforces after composition. A feature is only kept if all of them
+// still hold; this makes the pass stricter than a plain "can the auto-player finish?" check.
+function preservesGates(level, index) {
+  const result = playLevel(level);
+  if (!result.completed || result.deaths !== 0) return false;
+  const metrics = analyzeLevel(level, result);
+  if (metrics.deadBandViolations.length !== 0) return false;
+  if (metrics.telegraphViolations.length !== 0) return false;
+  if (Math.abs(metrics.inputsPerSecond / blueprint[index].target - 1) > .05) return false;
+  if (metrics.jumps < .75 * metrics.beats) return false;
+  if (!(metrics.tightestMargin >= .35)) return false;
+  if (tierOf(index) >= 2 && metrics.comboBeats < 1) return false;
+  if (featureTypes(level).size < 3) return false;
+  return true;
+}
+
+// A change is only kept when the whole catalog still validates and the course still passes every
+// fairness gate.
 function keep(catalog, trial, index) {
   const candidate = catalog.map((level, position) => (position === index ? trial : level));
   try {
@@ -130,7 +165,7 @@ function keep(catalog, trial, index) {
   } catch {
     return false;
   }
-  return plays(trial).ok;
+  return preservesGates(trial, index);
 }
 
 /** Beats sorted by distance, with the end of each beat, to reason about clear track. */
@@ -142,36 +177,50 @@ function beatSpans(level) {
   ].sort((a, b) => a.at - b.at);
 }
 
-/** Can a platform sit here? Plain track, clear of every beat and portal. */
-function platformFits(level, at, halfWidth) {
+function speedAt(level, at) {
+  return courseSpeedTimeline(level).advance(at).speed;
+}
+
+/** Can a platform sit here? Plain track, clear of every beat, portal, shard and other platform. */
+function platformFits(level, at, halfWidth, clearance = 0) {
   const guard = .6;
+  const start = at - halfWidth;
+  const end = at + halfWidth;
   const beats = beatSpans(level);
   for (const beat of beats) {
+    // The platform body must not touch a beat.
     if (beat.kind === 'gap') {
       if (Math.abs(at - beat.at) < halfWidth + guard) return false;
-      if (at + halfWidth > beat.at - guard && at - halfWidth < beat.end + guard) return false;
-    } else if (at + halfWidth > beat.at - guard && at - halfWidth < beat.end + guard) {
+      if (end > beat.at - guard && start < beat.end + guard) return false;
+    } else if (end > beat.at - guard && start < beat.end + guard) {
       return false;
     }
+    // Optional extra clear track at both ends (used by shelves).
+    if (clearance > 0 && beat.end > start - clearance && beat.at < end + clearance) return false;
   }
   for (const portal of level.portals) {
     if (Math.abs(at - portal.at) < halfWidth + 1.2) return false;
+    if (clearance > 0 && portal.at > start - clearance && portal.at < end + clearance) return false;
   }
   for (const platform of level.platforms) {
     const centre = platform.at + platform.width / 2;
     if (Math.abs(at - centre) < halfWidth + platform.width / 2 + .8) return false;
   }
-  return at - halfWidth > 1.2 * level.speed + 2 && at + halfWidth < level.length - 6;
+  // A platform under an apex shard would make that shard's launch surface ambiguous.
+  for (const collectible of level.collectibles) {
+    if (Math.abs(at - collectible.at) < halfWidth + .8) return false;
+  }
+  return start > 1.2 * level.speed + 2 && end < level.length - 6;
 }
 
 /** Candidate platform positions: the middle of the widest clear stretches. */
-function candidatePlatformSpots(level, halfWidth) {
+function candidatePlatformSpots(level, halfWidth, clearance = 0) {
   const step = .5;
   const spots = [];
+  const clearanceAt = typeof clearance === 'function' ? clearance : () => clearance;
   for (let at = halfWidth + 2; at <= level.length - halfWidth - 2; at += step) {
-    if (platformFits(level, at, halfWidth)) spots.push(at);
+    if (platformFits(level, at, halfWidth, clearanceAt(at))) spots.push(at);
   }
-  // Prefer spots far from anything else: score by distance to the closest beat.
   const beats = beatSpans(level);
   const scored = spots.map((at) => ({
     at,
@@ -181,10 +230,205 @@ function candidatePlatformSpots(level, halfWidth) {
   return scored;
 }
 
+function platformShard(platform, kind) {
+  const at = kind === 'shelf'
+    ? platform.at + platform.width - .55
+    : platform.at + platform.width / 2;
+  return { at: round(at), height: round(platform.height + 1.2) };
+}
+
+function placed(level, platform, options = {}) {
+  const trial = clone(level);
+  trial.platforms.push(platform);
+  if (options.enemy) trial.enemies.push(options.enemy);
+  if (options.shard !== false) trial.collectibles.push(platformShard(platform, platform.kind));
+  return trial;
+}
+
+function placePlainPlatform(level, index, catalog, kind, width, height, clearance = 0) {
+  const halfWidth = width / 2;
+  const spots = candidatePlatformSpots(level, halfWidth, clearance);
+  for (const spot of spots.slice(0, 80)) {
+    const platform = {
+      at: round(spot.at - halfWidth),
+      width,
+      height,
+      kind,
+    };
+    const trial = placed(level, platform);
+    if (keep(catalog, trial, index)) return trial;
+  }
+  return null;
+}
+
+function placeShelf(level, index, catalog) {
+  const width = 10;
+  return placePlainPlatform(
+    level,
+    index,
+    catalog,
+    'shelf',
+    width,
+    .5,
+    (at) => .5 * jumpReach(speedAt(level, at)),
+  );
+}
+
+function placeKerb(level, index, catalog) {
+  return placePlainPlatform(level, index, catalog, 'kerb', 4.5, .45);
+}
+
+function placeHover(level, index, catalog) {
+  return placePlainPlatform(level, index, catalog, 'hover', 4.5, .45);
+}
+
+// An island is a raised platform inside a gap: the runner must jump up/over it and the gap reads as
+// two holes. Both sides keep at least 1.6 units of open hole.
+function placeIsland(level, index, catalog) {
+  const islandWidth = 2.5;
+  for (const [gapIndex, gap] of level.gaps.entries()) {
+    for (const hole of [1.6, 1.7, 1.85]) {
+      const width = islandWidth + hole * 2;
+      const starts = [
+        gap.at + gap.width - width,   // keep the far edge
+        gap.at,                       // keep the near edge
+        gap.at + gap.width / 2 - width / 2, // keep the centre
+      ];
+      for (const start of starts) {
+        const at = round(start);
+        const end = at + width;
+        if (at < 3 || end > level.length - 2) continue;
+        if (level.collectibles.some((shard) => shard.at > at - .15 && shard.at < end + .15)) continue;
+        const trial = clone(level);
+        trial.gaps[gapIndex] = { at, width: round(width) };
+        trial.gaps.sort((a, b) => a.at - b.at);
+        const platform = {
+          at: round(at + hole),
+          width: islandWidth,
+          height: .9,
+          kind: 'island',
+        };
+        trial.platforms.push(platform);
+        trial.collectibles.push(platformShard(platform, 'island'));
+        if (keep(catalog, trial, index)) return trial;
+      }
+    }
+  }
+  return null;
+}
+
+// A perch replaces one single-hazard beat: the hazard group becomes a raised kerb with a crawler
+// standing on it. Keeping the input count unchanged preserves the course's target input rate.
+function placePerch(level, index, catalog) {
+  const width = 4.5;
+  const halfWidth = width / 2;
+  const groups = level.obstacles
+    .map(([at, count], groupIndex) => ({ at, count, groupIndex }))
+    .filter(({ count }) => count === 1)
+    .sort((a, b) => a.at - b.at);
+
+  for (const group of groups) {
+    const without = clone(level);
+    without.obstacles.splice(group.groupIndex, 1);
+    // Prefer to keep the beat where it was: centre the perch on the hazard it replaces.
+    const centres = [group.at, ...candidatePlatformSpots(without, halfWidth).map(({ at }) => at)];
+    for (const centre of centres.slice(0, 60)) {
+      if (Math.abs(centre - group.at) > 3) continue;
+      if (!platformFits(without, centre, halfWidth)) continue;
+      const platform = {
+        at: round(centre - halfWidth),
+        width,
+        height: .45,
+        kind: 'perch',
+      };
+      const trial = clone(without);
+      trial.platforms.push(platform);
+      trial.enemies.push({
+        at: round(platform.at + platform.width / 2),
+        type: 'crawler',
+      });
+      if (keep(catalog, trial, index)) return trial;
+    }
+  }
+  return null;
+}
+
+// Course-range mix:
+//   1-4   kerb only, at most one (the shipped tutorial courses keep none)
+//   5-8   exactly one kerb
+//   9-14  one kerb plus a shelf or island, and a perch from course 12 on
+//   15-20 two of shelf / island / hover, plus a perch
+function desiredPlatforms(index) {
+  if (index < 4) return [];
+  if (index < 8) return ['kerb'];
+  if (index < 14) {
+    const plan = ['kerb', 'special'];
+    if (index >= 11) plan.push('perch');
+    return plan;
+  }
+  return ['special', 'special', 'perch'];
+}
+
+function isBridge(platform, gaps) {
+  return platform.height <= .6 && gaps.some((gap) => (
+    platform.at <= gap.at && platform.at + platform.width >= gap.at + gap.width
+  ));
+}
+
+function carriesShard(level, platform) {
+  return level.collectibles.some(({ at }) => at >= platform.at - .15 && at <= platform.at + platform.width + .15);
+}
+
+// The feature pass changes when the auto-player jumps (new enemies, perches and step-up surfaces).
+// Re-derive the free apex shards from the final run trace so each one still sits on a jump arc. The
+// platform shards are fixed to their platform and are kept as-is.
+function regenerateApexShards(level, index) {
+  const platformShards = level.collectibles.filter((shard) => (
+    level.platforms.some((platform) => (
+      shard.at >= platform.at - .15 && shard.at <= platform.at + platform.width + .15
+    ))
+  ));
+  level.collectibles = [...platformShards];
+  const wanted = blueprint[index].shards;
+  if (wanted === 0) return true;
+
+  const result = playLevel(level);
+  if (!result.completed) return false;
+  const movementPortals = new Set(['spring', 'dash', 'float']);
+  const firstMovement = result.events.find(({ type, portal }) => type === 'portal' && movementPortals.has(portal));
+  const cutoff = firstMovement?.time ?? Infinity;
+  const windows = beatWindows(level).filter(({ kind }) => kind === 'hazard' || kind === 'gap' || kind === 'enemy');
+  const apexHeight = jumpApexHeight();
+  const candidates = [];
+
+  for (const event of result.events) {
+    if (event.type !== 'jump' || event.time >= cutoff) continue;
+    const apexSpeed = courseSpeedTimeline(level).advance(event.at).speed;
+    const apexAt = event.at + apexSpeed * jumpRiseTime();
+    const options = [];
+    for (let at = Math.max(3, event.at + .3); at <= Math.min(level.length - 3, event.at + jumpReach(apexSpeed)); at += .05) {
+      if (level.platforms.some((platform) => at >= platform.at - .15 && at <= platform.at + platform.width + .15)) continue;
+      const speed = courseSpeedTimeline(level).advance(at).speed;
+      const time = (at - event.at) / speed;
+      const height = jumpHeightAt(time);
+      if (height < 1.45 || height > apexHeight + .02) continue;
+      if (windows.some(({ start, end }) => at > start - .12 && at < end + .12)) continue;
+      if (platformShards.some((shard) => Math.abs(shard.at - at) < 1)) continue;
+      options.push({ at, height, score: height - Math.abs(at - apexAt) * .0001 });
+    }
+    options.sort((a, b) => b.score - a.score);
+    const shard = options.find(({ at }) => candidates.every((existing) => Math.abs(existing.at - at) >= 1));
+    if (shard) candidates.push({ at: round(shard.at), height: round(shard.height) });
+    if (candidates.length === wanted) break;
+  }
+  if (candidates.length !== wanted) return false;
+  level.collectibles = [...candidates, ...platformShards];
+  return true;
+}
+
 function applyFeaturePass(catalog, base, index) {
   const quota = QUOTAS[tierOf(index)];
   let level = clone(base);
-  const applied = [];
 
   // 1. Enemies: convert hazard slots. A crawler is shorter than a hazard, so a jump that cleared
   //    the hazard clears the crawler; the auto-player still has to agree.
@@ -198,7 +442,7 @@ function applyFeaturePass(catalog, base, index) {
     if (enemies >= quota.enemies) break;
     const before = clone(level);
     const nextBeat = beatSpans(level).find((beat) => beat.at > group.at + .5);
-    const roomy = nextBeat ? nextBeat.at - group.at > .9 * level.speed * 2 * 8.5 / 19 : true;
+    const roomy = nextBeat ? nextBeat.at - group.at > .9 * level.speed * airTime() : true;
     const type = drones < quota.drones && roomy ? 'drone' : 'crawler';
     level.enemies = level.enemies.filter((enemy) => Math.abs(enemy.at - group.at) > 2);
     level.enemies.push(type === 'drone'
@@ -211,60 +455,99 @@ function applyFeaturePass(catalog, base, index) {
     }
     enemies++;
     if (type === 'drone') drones++;
-    applied.push(`enemy ${type} @${group.at.toFixed(1)}`);
   }
 
-  // 2. Platforms with a shard: raised kerbs on plain track.
-  const halfWidth = 2;
-  let platforms = 0;
-  const desiredShards = Math.max(quota.shards, level.collectibles.length);
-  const rejected = new Set();
-  while (platforms < quota.platforms) {
-    const spot = candidatePlatformSpots(level, halfWidth).find((candidate) => !rejected.has(candidate.at));
-    if (!spot) break;
-    if (level.portals.some((portal) => Math.abs(spot.at - portal.at) < 6)) {
-      rejected.add(spot.at);
-      continue;
+  // 2. Rebuild the platform mix from the archetype plan. Every placement is verified as a whole.
+  level.platforms = [];
+  for (const slot of desiredPlatforms(index)) {
+    const before = level;
+    let next = null;
+    if (slot === 'kerb') {
+      next = placeKerb(level, index, catalog);
+    } else if (slot === 'perch') {
+      next = placePerch(level, index, catalog);
+    } else {
+      // Prefer an island (two jumps), then a shelf, then the hover (final tier only).
+      // A tier may repeat a special if that is the only mix the gates allow.
+      const candidates = index >= 14 ? ['island', 'shelf', 'hover'] : ['island', 'shelf'];
+      for (const kind of candidates) {
+        next = kind === 'island'
+          ? placeIsland(level, index, catalog)
+          : kind === 'shelf'
+            ? placeShelf(level, index, catalog)
+            : placeHover(level, index, catalog);
+        if (next) break;
+      }
     }
-    const before = clone(level);
-    level.platforms.push({ at: spot.at - halfWidth, width: halfWidth * 2, height: .45, kind: 'kerb' });
-    if (level.collectibles.length < desiredShards) level.collectibles.push({ at: spot.at, height: 1.9 });
-    if (!keep(catalog, level, index)) {
-      level = before;
-      rejected.add(spot.at);
-      continue;
+    if (!next) {
+      throw new Error(`${level.id}: could not place the ${slot} platform for its course tier`);
     }
-    platforms++;
-    applied.push(`platform @${spot.at.toFixed(1)}`);
+    level = next;
+    if (before === level) throw new Error(`${level.id}: platform pass made no progress`);
   }
 
-  // 3. Shards: make sure the quota is met, above existing beats where nothing else collides.
-  while (level.collectibles.length < quota.shards) {
-    const before = clone(level);
-    const spots = candidatePlatformSpots(level, .8);
-    if (!spots.length) break;
-    level.collectibles.push({ at: spots[0].at, height: 1.9 });
-    if (!keep(catalog, level, index)) {
-      level = before;
-      break;
-    }
-    applied.push(`shard @${spots[0].at.toFixed(1)}`);
+  // 3. Shards: every non-bridge platform carries one, then the free apex shards are re-derived
+  // from the final run trace because the feature mix can move the jump that used to carry them.
+  for (const platform of level.platforms) {
+    if (isBridge(platform, level.gaps) || platform.kind === 'perch') continue;
+    if (!carriesShard(level, platform)) level.collectibles.push(platformShard(platform, platform.kind));
+  }
+  if (!regenerateApexShards(level, index)) {
+    throw new Error(`${level.id}: could not re-place its apex shards after the feature pass`);
   }
 
   const copy = COPY[level.id];
   if (copy) {
     level.signature = copy.signature;
-    level.designHook = copy.designHook;
+    level.designHook = designHookFor(level);
   }
-  return { level, applied };
+  return { level, applied: [] };
+}
+
+function archetypeCounts(level) {
+  const result = {};
+  for (const platform of level.platforms) {
+    const kind = platform.kind ?? 'bridge';
+    result[kind] = (result[kind] ?? 0) + 1;
+  }
+  return result;
+}
+
+function plural(count, singular) {
+  return `${count} ${count === 1 ? singular : `${singular}s`}`;
+}
+
+function listPhrase(items) {
+  if (items.length <= 1) return items[0] ?? '';
+  return `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`;
+}
+
+function designHookFor(level) {
+  const style = level.hazardStyle.replaceAll('-', ' ');
+  const parts = [plural(level.obstacles.length, `${style} group`)];
+  if (level.gaps.length) parts.push(plural(level.gaps.length, 'gap'));
+  const counts = archetypeCounts(level);
+  const platforms = Object.entries(counts).map(([kind, count]) => plural(count, kind));
+  if (platforms.length) parts.push(listPhrase(platforms));
+  if (level.portals.length) {
+    const types = [...new Set(level.portals.map(({ type }) => type))];
+    parts.push(`${plural(level.portals.length, 'portal')} (${listPhrase(types)})`);
+  }
+  if (level.enemies.length) {
+    const byType = new Map();
+    for (const { type } of level.enemies) byType.set(type, (byType.get(type) ?? 0) + 1);
+    parts.push(listPhrase([...byType].map(([type, count]) => plural(count, type))));
+  }
+  if (level.collectibles.length) parts.push(plural(level.collectibles.length, 'shard'));
+  return `${level.name} lays out ${listPhrase(parts)}.`;
 }
 
 function main() {
   const composed = composeLevels(levels);
   const catalog = composed.map(({ level }) => level);
   const results = composed.map(({ level, phrases }, index) => {
-    const { level: enriched, applied } = applyFeaturePass(catalog, level, index);
-    return { level: enriched, phrases, metrics: analyzeLevel(enriched), applied };
+    const { level: enriched } = applyFeaturePass(catalog, level, index);
+    return { level: enriched, phrases, metrics: analyzeLevel(enriched) };
   });
 
   validateLevels(results.map(({ level }) => level));
@@ -275,12 +558,13 @@ function main() {
   writeFileSync(LEVELS_PATH, rewriteLevels(source, check));
   writeFileSync(PLAN_PATH, renderDesignPlan(check, checklist));
 
-  for (const { level, applied } of results) {
+  for (const { level } of results) {
     const jumps = playLevel(level).jumps;
+    const counts = archetypeCounts(level);
+    const archetypes = Object.entries(counts).map(([kind, count]) => `${kind} x${count}`).join(', ') || 'none';
     console.log(
-      `${level.id}: platforms ${level.platforms.length} | enemies ${level.enemies.length}`
-      + ` | portals ${level.portals.length} | shards ${level.collectibles.length} | jumps ${jumps}`
-      + ` | ${applied.length ? applied.join(', ') : 'no change'}`,
+      `${level.id}: platforms ${level.platforms.length} [${archetypes}] | enemies ${level.enemies.length}`
+      + ` | portals ${level.portals.length} | shards ${level.collectibles.length} | jumps ${jumps}`,
     );
   }
 }

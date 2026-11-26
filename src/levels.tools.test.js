@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { playLevel } from '../tools/auto-player.mjs';
 import { analyzeLevel } from '../tools/level-report.mjs';
-import { airTime, jumpReach } from '../tools/level-physics.mjs';
+import { airTime, jumpFallTime, jumpReach, jumpRiseTime } from '../tools/level-physics.mjs';
 import { jumpTuning, motionTuning } from './game-logic.js';
 
 function fixture(overrides = {}) {
@@ -23,7 +23,8 @@ function fixture(overrides = {}) {
 
 test('a straight run with a hazard one reach away is completed', () => {
   const reach = jumpReach(8);
-  assert.equal(airTime(), 2 * jumpTuning.initialVelocity / motionTuning.gravity);
+  assert.ok(Math.abs(airTime() - (jumpRiseTime() + jumpFallTime())) < 1e-12);
+  assert.ok(airTime() < 2 * jumpTuning.initialVelocity / motionTuning.gravity);
   const result = playLevel(fixture({ obstacles: [[4 + reach, 1]] }));
   assert.equal(result.completed, true);
   assert.equal(result.deaths, 0);

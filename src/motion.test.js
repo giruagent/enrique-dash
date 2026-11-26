@@ -56,19 +56,60 @@ test('standing on flat ground preserves support and does not fall', () => {
   assert.equal(result.fell, false);
 });
 
+function ballisticJump() {
+  const riseTime = jumpTuning.initialVelocity / motionTuning.gravity;
+  const apex = jumpTuning.initialVelocity ** 2 / (2 * motionTuning.gravity);
+  const fallTime = Math.sqrt((2 * apex) / (motionTuning.gravity * motionTuning.fallGravityMultiplier));
+  return { riseTime, apex, fallTime, airTime: riseTime + fallTime };
+}
+
+test('the jump constants describe a brisk rise and a faster fall at the same apex', () => {
+  assert.equal(jumpTuning.initialVelocity, 10);
+  assert.equal(motionTuning.gravity, 27);
+  assert.equal(motionTuning.fallGravityMultiplier, 1.45);
+  const { riseTime, apex, fallTime, airTime } = ballisticJump();
+  assert.ok(Math.abs(apex - 1.85) < .01);
+  assert.ok(Math.abs(riseTime - .37) < .01);
+  assert.ok(Math.abs(fallTime - .31) < .01);
+  assert.ok(Math.abs(airTime - .68) < .01);
+  assert.ok(airTime < 0.895 * .8);
+});
+
 test('a jump reaches the expected apex and lands exactly once at ground level', () => {
   const result = simulateJump();
-  const expectedApex = jumpTuning.initialVelocity ** 2 / (2 * motionTuning.gravity);
-  assert.ok(Math.abs(result.apex - expectedApex) <= expectedApex * .05);
+  const { apex } = ballisticJump();
+  assert.ok(Math.abs(result.apex - apex) <= apex * .05);
   assert.equal(result.y, BASE_HEIGHT);
   assert.equal(result.grounded, true);
   assert.equal(result.landingCount, 1);
 });
 
-test('jump air time stays within ten percent of the ballistic prediction', () => {
+test('jump air time matches the asymmetric ballistic prediction', () => {
   const result = simulateJump();
-  const expectedAirTime = 2 * jumpTuning.initialVelocity / motionTuning.gravity;
-  assert.ok(Math.abs(result.airTime - expectedAirTime) <= expectedAirTime * .1);
+  const { airTime } = ballisticJump();
+  assert.ok(Math.abs(result.airTime - airTime) <= airTime * .05);
+});
+
+test('the fall phase uses 1.45 times gravity and takes about a fifth less time than the rise', () => {
+  const { riseTime, fallTime } = ballisticJump();
+  assert.ok(Math.abs(fallTime / riseTime - 1 / 1.2) < .01);
+  assert.ok(fallTime < riseTime);
+
+  const rising = stepPlayerMotion(
+    makePlayer({ y: 10, velocityY: 1, grounded: false }),
+    STEP,
+    makeCourse(),
+  );
+  const falling = stepPlayerMotion(
+    makePlayer({ y: 10, velocityY: -1, grounded: false }),
+    STEP,
+    makeCourse(),
+  );
+  const riseDrop = 1 - rising.velocityY;
+  const fallDrop = -1 - falling.velocityY;
+  assert.ok(Math.abs(riseDrop - motionTuning.gravity * STEP) < 1e-9);
+  assert.ok(Math.abs(fallDrop - motionTuning.gravity * motionTuning.fallGravityMultiplier * STEP) < 1e-9);
+  assert.ok(Math.abs(fallDrop / riseDrop - motionTuning.fallGravityMultiplier) < 1e-9);
 });
 
 test('grounded motion steps onto a half-unit platform and drops back to ground', () => {

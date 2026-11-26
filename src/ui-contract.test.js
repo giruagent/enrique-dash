@@ -31,3 +31,23 @@ test('paused overlay has a dedicated high-contrast backdrop', () => {
 test('paused overlay uses system colors in forced-colors mode', () => {
   assert.match(styles, /@media\s*\(forced-colors:\s*active\)[\s\S]*?\.game-wrap\.is-paused\s+\.game-overlay\s*\{[^}]*background:\s*Canvas/);
 });
+
+test('the course legend names all four gameplay roles', () => {
+  const legend = html.match(/<ul class="game-legend"[\s\S]*?<\/ul>/)?.[0] ?? '';
+  assert.notEqual(legend, '');
+  assert.match(legend, /aria-label="Course legend: danger, shard, power-up, platform"/);
+  for (const role of ['DANGER', 'SHARD', 'POWER-UP', 'PLATFORM']) {
+    assert.match(legend, new RegExp(`>${role}<`), `the legend is missing ${role}`);
+  }
+  assert.match(styles, /\.game-legend\s*\{[^}]*display:\s*flex[^}]*flex-wrap:\s*wrap/);
+  assert.match(styles, /\.game-legend\s*\{[^}]*font-size:\s*9px/);
+});
+
+test('starting a run never consumes a jump', async () => {
+  const main = await readFile(new URL('./main.js', import.meta.url), 'utf8');
+  // The tap that starts or restarts a run must only start it. Applying it as a jump dropped the
+  // player into the first gap on thirteen of the twenty composed courses.
+  assert.doesNotMatch(main, /jumpAfterLoad/);
+  assert.doesNotMatch(main, /pendingStartJump/);
+  assert.match(main, /void start\(\);/);
+});

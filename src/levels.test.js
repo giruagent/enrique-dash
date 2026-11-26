@@ -4,7 +4,7 @@ import { getLevel, levelValidationError, levels, validateLevels } from './levels
 import { jumpTuning, motionTuning, platformTuning } from './game-logic.js';
 import { playLevel } from '../tools/auto-player.mjs';
 import { analyzeLevel } from '../tools/level-report.mjs';
-import { beatWindows, courseSpeedTimeline } from '../tools/level-physics.mjs';
+import { beatWindows, courseSpeedTimeline, jumpHeightAt, jumpReach } from '../tools/level-physics.mjs';
 import { blueprint } from '../tools/compose-levels.mjs';
 
 test('the valid course catalog imports without a validation failure', () => {
@@ -227,13 +227,130 @@ test('every shard sits in the reachable apex band above a jump, clear of gaps an
         const reachable = jumps.some(({ at }) => {
           const time = (shard.at - at) / timeline.advance(shard.at).speed;
           if (time <= 0) return false;
-          const height = jumpTuning.initialVelocity * time - .5 * motionTuning.gravity * time ** 2;
+          const height = jumpHeightAt(time);
           return height >= 1.2 && height <= apexHeight + .05 && Math.abs(height - shard.height) <= .1;
         });
         assert.ok(reachable, `${level.id} shard ${index} is not above a jump arc`);
         assert.ok(collected.has(`collectible-${index}`), `${level.id} shard ${index} was not collected by the jump`);
       }
-      assert.equal(hazards.some(({ start, end }) => shard.at > start && shard.at < end), false, `${level.id} shard ${index} sits inside a gap or hazard window`);
+      // An island shard is above a support surface inside an island gap, so the gap window is
+      // interrupted by the island. Every other shard must sit clear of gap and hazard windows.
+      const island = kerb?.kind === 'island'
+        && level.gaps.find(({ at, width }) => kerb.at >= at && kerb.at + kerb.width <= at + width);
+      const insideHazard = hazards.some(({ start, end }) => shard.at > start && shard.at < end);
+      assert.equal(insideHazard && !island, false, `${level.id} shard ${index} sits inside a gap or hazard window`);
     });
   }
+});
+
+function platformKindCounts(level) {
+  const counts = {};
+  for (const { kind } of level.platforms) counts[kind] = (counts[kind] ?? 0) + 1;
+  return counts;
+}
+
+function spansGap(platform, gaps) {
+  return platform.height <= platformTuning.maxStepHeight
+    && gaps.some((gap) => platform.at <= gap.at && platform.at + platform.width >= gap.at + gap.width);
+}
+
+test('platform archetypes follow the tier mix', () => {
+  levels.forEach((level, index) => {
+    const counts = platformKindCounts(level);
+    const kinds = Object.keys(counts);
+    if (index < 4) {
+      assert.ok(level.platforms.length <= 1, `${level.id} may keep at most one tier-1 platform`);
+      assert.ok(kinds.every((kind) => kind === 'kerb'), `${level.id} uses a non-kerb tutorial platform`);
+    } else if (index < 8) {
+      assert.equal(counts.kerb, 1, `${level.id} needs exactly one kerb`);
+      assert.equal(level.platforms.length, 1, `${level.id} has extra tier-2 platforms`);
+    } else if (index < 14) {
+      assert.equal(counts.kerb, 1, `${level.id} needs one kerb`);
+      assert.equal((counts.shelf ?? 0) + (counts.island ?? 0), 1, `${level.id} needs one shelf or island`);
+      assert.equal(counts.hover ?? 0, 0, `${level.id} is below the hover tier`);
+      assert.equal(counts.perch ?? 0, index >= 11 ? 1 : 0, `${level.id} has the wrong perch quota`);
+      assert.equal(
+        level.platforms.length,
+        index >= 11 ? 3 : 2,
+        `${level.id} has an unexpected platform count`,
+      );
+    } else {
+      const specials = (counts.shelf ?? 0) + (counts.island ?? 0) + (counts.hover ?? 0);
+      assert.equal(specials, 2, `${level.id} needs two shelf/island/hover platforms`);
+      assert.equal(counts.perch, 1, `${level.id} needs exactly one perch`);
+      assert.equal(counts.kerb ?? 0, 0, `${level.id} should spend both platform slots on specials`);
+      assert.equal(level.platforms.length, 3, `${level.id} has an unexpected platform count`);
+    }
+  });
+});
+
+test('every island sits inside a gap with at least 1.6 units of hole on each side', () => {
+  for (const level of levels) {
+    for (const platform of level.platforms.filter(({ kind }) => kind === 'island')) {
+      const gap = level.gaps.find(({ at, width }) => (
+        platform.at >= at && platform.at + platform.width <= at + width
+      ));
+      assert.ok(gap, `${level.id} island is not inside a gap`);
+      assert.ok(platform.at - gap.at >= 1.6 - 1e-9, `${level.id} island leaves less than 1.6 units before it`);
+      assert.ok(
+        gap.at + gap.width - (platform.at + platform.width) >= 1.6 - 1e-9,
+        `${level.id} island leaves less than 1.6 units after it`,
+      );
+      assert.equal(platform.height, .9, `${level.id} island should be .9 high`);
+      assert.equal(platform.width, 2.5, `${level.id} island should use the six-sided prism width`);
+    }
+  }
+});
+
+test('every perch carries a crawler standing at the platform centre', () => {
+  for (const level of levels) {
+    for (const platform of level.platforms.filter(({ kind }) => kind === 'perch')) {
+      const centre = platform.at + platform.width / 2;
+      const enemy = level.enemies.find(({ at }) => at === centre);
+      assert.ok(enemy, `${level.id} perch has no enemy at ${centre}`);
+      assert.equal(enemy.type, 'crawler', `${level.id} perch must carry a crawler`);
+      assert.equal(platform.height, .45, `${level.id} perch should be kerb height`);
+    }
+  }
+});
+
+test('every non-bridge platform carries a shard, except the perch', () => {
+  for (const level of levels) {
+    for (const platform of level.platforms) {
+      if (spansGap(platform, level.gaps) || platform.kind === 'perch') continue;
+      const shard = level.collectibles.find(({ at }) => at >= platform.at - .15 && at <= platform.at + platform.width + .15);
+      assert.ok(shard, `${level.id} ${platform.kind} at ${platform.at} is missing its shard`);
+    }
+    for (const platform of level.platforms.filter(({ kind }) => kind === 'perch')) {
+      const shard = level.collectibles.find(({ at }) => at >= platform.at && at <= platform.at + platform.width);
+      assert.equal(shard, undefined, `${level.id} perch should carry the enemy instead of a shard`);
+    }
+  }
+});
+
+test('every shelf keeps half a jump reach of clear track on both ends', () => {
+  for (const level of levels) {
+    for (const platform of level.platforms.filter(({ kind }) => kind === 'shelf')) {
+      assert.ok(platform.width >= 9 && platform.width <= 11, `${level.id} shelf width is outside 9–11`);
+      assert.equal(platform.height, .5, `${level.id} shelf should be .5 high`);
+      const centre = platform.at + platform.width / 2;
+      const reach = jumpReach(courseSpeedTimeline(level).advance(centre).speed);
+      const clearance = .5 * reach;
+      for (const beat of inputBeats(level)) {
+        const clear = beat.courseEnd <= platform.at - clearance + 1e-9
+          || beat.courseStart >= platform.at + platform.width + clearance - 1e-9;
+        assert.ok(clear, `${level.id} shelf at ${platform.at} has less than half a reach of track by ${beat.id}`);
+      }
+    }
+  }
+});
+
+test('hover platforms only appear from course 15 on and use the short bob height', () => {
+  levels.forEach((level, index) => {
+    const hovers = level.platforms.filter(({ kind }) => kind === 'hover');
+    if (index < 14) assert.equal(hovers.length, 0, `${level.id} has a hover before course 15`);
+    for (const hover of hovers) {
+      assert.equal(hover.height, .45, `${level.id} hover should bob around the kerb height`);
+    }
+  });
 });

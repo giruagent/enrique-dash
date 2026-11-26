@@ -4,7 +4,7 @@ import { jumpTuning, motionTuning, portalEffects } from '../src/game-logic.js';
 import { levels, validateLevels } from '../src/levels.js';
 import { playLevel } from './auto-player.mjs';
 import { analyzeLevel } from './level-report.mjs';
-import { beatWindows, courseSpeedTimeline, jumpReach } from './level-physics.mjs';
+import { beatWindows, courseSpeedTimeline, jumpHeightAt, jumpReach, jumpRiseTime } from './level-physics.mjs';
 
 const LEVELS_PATH = new URL('../src/levels.js', import.meta.url);
 const PLAN_PATH = new URL('../LEVEL_DESIGN_PLAN.md', import.meta.url);
@@ -277,7 +277,7 @@ function placeShards(level, brief) {
   const firstMovement = result.events.find(({ type, portal }) => type === 'portal' && movementPortals.has(portal));
   const cutoff = firstMovement?.time ?? Infinity;
   const windows = beatWindows(level).filter(({ kind }) => kind === 'hazard' || kind === 'gap' || kind === 'enemy');
-  const apexDistance = level.speed * jumpTuning.initialVelocity / motionTuning.gravity;
+  const apexDistance = level.speed * jumpRiseTime();
   const apexHeight = jumpTuning.initialVelocity ** 2 / (2 * motionTuning.gravity);
   const candidates = [];
   for (const event of result.events) {
@@ -286,7 +286,7 @@ function placeShards(level, brief) {
     const options = [];
     for (let at = Math.max(3, event.at + .3); at <= Math.min(level.length - 3, event.at + jumpReach(level.speed)); at += .05) {
       const time = (at - event.at) / level.speed;
-      const height = jumpTuning.initialVelocity * time - .5 * motionTuning.gravity * time ** 2;
+      const height = jumpHeightAt(time);
       if (height < 1.45 || height > apexHeight + .02) continue;
       if (windows.some(({ start, end }) => at > start - .12 && at < end + .12)) continue;
       options.push({ at, height, score: height - Math.abs(at - apexAt) * .0001 });

@@ -1,6 +1,6 @@
 # Enrique Dash
 
-**Current test version: 0.6.1** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
+**Current test version: 0.7.0** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
 
 ## Play locally
 
@@ -48,6 +48,14 @@ See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the auto-playe
 - Added a mute toggle and start audio only following a user gesture.
 - Deferred loading Three.js and the 2.6 MB character atlas until the first play action, retaining a static preview and cube fallback.
 - Added Node's built-in test runner for level validation, collision/progress rules, and music theory helpers.
+
+### v0.7.0
+
+- A tap or keypress that starts (or restarts) a run no longer doubles as a jump: with the composed courses that dropped the player straight into the first gap on thirteen of the twenty courses.
+- Jump feel: asymmetric gravity (rise 27, fall ×1.45) keeps the same 1.85 apex but cuts air time from 0.90 s to 0.68 s, so two jumps can be chained in rhythm.
+- One colour language for the whole game: hazards are always crimson, shards are gold faceted diamonds, platforms are slate, portals keep their per-type colour with a white core and a marker strip on the lane. A legend under the playfield names the four roles.
+- Platform archetypes: kerbs, long shelves, hexagonal islands over gaps, bobbing hover stones and perches with a crawler standing on them. Every placement is still replayed through the auto-player and reverted if it breaks the course.
+- All twenty courses recomposed for the shorter jump; gates unchanged (20/20 completable, zero dead bands, zero telegraph violations).
 
 ### v0.6.1
 

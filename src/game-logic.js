@@ -12,12 +12,23 @@ export function levelProgressPercent(distance, length) {
 export const platformTuning = Object.freeze({ maxStepHeight: .6, landingTolerance: .08 });
 
 export const motionTuning = Object.freeze({
-  gravity: 19,
+  gravity: 27,
+  fallGravityMultiplier: 1.45,
   fallLimit: 1.65,
   groundSnapTolerance: .05,
   groundLostThreshold: .05,
   landingTolerance: platformTuning.landingTolerance,
 });
+
+// Asymmetric gravity: a brisk rise, then a faster fall. The multiplier is chosen
+// from the vertical velocity at the start of the step, so a jump that crosses
+// its apex inside one step changes regime only on the next step.
+export function gravityForStep(velocityY, gravityMultiplier = 1) {
+  const base = velocityY > 0
+    ? motionTuning.gravity
+    : motionTuning.gravity * motionTuning.fallGravityMultiplier;
+  return base * gravityMultiplier;
+}
 
 // Returns the surface the player should step up onto, or null.
 export function findStepSurface(playerX, playerY, grounded, baseHeight, platforms, maxStepHeight = platformTuning.maxStepHeight) {
@@ -56,7 +67,7 @@ export const portalEffects = Object.freeze({
 });
 
 export const jumpTuning = Object.freeze({
-  initialVelocity: 8.5,
+  initialVelocity: 10,
   inputBufferSeconds: .14,
   coyoteSeconds: .12,
   obstacleVerticalForgiveness: .08,
@@ -137,7 +148,7 @@ export function stepPlayerMotion(player, dt, course, options = {}) {
       coyoteTimer = jumpTuning.coyoteSeconds;
     }
     if (grounded && (supportHeight === null || supportHeight < y - motionTuning.groundLostThreshold)) grounded = false;
-    const gravity = motionTuning.gravity * (options.gravityMultiplier ?? 1);
+    const gravity = gravityForStep(velocityY, options.gravityMultiplier ?? 1);
     const nextMotion = integrateVerticalMotion(y, velocityY, gravity, dt);
     y = nextMotion.position;
     velocityY = nextMotion.velocity;
