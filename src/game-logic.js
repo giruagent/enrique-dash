@@ -157,6 +157,48 @@ export function portalLabel(type) {
   return Object.hasOwn(portalCopy, type) ? portalCopy[type] : portalCopy.phase;
 }
 
+export const effectCopy = Object.freeze({
+  dash: Object.freeze({ name: 'DASH', color: 0x52eaff }),
+  float: Object.freeze({ name: 'FLOAT', color: 0xb884ff }),
+  phase: Object.freeze({ name: 'PHASE', color: 0xff6fe0 }),
+  shield: Object.freeze({ name: 'SHIELD', color: 0x6c9dff }),
+});
+
+const effectTimers = Object.freeze({
+  dash: 'dashTimer',
+  float: 'gravityTimer',
+  phase: 'phaseTimer',
+});
+
+const effectTotals = Object.freeze({
+  dash: portalEffects.dash.duration,
+  float: portalEffects.float.duration,
+  phase: portalEffects.phase.duration,
+});
+
+// The HUD reads one stable, ordered list: timed effects first, then the shield charge. A timer
+// is live only above zero, so the entry disappears exactly when the effect stops.
+export function activeEffects(effects) {
+  if (!effects || typeof effects !== 'object') return [];
+  const active = [];
+  for (const type of ['dash', 'float', 'phase']) {
+    const remaining = effects[effectTimers[type]];
+    if (!Number.isFinite(remaining) || remaining <= 0) continue;
+    active.push({
+      type,
+      remaining,
+      total: effectTotals[type],
+      ratio: clampFraction(remaining / effectTotals[type]),
+      ...effectCopy[type],
+    });
+  }
+  const charges = effects.shieldCharges;
+  if (Number.isFinite(charges) && charges > 0) {
+    active.push({ type: 'shield', remaining: charges, total: 1, ratio: 1, ...effectCopy.shield });
+  }
+  return active;
+}
+
 export const jumpTuning = Object.freeze({
   initialVelocity: 10,
   inputBufferSeconds: .14,

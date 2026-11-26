@@ -2,7 +2,7 @@ let THREE;
 import packageInfo from '../package.json';
 import { getLevel, levelValidationError, levels } from './levels.js';
 import { createLossCue, playOneShot, primeOneShot, stopOneShot } from './audio-cues.js';
-import { canConsumeJumpBuffer, courseMedal, emptyProgress, finishGateDistance, getHazardProfile, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeRunProgress, parseProgress, portalEffects, portalLabel, shouldAcceptJumpInput, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy, stepPlayerMotion } from './game-logic.js';
+import { activeEffects, canConsumeJumpBuffer, courseMedal, effectCopy, emptyProgress, finishGateDistance, getHazardProfile, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeRunProgress, parseProgress, portalEffects, portalLabel, shouldAcceptJumpInput, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy, stepPlayerMotion } from './game-logic.js';
 import { MusicEngine } from './music.js';
 import './style.css';
 
@@ -18,6 +18,8 @@ const attemptDisplay = document.querySelector('#attempt');
 const collectibleHud = document.querySelector('#collectible-hud');
 const collectibleCountDisplay = document.querySelector('#collectible-count');
 const finishChip = document.querySelector('#finish-chip');
+const effectHud = document.querySelector('#effect-hud');
+effectHud.hidden = true;
 const message = document.querySelector('#game-message');
 const gameStatus = document.querySelector('#game-status');
 const levelName = document.querySelector('#level-name');
@@ -60,8 +62,15 @@ const finishGates = [];
 let collectedCount = 0;
 const DEFAULT_RUN_MESSAGE = 'TAP / CLICK / SPACE TO JUMP · P TO PAUSE';
 const PORTAL_ANNOUNCEMENT_SECONDS = 1.6;
+const EFFECT_BAR_INTERVAL_MS = 100;
 let finishChipLabel = '';
 let portalAnnouncementTime = 0;
+let effectHudSignature = '';
+let effectHudBarElapsedMs = 0;
+const effectPills = new Map();
+let effectAura = null;
+let effectAuraColor = null;
+let effectHalo = null;
 const completionKey = 'enrique-dash.completed-levels.v1';
 const progressKey = 'enrique-dash.progress.v2';
 let progress = readProgress();
@@ -142,6 +151,22 @@ function initScene() {
   player.add(fallback);
   player.userData.fallback = fallback;
   scene.add(player);
+  effectHalo = new THREE.Mesh(
+    new THREE.TorusGeometry(.34, .025, 8, 24),
+    new THREE.MeshStandardMaterial({
+      color: effectCopy.shield.color,
+      emissive: effectCopy.shield.color,
+      emissiveIntensity: .8,
+      metalness: .2,
+      roughness: .3,
+      transparent: true,
+      opacity: .85,
+    }),
+  );
+  effectHalo.rotation.x = -Math.PI / 2;
+  effectHalo.position.set(0, 3.35, 0);
+  effectHalo.visible = false;
+  player.add(effectHalo);
   resizeObserver = new ResizeObserver(resize);
   resizeObserver.observe(stage);
   clock = new THREE.Clock();
@@ -355,6 +380,8 @@ function update(dt) {
 
   updateProgress(levelProgressPercent(distance, level.length));
   updateFinishChip();
+  updateEffectHud(dt);
+  updateEffectVisuals();
   updatePortalAnnouncement(dt);
   if (distance >= level.length) finish();
 }
@@ -524,6 +551,101 @@ function updateFinishChip() {
   if (label === finishChipLabel) return;
   finishChipLabel = label;
   finishChip.textContent = label;
+}
+
+// The pill list is rebuilt only when the set of active effects changes. Between rebuilds a bar
+// moves at most every 100 ms, and only when its rounded percentage actually changes.
+function updateEffectHud(dt) {
+  if (!effectHud || !player) return;
+  const active = activeEffects(player.userData.effects);
+  const signature = active.map((effect) => effect.type).join(',');
+  if (signature !== effectHudSignature) {
+    effectHudSignature = signature;
+    effectHudBarElapsedMs = 0;
+    effectPills.clear();
+    effectHud.replaceChildren();
+    effectHud.hidden = active.length === 0;
+    for (const effect of active) {
+      const pill = document.createElement('li');
+      pill.className = 'effect-pill';
+      pill.dataset.effect = effect.type;
+      pill.style.setProperty('--effect-color', `#${effect.color.toString(16).padStart(6, '0')}`);
+      const name = document.createElement('span');
+      name.className = 'effect-pill-name';
+      name.textContent = effect.name;
+      const track = document.createElement('span');
+      track.className = 'effect-pill-track';
+      const fill = document.createElement('i');
+      fill.className = 'effect-pill-fill';
+      const percent = Math.round(effect.ratio * 100);
+      fill.style.width = `${percent}%`;
+      track.append(fill);
+      pill.append(name, track);
+      effectHud.append(pill);
+      effectPills.set(effect.type, { fill, percent });
+    }
+    return;
+  }
+  if (active.length === 0) return;
+  effectHudBarElapsedMs += dt * 1000;
+  if (effectHudBarElapsedMs < EFFECT_BAR_INTERVAL_MS) return;
+  effectHudBarElapsedMs = 0;
+  for (const effect of active) {
+    const pill = effectPills.get(effect.type);
+    if (!pill) continue;
+    const percent = Math.round(effect.ratio * 100);
+    if (percent === pill.percent) continue;
+    pill.percent = percent;
+    pill.fill.style.width = `${percent}%`;
+  }
+}
+
+function disposeEffectAura() {
+  if (!effectAura) return;
+  scene?.remove(effectAura);
+  effectAura.geometry.dispose();
+  effectAura.material.dispose();
+  effectAura = null;
+  effectAuraColor = null;
+}
+
+function ensureEffectAura(color) {
+  if (effectAura && effectAuraColor === color) return effectAura;
+  disposeEffectAura();
+  effectAura = new THREE.Mesh(
+    new THREE.TorusGeometry(.55, .04, 8, 32),
+    new THREE.MeshStandardMaterial({
+      color,
+      emissive: color,
+      emissiveIntensity: .8,
+      metalness: .1,
+      roughness: .5,
+      transparent: true,
+      opacity: .5,
+      depthWrite: false,
+    }),
+  );
+  effectAura.rotation.x = -Math.PI / 2;
+  effectAura.position.set(player.position.x, laneY + .03, 0);
+  scene.add(effectAura);
+  effectAuraColor = color;
+  return effectAura;
+}
+
+// The ring sits on the lane, not on the jumping body, and fades with the strongest remaining
+// effect. Reduced motion keeps the fade but drops the pulse.
+function updateEffectVisuals() {
+  const active = activeEffects(player?.userData.effects);
+  if (effectHalo) effectHalo.visible = active.some((effect) => effect.type === 'shield');
+  if (active.length === 0) {
+    disposeEffectAura();
+    return;
+  }
+  const ratio = active.reduce((strongest, effect) => Math.max(strongest, effect.ratio), 0);
+  const aura = ensureEffectAura(active[0].color);
+  const pulse = reducedMotion ? 0 : Math.sin(simulationTime * 5) * .08;
+  aura.material.opacity = Math.min(.95, Math.max(.1, .18 + ratio * .52 + pulse));
+  aura.position.x = player.position.x;
 }
 
 function updatePortalAnnouncement(dt) {
@@ -1098,6 +1220,8 @@ function reset() {
     player.userData.supportY = laneY;
     player.userData.effects = { dashTimer: 0, gravityTimer: 0, shieldCharges: 0, phaseTimer: 0 };
   }
+  updateEffectHud(0);
+  updateEffectVisuals();
   while (obstacles.length) removeObstacle(obstacles[obstacles.length - 1]);
   while (gaps.length) removeGap(gaps[gaps.length - 1]);
   while (platforms.length) removeMeshFeature(platforms[platforms.length - 1], platforms.length - 1, platforms);

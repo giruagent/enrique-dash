@@ -1,6 +1,6 @@
 # Enrique Dash
 
-**Current test version: 0.8.1** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
+**Current test version: 0.8.2** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
 
 ## Play locally
 
@@ -48,6 +48,11 @@ See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the auto-playe
 - Added a mute toggle and start audio only following a user gesture.
 - Deferred loading Three.js and the 2.6 MB character atlas until the first play action, retaining a static preview and cube fallback.
 - Added Node's built-in test runner for level validation, collision/progress rules, and music theory helpers.
+
+### v0.8.2
+
+- Active power-ups are visible for their whole duration: a HUD row under the level name shows one pill per live effect, named in its gameplay colour, with a thin bar that drains by the remaining ratio. Dash 2.2 s, float 2.8 s, phase 2.4 s, and shield until its saved hit is spent; the row hides when nothing is active.
+- The character carries a soft aura ring on the lane for as long as any effect is live, tinted by the effect colour and fading with the strongest remaining ratio. Shield adds a thin blue halo above the head so a saved hit is understandable. Pulsing is disabled, with static opacity, under `prefers-reduced-motion`.
 
 ### v0.8.1
 
