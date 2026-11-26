@@ -9,6 +9,79 @@ export function levelProgressPercent(distance, length) {
   return Math.max(0, Math.min(100, (distance / length) * 100));
 }
 
+export const PROGRESS_VERSION = 2;
+
+const clampFraction = (value) => (
+  Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0
+);
+
+const clampShards = (value) => (
+  Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0
+);
+
+export function emptyProgress() {
+  return { version: PROGRESS_VERSION, courses: {} };
+}
+
+// Storage is untrusted: anything may be there. Accept the current object, the old array of
+// completed ids, or junk, and always return a fresh normalized v2 object.
+export function parseProgress(raw) {
+  let data = raw;
+  if (typeof raw === 'string') {
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      return emptyProgress();
+    }
+  }
+  if (Array.isArray(data)) {
+    const courses = {};
+    for (const id of data) {
+      if (typeof id === 'string' && id.length > 0) courses[id] = { cleared: true };
+    }
+    return { version: PROGRESS_VERSION, courses };
+  }
+  if (!data || typeof data !== 'object') return emptyProgress();
+  const courses = {};
+  const stored = data.courses;
+  if (stored && typeof stored === 'object' && !Array.isArray(stored)) {
+    for (const [id, entry] of Object.entries(stored)) {
+      if (!id || !entry || typeof entry !== 'object' || Array.isArray(entry)) continue;
+      courses[id] = {
+        best: clampFraction(entry.best),
+        shards: clampShards(entry.shards),
+        cleared: entry.cleared === true,
+      };
+    }
+  }
+  return { version: PROGRESS_VERSION, courses };
+}
+
+// Runs only get better: the best distance, the shard count and the clear flag never regress.
+export function mergeRunProgress(progress, levelId, run = {}) {
+  const source = progress && typeof progress === 'object' && progress.courses && typeof progress.courses === 'object'
+    ? progress.courses
+    : {};
+  const current = source[levelId] && typeof source[levelId] === 'object' ? source[levelId] : {};
+  const entry = {
+    best: Math.max(clampFraction(current.best), clampFraction(run.reached)),
+    shards: Math.max(clampShards(current.shards), clampShards(run.shards)),
+    cleared: current.cleared === true || run.cleared === true,
+  };
+  return {
+    ...(progress && typeof progress === 'object' ? progress : {}),
+    version: PROGRESS_VERSION,
+    courses: { ...source, [levelId]: entry },
+  };
+}
+
+export function courseMedal(entry, level) {
+  if (!entry || entry.cleared !== true) return null;
+  const totalShards = Array.isArray(level?.collectibles) ? level.collectibles.length : 0;
+  if (totalShards > 0 && clampShards(entry.shards) >= totalShards) return 'silver';
+  return 'bronze';
+}
+
 // The finish gate is authored at the same course distance as the run-ending check, so the
 // player reaches it exactly when `distance` reaches `level.length`.
 export function finishGateDistance(level) {

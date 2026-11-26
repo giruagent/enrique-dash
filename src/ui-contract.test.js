@@ -71,3 +71,20 @@ test('starting a run never consumes a jump', async () => {
   assert.doesNotMatch(main, /pendingStartJump/);
   assert.match(main, /void start\(\);/);
 });
+
+test('level cards show a progress bar, shard pips and a medal dot', async () => {
+  const main = await readFile(new URL('./main.js', import.meta.url), 'utf8');
+  const cardRenderer = main.match(/function renderLevelCards\(\)[\s\S]*?\n\}/)?.[0] ?? '';
+  assert.notEqual(cardRenderer, '');
+  assert.match(cardRenderer, /level-card-progress/);
+  assert.match(cardRenderer, /setAttribute\('role', 'presentation'\)/);
+  assert.match(cardRenderer, /level-card-percent/);
+  assert.match(cardRenderer, /aria-hidden', 'true'/);
+  assert.match(cardRenderer, /level-card-shards/);
+  assert.match(cardRenderer, /◆/);
+  assert.match(cardRenderer, /level-card-medal/);
+  assert.match(cardRenderer, /courseMedal\(/);
+  assert.match(styles, /\.level-card-shards\s*\{[^}]*color:\s*#ffe066/);
+  assert.match(styles, /\.level-card-medal\.bronze\s*\{[^}]*background:\s*#c98a4b/);
+  assert.match(styles, /\.level-card-medal\.silver\s*\{[^}]*background:\s*#dfe8f5/);
+});

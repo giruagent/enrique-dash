@@ -2,7 +2,7 @@ let THREE;
 import packageInfo from '../package.json';
 import { getLevel, levelValidationError, levels } from './levels.js';
 import { createLossCue, playOneShot, primeOneShot, stopOneShot } from './audio-cues.js';
-import { canConsumeJumpBuffer, finishGateDistance, getHazardProfile, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, portalEffects, portalLabel, shouldAcceptJumpInput, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy, stepPlayerMotion } from './game-logic.js';
+import { canConsumeJumpBuffer, courseMedal, emptyProgress, finishGateDistance, getHazardProfile, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeRunProgress, parseProgress, portalEffects, portalLabel, shouldAcceptJumpInput, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy, stepPlayerMotion } from './game-logic.js';
 import { MusicEngine } from './music.js';
 import './style.css';
 
@@ -47,7 +47,7 @@ let renderer, scene, camera, player, playerSprite, spriteMaterial, atlasTexture,
 let sceneStarted = false;
 let scenePromise = null;
 let floor, floorMaterial, trackEdgeMaterial, sceneryGroup;
-let running = false, started = false, dead = false, completed = false, distance = 0, attempt = 1;
+let running = false, started = false, dead = false, completed = false, distance = 0, runBestDistance = 0, attempt = 1;
 let simulationTime = 0, graphicsUnavailable = false;
 let musicEnabled = true, pseudoFullscreen = false, activeAnimation = '', animationTime = 0;
 const obstacles = [];
@@ -63,15 +63,32 @@ const PORTAL_ANNOUNCEMENT_SECONDS = 1.6;
 let finishChipLabel = '';
 let portalAnnouncementTime = 0;
 const completionKey = 'enrique-dash.completed-levels.v1';
-let completedLevelIds = readCompletedLevels();
+const progressKey = 'enrique-dash.progress.v2';
+let progress = readProgress();
+let runRecorded = false;
 
-function readCompletedLevels() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(completionKey) || '[]');
-    return new Set(Array.isArray(saved) ? saved.filter((id) => levels.some((item) => item.id === id)) : []);
-  } catch {
-    return new Set();
+// The v2 object is authoritative, but the legacy id array is still read forever so downgrades
+// and old saves keep their clears. Unknown course ids survive parsing and are ignored by the
+// selector, which only ever looks up ids from the level catalogue.
+function readProgress() {
+  let storedV2 = null;
+  let storedLegacy = null;
+  try { storedV2 = localStorage.getItem(progressKey); } catch { /* Storage is optional. */ }
+  try { storedLegacy = localStorage.getItem(completionKey); } catch { /* Storage is optional. */ }
+  const merged = parseProgress(storedV2);
+  const legacy = parseProgress(storedLegacy);
+  const courses = { ...merged.courses };
+  for (const [id, entry] of Object.entries(legacy.courses)) {
+    const current = courses[id];
+    courses[id] = current
+      ? {
+        best: Math.max(current.best, entry.best ?? 0),
+        shards: Math.max(current.shards, entry.shards ?? 0),
+        cleared: current.cleared || entry.cleared,
+      }
+      : entry;
   }
+  return { ...emptyProgress(), courses };
 }
 
 function initScene() {
@@ -280,6 +297,7 @@ function update(dt) {
   effects.phaseTimer = Math.max(0, effects.phaseTimer - dt);
   const speed = level.speed * (effects.dashTimer > 0 ? portalEffects.dash.speedMultiplier : 1);
   distance += dt * speed;
+  runBestDistance = Math.max(runBestDistance, distance);
 
   moveFeatureGroup(obstacles, dt, speed, removeObstacle);
   moveFeatureGroup(gaps, dt, speed, removeGap);
@@ -1033,6 +1051,7 @@ function crash(reason = 'Tap or press Space to try this level again.') {
   dead = true;
   attempt++;
   attemptDisplay.textContent = String(attempt).padStart(2, '0');
+  recordRunEnd(false);
   showOverlay('One more try.', reason);
   message.textContent = 'RUN ENDED — TRY AGAIN';
   gameStatus.textContent = `Run ended. ${reason}`;
@@ -1045,10 +1064,9 @@ function finish() {
   running = false;
   completed = true;
   distance = level.length;
+  runBestDistance = level.length;
   updateProgress(100);
-  completedLevelIds.add(level.id);
-  try { localStorage.setItem(completionKey, JSON.stringify([...completedLevelIds])); } catch { /* Completion remains available for this session. */ }
-  renderLevelCards();
+  recordRunEnd(true);
   const totalShards = level.collectibles.length;
   const shardSummary = totalShards ? ` You found ${collectedCount} of ${totalShards} shards.` : '';
   showOverlay(`${level.name} cleared!`, `Course ${selectedLevelIndex + 1} of ${levels.length} complete.${shardSummary}`, selectedLevelIndex < levels.length - 1);
@@ -1068,6 +1086,8 @@ function reset() {
   running = false;
   simulationTime = 0;
   distance = 0;
+  runBestDistance = 0;
+  runRecorded = false;
   attempt = 1;
   if (player) {
     player.position.set(-3, laneY, 0);
@@ -1101,15 +1121,46 @@ function reset() {
   void musicEngine.stop();
 }
 
+// A run ends exactly once: crash() and finish() each funnel into here. Staying out of the render
+// loop keeps storage writes to one per run end and leaves pause untouched.
+function recordRunEnd(cleared) {
+  if (runRecorded) return;
+  runRecorded = true;
+  const reached = level.length > 0 ? Math.min(1, runBestDistance / level.length) : 0;
+  progress = mergeRunProgress(progress, level.id, {
+    reached,
+    shards: collectedCount,
+    cleared,
+  });
+  const clearedIds = Object.entries(progress.courses)
+    .filter(([id, entry]) => entry.cleared && levels.some((item) => item.id === id))
+    .map(([id]) => id);
+  try {
+    localStorage.setItem(progressKey, JSON.stringify(progress));
+    localStorage.setItem(completionKey, JSON.stringify(clearedIds));
+  } catch { /* Progress remains available for this session. */ }
+  renderLevelCards();
+}
+
 function renderLevelCards() {
   const list = document.querySelector('#level-list');
   list.replaceChildren();
   levels.forEach((item, index) => {
+    const entry = progress.courses[item.id];
+    const totalShards = item.collectibles?.length ?? 0;
+    const best = Number.isFinite(entry?.best) ? entry.best : 0;
+    const shards = Number.isFinite(entry?.shards) ? entry.shards : 0;
+    const medal = courseMedal(entry, item);
+    const percent = Math.round(best * 100);
     const button = document.createElement('button');
-    button.className = `level-card${index === selectedLevelIndex ? ' selected' : ''}${completedLevelIds.has(item.id) ? ' completed' : ''}`;
+    button.className = `level-card${index === selectedLevelIndex ? ' selected' : ''}${entry?.cleared ? ' completed' : ''}`;
     button.type = 'button';
     button.setAttribute('aria-pressed', String(index === selectedLevelIndex));
-    button.setAttribute('aria-label', `Play level ${index + 1}: ${item.name}${completedLevelIds.has(item.id) ? ', completed' : ''}`);
+    const details = [];
+    if (percent > 0) details.push(`best ${percent} percent`);
+    if (totalShards > 0) details.push(`${shards} of ${totalShards} shards`);
+    if (medal) details.push(`${medal} medal`);
+    button.setAttribute('aria-label', `Play level ${index + 1}: ${item.name}${details.length ? `, ${details.join(', ')}` : ''}`);
     const number = document.createElement('span');
     number.className = 'level-number';
     number.textContent = `LEVEL ${String(index + 1).padStart(2, '0')}`;
@@ -1119,7 +1170,37 @@ function renderLevelCards() {
     const zone = document.createElement('span');
     zone.className = 'level-card-zone';
     zone.textContent = item.zone;
-    button.append(number, title, zone);
+    // Card footer: a thin <span class="level-card-progress" role="presentation"> bar with an
+    // aria-hidden percent, then <span class="level-card-shards">◆ n/total</span> and the medal dot.
+    const stats = document.createElement('span');
+    stats.className = 'level-card-stats';
+    const bar = document.createElement('span');
+    bar.className = 'level-card-progress';
+    bar.setAttribute('role', 'presentation');
+    const fill = document.createElement('i');
+    fill.style.width = `${best * 100}%`;
+    bar.append(fill);
+    const percentLabel = document.createElement('span');
+    percentLabel.className = 'level-card-percent';
+    percentLabel.textContent = `${percent}%`;
+    percentLabel.setAttribute('aria-hidden', 'true');
+    stats.append(bar);
+    // An untouched course shows the shard pips and an empty bar; a "0%" label on all twenty cards
+    // is noise, and the accessible name already omits a zero best.
+    if (percent > 0) stats.append(percentLabel);
+    if (totalShards > 0) {
+      const pips = document.createElement('span');
+      pips.className = 'level-card-shards';
+      pips.textContent = `◆ ${shards}/${totalShards}`;
+      stats.append(pips);
+    }
+    if (medal) {
+      const dot = document.createElement('span');
+      dot.className = `level-card-medal ${medal}`;
+      dot.setAttribute('aria-hidden', 'true');
+      stats.append(dot);
+    }
+    button.append(number, title, zone, stats);
     button.addEventListener('click', () => selectLevel(index));
     list.appendChild(button);
   });
