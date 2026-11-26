@@ -2,7 +2,7 @@ let THREE;
 import packageInfo from '../package.json';
 import { getLevel, levelValidationError, levels } from './levels.js';
 import { createLossCue, playOneShot, primeOneShot, stopOneShot } from './audio-cues.js';
-import { canConsumeJumpBuffer, findStepSurface, getHazardProfile, getTrackSupportHeight, integrateVerticalMotion, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, portalEffects, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy } from './game-logic.js';
+import { canConsumeJumpBuffer, getHazardProfile, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, portalEffects, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy, stepPlayerMotion } from './game-logic.js';
 import { MusicEngine } from './music.js';
 import './style.css';
 
@@ -268,54 +268,26 @@ function update(dt) {
   moveFeatureGroup(enemies, dt, speed, removeMeshFeature);
   moveFeatureGroup(collectibles, dt, speed, removeMeshFeature);
   triggerPortals();
-  const wasGrounded = player.userData.grounded;
-
-  const stepSurface = findStepSurface(
-    player.position.x,
-    player.position.y,
-    player.userData.grounded,
-    laneY,
+  const result = stepPlayerMotion({
+    x: player.position.x,
+    y: player.position.y,
+    velocityY: player.userData.vy,
+    grounded: player.userData.grounded,
+    coyoteTimer: player.userData.coyoteTimer,
+  }, dt, {
+    baseHeight: laneY,
+    gaps: gaps.map(({ center, width }) => ({ center, width })),
     platforms,
-  );
-  if (stepSurface !== null) {
-    player.position.y = stepSurface;
-    player.userData.vy = 0;
-    player.userData.grounded = true;
-    player.userData.coyoteTimer = jumpTuning.coyoteSeconds;
-  }
-  const supportHeight = getTrackSupportHeight(
-    player.position.x,
-    player.position.y,
-    laneY,
-    gaps.map(({ center, width }) => ({ center, width })),
-    platforms,
-  );
-  player.userData.supportY = supportHeight ?? laneY;
-  const previousY = player.position.y;
-
-  if (player.userData.grounded && supportHeight !== null && player.position.y <= supportHeight + .05) {
-    player.position.y = supportHeight;
-    player.userData.vy = 0;
-    player.userData.coyoteTimer = jumpTuning.coyoteSeconds;
-  } else {
-    if (wasGrounded && (supportHeight === null || supportHeight < player.position.y - .05)) {
-      player.userData.coyoteTimer = jumpTuning.coyoteSeconds;
-    }
-    if (player.userData.grounded && (supportHeight === null || supportHeight < player.position.y - .05)) player.userData.grounded = false;
-    const gravity = 19 * (effects.gravityTimer > 0 ? portalEffects.float.gravityMultiplier : 1);
-    const nextMotion = integrateVerticalMotion(player.position.y, player.userData.vy, gravity, dt);
-    player.position.y = nextMotion.position;
-    player.userData.vy = nextMotion.velocity;
-    if (supportHeight !== null && player.userData.vy <= 0 && player.position.y <= supportHeight && previousY >= supportHeight - .08) {
-      player.position.y = supportHeight;
-      player.userData.vy = 0;
-      player.userData.grounded = true;
-      player.userData.coyoteTimer = jumpTuning.coyoteSeconds;
-    }
-  }
-  if (supportHeight === null) player.userData.grounded = false;
+  }, {
+    gravityMultiplier: effects.gravityTimer > 0 ? portalEffects.float.gravityMultiplier : 1,
+  });
+  player.position.y = result.y;
+  player.userData.vy = result.velocityY;
+  player.userData.grounded = result.grounded;
+  player.userData.coyoteTimer = result.coyoteTimer;
+  player.userData.supportY = result.supportY;
   consumeBufferedJump();
-  if (player.position.y < laneY - 1.65) {
+  if (result.fell) {
     crash('Missed the jump.');
     return;
   }
