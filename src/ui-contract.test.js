@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { emitBurst, emitRing } from './particles.js';
 
 const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 const styles = await readFile(new URL('./style.css', import.meta.url), 'utf8');
@@ -173,4 +174,41 @@ test('the page labels match the package version', async () => {
   for (const label of [...labels, footer]) {
     assert.equal(label, pkg.version, `index.html advertises ${label} but package.json is ${pkg.version}`);
   }
+});
+
+test('the shard counter pop class is applied, animated and removed on animationend', async () => {
+  const main = await readFile(new URL('./main.js', import.meta.url), 'utf8');
+  assert.match(main, /collectibleCountDisplay\.classList\.add\('is-pop'\)/);
+  assert.match(main, /collectibleCountDisplay\?\.addEventListener\('animationend', \(\) => \{\s*collectibleCountDisplay\.classList\.remove\('is-pop'\)/);
+  assert.match(styles, /@keyframes shard-pop/);
+  assert.match(styles, /scale\(1\.35\)/);
+  assert.match(styles, /\.collectible-hud \.hud-value\.is-pop\{animation:shard-pop \.18s/);
+});
+
+test('reduced motion suppresses particle bursts and ring pulses', async () => {
+  const calls = [];
+  const pool = {
+    burst(options) { calls.push(['burst', options]); return 1; },
+    ring(options) { calls.push(['ring', options]); return true; },
+  };
+  assert.equal(emitBurst(pool, { count: 8 }, { reducedMotion: true }), 0);
+  assert.equal(emitRing(pool, { life: .4 }, { reducedMotion: true }), false);
+  assert.deepEqual(calls, [], 'nothing reaches the pool under reduced motion');
+  assert.equal(emitBurst(pool, { count: 8 }, { reducedMotion: false }), 1);
+  assert.equal(emitRing(pool, { life: .4 }, { reducedMotion: false }), true);
+  assert.equal(calls.length, 2);
+  const main = await readFile(new URL('./main.js', import.meta.url), 'utf8');
+  assert.match(main, /emitBurst\(particlePool, options, \{ reducedMotion \}\)/);
+  assert.match(main, /emitRing\(particlePool, options, \{ reducedMotion \}\)/);
+});
+
+test('the MUSIC toggle gates SFX and the death feedback is reduced-motion aware', async () => {
+  const main = await readFile(new URL('./main.js', import.meta.url), 'utf8');
+  assert.match(main, /if \(!musicEnabled \|\| !sfxEngine\) return false/);
+  assert.match(main, /sfxEngine\?\.setEnabled\(musicEnabled\)/);
+  assert.match(main, /function flashDamage\(\) \{\s*if \(reducedMotion/);
+  assert.match(html, /id="damage-vignette"/);
+  assert.match(styles, /@keyframes damage-vignette/);
+  assert.match(styles, /@keyframes screen-shake/);
+  assert.match(styles, /@keyframes chip-pulse/);
 });

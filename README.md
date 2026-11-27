@@ -1,6 +1,6 @@
 # Enrique Dash
 
-**Current test version: 1.2.0** — a touch-first Three.js rhythm platformer with twenty core courses and twenty Wool Road courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
+**Current test version: 1.3.0** — a touch-first Three.js rhythm platformer with twenty core courses and twenty Wool Road courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
 
 ## Play locally
 
@@ -50,6 +50,14 @@ See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the auto-playe
 - Added a mute toggle and start audio only following a user gesture.
 - Deferred loading Three.js and the 2.6 MB character atlas until the first play action, retaining a static preview and cube fallback.
 - Added Node's built-in test runner for level validation, collision/progress rules, and music theory helpers.
+
+### v1.3.0
+
+- Added `src/sfx.js`, a procedural sound engine with its own master gain, six-voice cap, .35 s cue ceiling and a suspended-context drop path. Pickups, landings, jumps, bounce pads, shields, checkpoints, portals, deaths and finishes each get a synthesised cue.
+- Shard pickups now rise up the course scale with the consecutive-pickup streak (`shardChimeDegree`/`nextStreak`), the closing shard of an authored arc plays the brighter `shardArc`, and the HUD counter pops for 180 ms.
+- Added `src/particles.js`, a pre-built 40-particle / 6-ring pool with no frame-loop allocation. Shards burst eight felt particles plus an expanding ring; landings puff dust; bounce pads, checkpoints and portals pulse a ring; the finish gate drops 24 felt confetti pieces for 1.2 s.
+- Added shield-hit enemy flashes, a checkpoint flag hop, a red death vignette with a 3 px shake, and a one-shot finish-chip pulse. `prefers-reduced-motion` suppresses every particle, shake, vignette and HUD animation while keeping the sounds.
+- The MUSIC toggle now gates SFX as well, and no new UI controls were added.
 
 ### v1.1.0
 

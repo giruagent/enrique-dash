@@ -50,3 +50,16 @@
 .campaign-tab[aria-pressed="true"] .campaign-tab-count{color:var(--level-accent)}
 .level-chapter{grid-column:1/-1;margin:0;padding:12px 4px 10px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,rgba(255,255,255,.04),transparent);color:var(--level-accent);font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:800;letter-spacing:1.8px}
 @media(max-width:360px){.campaign-tab{padding:7px 9px}.campaign-tab-label{font-size:16px}}
+
+/* Feedback: a shard counter pop, a one-shot finish-chip pulse, and a death vignette/shake. */
+.collectible-hud .hud-value{display:inline-block;transform-origin:left center}
+.collectible-hud .hud-value.is-pop{animation:shard-pop .18s ease-out;color:#ffe066}
+@keyframes shard-pop{0%{transform:scale(1)}45%{transform:scale(1.35)}100%{transform:scale(1)}}
+.finish-chip.is-pop{animation:chip-pulse .3s ease-out}
+@keyframes chip-pulse{0%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.15)}100%{transform:translateX(-50%) scale(1)}}
+.damage-vignette{position:absolute;inset:0;z-index:4;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,transparent 42%,rgba(255,40,70,.62) 100%)}
+.damage-vignette.is-active{animation:damage-vignette .22s ease-out}
+@keyframes damage-vignette{0%{opacity:.9}100%{opacity:0}}
+.game-wrap.is-shaking{animation:screen-shake .22s ease-out}
+@keyframes screen-shake{0%,100%{transform:translate3d(0,0,0)}20%{transform:translate3d(-3px,1px,0)}40%{transform:translate3d(3px,-1px,0)}60%{transform:translate3d(-2px,-1px,0)}80%{transform:translate3d(2px,1px,0)}}
+@media(prefers-reduced-motion:reduce){.collectible-hud .hud-value.is-pop,.finish-chip.is-pop,.damage-vignette.is-active,.game-wrap.is-shaking{animation:none!important}}
