@@ -37,11 +37,18 @@ Run `npm run levels:compose:wool` to deterministically rebuild every Wool Road l
 - **Audio:** 112 BPM with the existing sixteen-step procedural motif.
 
 ### 04 — Pillow Pines (89 units)
-- **Signature:** A spike run of 4 hazard groups over 3 open gaps, every landing clear.
+- **Signature:** A plush pad springs you over the middle stitch while three gaps open between pine-shadow hazards.
 - **Rhythm:** 1 + 1 + 1 + 2 + 2 input beats; target 0.66 inputs/s, measured 0.64; 3 open gaps and 1 bounce pad.
-- **Design hook:** Pillow Pines lays out 4 spike groups, 3 open gaps and 1 shard.
+- **Design hook:** Pillow Pines mixes spike, yarn spike and felt block over four hazard groups, opens three gaps, and threads one pad before the middle hole with a four-shard arc over the first.
 - **Layout:** Hazard groups at 45.36 [spike], 64.29 [yarn-spike], 79.28 [felt-block]; gaps at 27.54 (2.5), 56.77 (2.5), 71.76 (2.5); platforms: bounce at 36, width 3.5, height 0.35; portals: none; enemies: beetle at 9.72; shards: 8.6 (height 1.85), 25.85 (height 1.24, arc of 3), 27.47 (height 1.85), 29.02 (height 1.23). arches: none; pom-poms: 3
 - **Audio:** 116 BPM with the existing sixteen-step procedural motif.
+
+### 05 — Loom Lake (92 units)
+- **Signature:** A spike run of 5 hazard groups over 3 open gaps, every landing clear.
+- **Rhythm:** 1 + 2 + 2 + 2 + 1 input beats; target 0.68 inputs/s, measured 0.71; 3 open gaps and 1 kerb and 1 bounce pad.
+- **Design hook:** Loom Lake lays out 5 spike groups, 3 open gaps and 1 shard.
+- **Layout:** Hazard groups at 34.64 [spike], 59.45 [yarn-spike], 74.6 [felt-block], 82.16 [spike]; gaps at 27.06 (2.5), 51.86 (2.5), 67.02 (2.5); platforms: kerb at 15, width 4.5, height 0.45; bounce at 40, width 3.5, height 0.35; portals: none; enemies: beetle at 9.84; shards: 8.72 (height 1.85), 17.25 (height 1.65), 25.28 (height 1.24, arc of 3), 26.92 (height 1.85), 28.49 (height 1.23). arches: none; pom-poms: 3
+- **Audio:** 118 BPM with the existing sixteen-step procedural motif.
 
 ## Playtest checklist
 
