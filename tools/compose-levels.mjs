@@ -782,6 +782,7 @@ export function rewriteLevels(source, composed, label = 'src/levels.js') {
     let block = source.slice(start, end);
     block = block.replace(/signature: '(?:\\.|[^'])*', designHook: '(?:\\.|[^'])*',/, `signature: ${quote(level.signature)}, designHook: ${quote(level.designHook)},`);
     const keys = ['obstacles', 'gaps', 'platforms', 'portals', 'enemies', 'collectibles'];
+    if (level.decor !== undefined) keys.push('decor');
     const lines = block.split('\n').filter((line) => !keys.some((key) => line.startsWith(`    ${key}:`)));
     const hookIndex = lines.findIndex((line) => line.includes('hazardStyle:'));
     if (hookIndex < 0) throw new Error(`Cannot locate ${level.id}'s layout anchor`);
@@ -794,13 +795,18 @@ export function rewriteLevels(source, composed, label = 'src/levels.js') {
 }
 
 function featureLine(level) {
-  const hazards = level.obstacles.map(([at, count]) => `${at}${count === 2 ? ' (double)' : ''}`).join(', ');
+  const hazards = level.obstacles.map(([at, count, style]) => (
+    `${at}${count === 2 ? ' (double)' : ''}${style ? ` [${style}]` : ''}`
+  )).join(', ');
   const gaps = level.gaps.map(({ at, width }) => `${at} (${width})`).join(', ') || 'none';
   const platforms = level.platforms.map(({ at, width, height, kind }) => `${kind} at ${at}, width ${width}, height ${height}`).join('; ') || 'none';
   const portals = level.portals.map(({ at, type }) => `${type} at ${at}`).join(', ') || 'none';
   const enemies = level.enemies.map(({ at, type }) => `${type} at ${at}`).join(', ') || 'none';
-  const shards = level.collectibles.map(({ at, height }) => `${at} (height ${height})`).join(', ') || 'none';
-  return `- **Layout:** Hazard groups at ${hazards}; gaps at ${gaps}; platforms: ${platforms}; portals: ${portals}; enemies: ${enemies}; shards: ${shards}.`;
+  const shards = level.collectibles.map(({ at, height, arc }) => `${at} (height ${height}${arc ? `, arc of ${arc}` : ''})`).join(', ') || 'none';
+  const scenery = level.decor
+    ? ` arches: ${level.decor.arches?.join(', ') || 'none'}; pom-poms: ${level.decor.pomPoms ?? 0}`
+    : '';
+  return `- **Layout:** Hazard groups at ${hazards}; gaps at ${gaps}; platforms: ${platforms}; portals: ${portals}; enemies: ${enemies}; shards: ${shards}.${scenery}`;
 }
 
 function platformCountPhrases(level) {

@@ -37,11 +37,11 @@ const QUOTAS = [
 // behind (gaps, kerbs, enemies, portals and shards as listed in the design plan).
 const COPY = {
   'wool-thimble-meadow': {
-    signature: 'Three open gaps in the meadow, each one a single soft landing.',
-    designHook: 'Thimble Meadow lays out 3 spike groups, 3 open gaps and 1 shard.',
+    signature: 'Three open gaps in the meadow, a yarn-and-felt hazard mix and one shard arc over the middle hole.',
+    designHook: 'Thimble Meadow lays out 3 hazard groups, 3 open gaps, 1 shard arc and 1 shard.',
   },
   'wool-02-button-bush': {
-    signature: 'A plush pad under the first shard launches you at the wide gap; two open holes follow.',
+    signature: 'A plush pad launches you through a shard arc at the wide gap; a beetle waits on the last stitch.',
     designHook: 'Button Bush lays out 4 spike groups, 3 gaps, 1 bounce pad and 1 shard.',
   },
   'neon-run': {
@@ -480,6 +480,223 @@ function regenerateApexShards(level, index, config) {
   return true;
 }
 
+// ---------------------------------------------------------------------------
+// Wool vocabulary pass
+//
+// The rhythm pass owns the beats. This pass dresses them: per-group hazard skins, the three new
+// enemy silhouettes, shard arcs sampled from the shared physics trace, and purely decorative
+// scenery. Every change that can affect the run is replayed through the unchanged auto-player and
+// reverted when a gate stops holding. Scenery never enters a collision list, so it needs no gate.
+// ---------------------------------------------------------------------------
+
+const WOOL_SKINS = ['yarn-spike', 'felt-block', 'button-bomb', 'thread-arch'];
+const WOOL_ENEMIES = ['beetle', 'bunny', 'moth'];
+
+function woolVocabularyQuota(index, config) {
+  const tier = config.tierFor(index);
+  if (tier <= 1) return { skins: [2, 3], enemies: 1, arcs: [0, 1], arches: 0 };
+  if (tier === 2) return { skins: [3, 3], enemies: 2, arcs: [1, 1], arches: 0 };
+  if (tier === 3) return { skins: [4, 4], enemies: 2, arcs: [1, 2], arches: 1 };
+  return { skins: [4, 4], enemies: 3, arcs: [2, 2], arches: 2 };
+}
+
+function enemyTypesOf(level) {
+  return [...new Set(level.enemies.map(({ type }) => type))];
+}
+
+function skinStylesFor(level, quota, vocabulary) {
+  if (Array.isArray(vocabulary.skins) && vocabulary.skins.length) {
+    return level.obstacles.map((_, index) => vocabulary.skins[index] ?? level.hazardStyle);
+  }
+  const distinct = Math.min(level.obstacles.length, quota.skins[1]);
+  const styles = [level.hazardStyle ?? 'spike'];
+  for (const skin of WOOL_SKINS) {
+    if (styles.length >= distinct) break;
+    if (!styles.includes(skin)) styles.push(skin);
+  }
+  return level.obstacles.map((_, index) => styles[index % styles.length]);
+}
+
+function withHazardSkins(level, index, catalog, config, styles) {
+  const trial = clone(level);
+  trial.obstacles = trial.obstacles.map(([at, count], groupIndex) => {
+    const style = styles[groupIndex];
+    return style ? [at, count, style] : [at, count];
+  });
+  return keep(catalog, trial, index, config) ? trial : null;
+}
+
+// Replace one whole hazard group with a single enemy. The group's beat stays at the same distance,
+// so the course's input rate is unchanged; only the silhouette and collision profile change.
+function replaceHazardWithEnemy(level, groupIndex, type, index, catalog, config) {
+  if (groupIndex < 0 || groupIndex >= level.obstacles.length) return null;
+  if (level.obstacles.length <= 3) return null;
+  const [at] = level.obstacles[groupIndex];
+  const trial = clone(level);
+  trial.obstacles.splice(groupIndex, 1);
+  trial.enemies.push({ at: round(at), type });
+  return keep(catalog, trial, index, config) ? trial : null;
+}
+
+function applyGenericWoolEnemies(level, quota, index, catalog, config) {
+  let next = level;
+  let attempts = 0;
+  while (enemyTypesOf(next).length < quota.enemies && attempts < WOOL_ENEMIES.length + 4) {
+    attempts++;
+    const missing = WOOL_ENEMIES.filter((type) => !enemyTypesOf(next).includes(type));
+    const type = quota.enemies === 1
+      ? (missing.includes('beetle') ? 'beetle' : missing[0])
+      : (missing[0] ?? WOOL_ENEMIES[attempts % WOOL_ENEMIES.length]);
+    if (!type) break;
+    const groups = next.obstacles
+      .map(([at, count], groupIndex) => ({ at, count, groupIndex }))
+      .filter(({ count }) => count === 1)
+      .sort((a, b) => a.at - b.at);
+    let replaced = null;
+    for (const group of groups) {
+      const trial = replaceHazardWithEnemy(next, group.groupIndex, type, index, catalog, config);
+      if (trial) { replaced = trial; break; }
+    }
+    if (!replaced) break;
+    next = replaced;
+  }
+  return next;
+}
+
+/** Frames of one real ballistic arc, sampled at even time steps. */
+function arcFrames(result, source, count, length) {
+  if (!source) return [];
+  const apex = jumpApexHeight();
+  const airborne = result.samples.filter((sample) => (
+    sample.time >= source.time
+    && sample.time <= source.time + airTime() + .05
+    && !sample.grounded
+  ));
+  const eligible = airborne.filter((sample) => {
+    const height = sample.y - sample.supportY;
+    return height >= 1.2
+      && height <= apex + .05
+      && sample.at > 3
+      && sample.at < length - 3;
+  });
+  if (eligible.length < count) return [];
+  return Array.from({ length: count }, (_, index) => {
+    const frame = eligible[Math.round(((eligible.length - 1) * index) / (count - 1))];
+    return { at: round(frame.at), height: round(frame.y - frame.supportY, 2) };
+  });
+}
+
+function arcSources(level, result, usedTimes) {
+  const jumps = result.events
+    .filter(({ type, time }) => type === 'jump' && !usedTimes.has(time))
+    .sort((a, b) => a.at - b.at);
+  const gaps = beatWindows(level).filter(({ kind }) => kind === 'gap');
+  // Prefer the jump that crosses a gap: that is the beat that forces the arc.
+  const gapJumps = jumps.filter(({ window }) => gaps.some((gap) => window.split('+').includes(gap.id)));
+  return [...gapJumps, ...jumps];
+}
+
+function chooseArcSource(level, result, spec, usedTimes) {
+  if (spec.source === 'pad') {
+    return result.events.find(({ type, time }) => type === 'bounce' && !usedTimes.has(time)) ?? null;
+  }
+  if (spec.source === 'gap') {
+    const gap = beatWindows(level).filter(({ kind }) => kind === 'gap')[spec.ordinal ?? 0];
+    if (!gap) return null;
+    return result.events.find(({ type, time, window }) => (
+      type === 'jump' && !usedTimes.has(time) && window.split('+').includes(gap.id)
+    )) ?? null;
+  }
+  return arcSources(level, result, usedTimes)[0] ?? null;
+}
+
+function placeArc(level, spec, index, catalog, config, usedTimes) {
+  const result = playLevel(level, { trace: true });
+  if (!result.completed) {
+    if (process.env.COMPOSE_DEBUG) console.log(level.id, 'arc pre-play failed', result.events.findLast(({ type }) => type === 'death')?.reason);
+    return null;
+  }
+  const source = chooseArcSource(level, result, spec, usedTimes);
+  const count = spec.count ?? 3;
+  const frames = arcFrames(result, source, count, level.length);
+  if (frames.length !== count) {
+    if (process.env.COMPOSE_DEBUG) console.log(level.id, 'arc frames', frames.length, spec.source, Boolean(source));
+    return null;
+  }
+  const trial = clone(level);
+  if (spec.replaceShards) trial.collectibles = [];
+  // Keep every arc in one contiguous block: its leader carries `arc: n` and the next n-1 entries
+  // are its samples. The browser (and any reader) can expand the arc from the leader alone.
+  const shards = frames.map((frame, frameIndex) => ({
+    at: frame.at,
+    height: frame.height,
+    ...(frameIndex === 0 ? { arc: count } : {}),
+  }));
+  if (!spec.replaceShards) {
+    // Do not stack a new arc on top of an existing shard.
+    if (trial.collectibles.some((shard) => shards.some((next) => Math.abs(shard.at - next.at) < .8))) return null;
+  }
+  trial.collectibles.push(...shards);
+  if (!keep(catalog, trial, index, config)) {
+    if (process.env.COMPOSE_DEBUG) console.log(level.id, 'arc gate rejected', JSON.stringify(shards));
+    return null;
+  }
+  usedTimes.add(source.time);
+  return trial;
+}
+
+function applyWoolVocabulary(level, index, catalog, config) {
+  const brief = config.blueprint[index] ?? {};
+  const vocabulary = brief.vocabulary ?? {};
+  if (process.env.COMPOSE_DEBUG) console.log('VOCAB', level.id, JSON.stringify(vocabulary));
+  const quota = woolVocabularyQuota(index, config);
+  let next = level;
+
+  // 1. Enemies. An authored retrofit names the group it converts (Button Bush's beetle); future
+  //    courses take the tier quota, always one beat for one beat.
+  if (vocabulary.replaceGroup) {
+    const { ordinal = 0, type = 'beetle' } = vocabulary.replaceGroup;
+    const groups = next.obstacles
+      .map(([at, count], groupIndex) => ({ at, count, groupIndex }))
+      .filter(({ count }) => count === 1)
+      .sort((a, b) => a.at - b.at);
+    const target = groups[ordinal];
+    if (target) next = replaceHazardWithEnemy(next, target.groupIndex, type, index, catalog, config) ?? next;
+  } else if (!brief.vocabulary) {
+    next = applyGenericWoolEnemies(next, quota, index, catalog, config);
+  }
+
+  // 2. Hazard skins. A group without a style keeps the base style.
+  const styled = withHazardSkins(next, index, catalog, config, skinStylesFor(next, quota, vocabulary));
+  if (styled) next = styled;
+
+  // 3. Shard arcs, sampled from the auto-player's own trajectory.
+  const specs = Array.isArray(vocabulary.arcs)
+    ? vocabulary.arcs
+    : Array.from({ length: quota.arcs[1] }, () => ({ source: 'jump', count: 3 }));
+  const usedTimes = new Set();
+  for (const spec of specs) {
+    const placed = placeArc(next, { ...spec, replaceShards: spec.replaceShards ?? vocabulary.replaceShards }, index, catalog, config, usedTimes);
+    if (placed) next = placed;
+  }
+  if (process.env.COMPOSE_DEBUG) console.log(level.id, 'arcs after', JSON.stringify(next.collectibles));
+
+  // 4. Decorative scenery. These objects are created for the level but never added to obstacles,
+  //    gaps, platforms, portals, enemies or collectibles, so they cannot enter the simulation.
+  const archCount = Array.isArray(vocabulary.arches)
+    ? vocabulary.arches.length
+    : quota.arches;
+  const arches = Array.isArray(vocabulary.arches)
+    ? [...vocabulary.arches]
+    : archCount >= 2 ? ['checkpoint', 'finish'] : archCount === 1 ? ['finish'] : [];
+  const pomPoms = vocabulary.pomPoms ?? (config.tierFor(index) >= 4 ? 5 : config.tierFor(index) >= 2 ? 4 : 3);
+  next.decor = {
+    ...(arches.length ? { arches } : {}),
+    pomPoms,
+  };
+  return next;
+}
+
 function applyFeaturePass(catalog, base, index, config) {
   const quota = QUOTAS[tierOf(index, config)];
   let level = clone(base);
@@ -563,6 +780,9 @@ function applyFeaturePass(catalog, base, index, config) {
     }
   }
 
+  // 5. Wool vocabulary: per-group skins, new enemy silhouettes, sampled shard arcs and scenery.
+  if (config.id === 'wool') level = applyWoolVocabulary(level, index, catalog, config);
+
   const copy = COPY[level.id];
   if (copy) {
     level.signature = copy.signature;
@@ -590,8 +810,10 @@ function listPhrase(items) {
 }
 
 function designHookFor(level) {
-  const style = level.hazardStyle.replaceAll('-', ' ');
-  const parts = [plural(level.obstacles.length, `${style} group`)];
+  const styles = [...new Set(level.obstacles.map((group) => group[2] ?? level.hazardStyle))];
+  const parts = [styles.length > 1
+    ? `${plural(level.obstacles.length, 'hazard group')} (${listPhrase(styles.map((style) => style.replaceAll('-', ' ')))})`
+    : plural(level.obstacles.length, `${(styles[0] ?? 'spike').replaceAll('-', ' ')} group`)];
   if (level.gaps.length) parts.push(plural(level.gaps.length, 'gap'));
   const counts = archetypeCounts(level);
   const platforms = Object.entries(counts).map(([kind, count]) => (
@@ -607,7 +829,16 @@ function designHookFor(level) {
     for (const { type } of level.enemies) byType.set(type, (byType.get(type) ?? 0) + 1);
     parts.push(listPhrase([...byType].map(([type, count]) => plural(count, type))));
   }
-  if (level.collectibles.length) parts.push(plural(level.collectibles.length, 'shard'));
+  if (level.collectibles.length) {
+    const arcs = level.collectibles.filter((shard) => shard.arc).length;
+    parts.push(arcs
+      ? `${plural(level.collectibles.length, 'shard')} in ${plural(arcs, 'arc')}`
+      : plural(level.collectibles.length, 'shard'));
+  }
+  if (level.decor?.arches?.length) {
+    const count = level.decor.arches.length;
+    parts.push(`${count} thread arch${count === 1 ? '' : 'es'}`);
+  }
   return `${level.name} lays out ${listPhrase(parts)}.`;
 }
 

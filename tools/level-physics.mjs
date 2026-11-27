@@ -1,5 +1,7 @@
 import {
-  getHazardProfile,
+  enemyTuning,
+  getEnemyProfile,
+  getObstacleProfile,
   jumpTuning,
   motionTuning,
   platformTuning,
@@ -124,15 +126,17 @@ export function beatWindows(level) {
     if (!timingAt.has(at)) timingAt.set(at, timeline.advance(at));
   }
 
-  (level.obstacles ?? []).forEach(([at, count], index) => {
-    const profile = getHazardProfile(level.hazardStyle);
+  (level.obstacles ?? []).forEach((group, index) => {
+    const [at, count] = group;
+    const style = group[2] ?? level.hazardStyle ?? 'spike';
+    const profile = getObstacleProfile(level, group);
     const radius = profile.width / 2 + OBSTACLE_HORIZONTAL_PADDING;
     const lastAt = at + (count - 1) * OBSTACLE_SPACING;
     const timing = timingAt.get(at);
     windows.push({
       id: `hazard-${index}`,
       kind: 'hazard',
-      type: level.hazardStyle ?? 'spike',
+      type: style,
       at,
       start: at - radius,
       end: lastAt + radius,
@@ -170,9 +174,14 @@ export function beatWindows(level) {
   });
 
   (level.enemies ?? []).forEach((enemy, index) => {
-    const crawler = enemy.type === 'crawler';
+    const profile = getEnemyProfile(enemy.type);
     const radius = ENEMY_HORIZONTAL_RADIUS;
     const timing = timingAt.get(enemy.at);
+    // The profile's clearance box already includes the flyer's altitude padding, so the moth's
+    // purely visual wing flap and bob never change this window (or the jump that clears it).
+    const clearance = profile.stompable
+      ? jumpTuning.stompMinimumHeight
+      : (enemy.height ?? profile.altitude) + enemyTuning.flyerClearancePadding;
     windows.push({
       id: `enemy-${index}`,
       kind: 'enemy',
@@ -182,9 +191,9 @@ export function beatWindows(level) {
       end: enemy.at + radius,
       courseStart: enemy.at,
       courseEnd: enemy.at,
-      requirement: crawler ? 'stomp' : 'airborne',
+      requirement: profile.stompable ? 'stomp' : 'airborne',
       unavoidable: true,
-      clearance: crawler ? jumpTuning.stompMinimumHeight : (enemy.height ?? 1.12) + .34 + .16,
+      clearance,
       speed: timing.speed,
       reach: jumpReach(timing.speed),
     });

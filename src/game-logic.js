@@ -116,7 +116,13 @@ export const checkpointTuning = Object.freeze({
 // distance inside the authored window. Returns null when the course has no room for a flag.
 export function safeCheckpointDistance(level) {
   const length = level?.length;
-  if (!Number.isFinite(length) || length < checkpointTuning.minimumLength) return null;
+  // Wool Road courses are deliberately shorter than the core campaign's 120-unit floor. A course may
+  // opt into an earlier checkpoint with `checkpointMinimumLength`; the default keeps every existing
+  // core course exactly as it was.
+  const minimumLength = Number.isFinite(level?.checkpointMinimumLength)
+    ? level.checkpointMinimumLength
+    : checkpointTuning.minimumLength;
+  if (!Number.isFinite(length) || length < minimumLength) return null;
   const midpoint = length / 2;
   const earliest = length * checkpointTuning.windowStart;
   const latest = length * checkpointTuning.windowEnd;
@@ -420,10 +426,76 @@ const hazardProfiles = Object.freeze({
   cloudstone: Object.freeze({ shape: 'block', width: 1.05, height: .78, clearanceHeight: .78 }),
   'magnetic-core': Object.freeze({ shape: 'debris', width: 1.06, height: .92, clearanceHeight: .92 }),
   corona: Object.freeze({ shape: 'corona', width: 1.18, height: .96, clearanceHeight: .96 }),
+  // Wool Road skins. Every wool skin copies an existing profile's collision box exactly; the extra
+  // shape names are purely visual, so a mixed-style course keeps the same spacing maths as the
+  // profile it borrows.
+  'yarn-spike': Object.freeze({ shape: 'yarn-spike', width: 1.14, height: .95, clearanceHeight: .95 }),
+  'felt-block': Object.freeze({ shape: 'felt-block', width: .86, height: .9, clearanceHeight: .9 }),
+  'button-bomb': Object.freeze({ shape: 'button-bomb', width: .82, height: .82, clearanceHeight: .82 }),
+  'thread-arch': Object.freeze({ shape: 'thread-arch', width: 1.35, height: .16, offsetY: 1.05, clearanceHeight: 1.15 }),
 });
 
 export function getHazardProfile(style = 'spike') {
   return hazardProfiles[style] ?? hazardProfiles.spike;
+}
+
+// A group may name its own skin (`[at, count, style]`); otherwise the course's single style
+// applies. Collision geometry always comes from the resolved profile.
+export function hazardStyleForGroup(level, group) {
+  return (Array.isArray(group) ? group[2] : group?.style) ?? level?.hazardStyle ?? 'spike';
+}
+
+export function getObstacleProfile(level, group) {
+  return getHazardProfile(hazardStyleForGroup(level, group));
+}
+
+// The three new silhouettes reuse the two shipped collision profiles exactly. Ground enemies are
+// stompable and stand on a .9-wide / .58-tall body; flyers hover at altitude 1.12 on a .72 / .68
+// body. Idle animation is visual only and is bounded by these boxes (see enemyTuning).
+export const enemyTuning = Object.freeze({
+  groundWidth: .9,
+  groundHeight: .58,
+  flyerWidth: .72,
+  flyerHeight: .68,
+  flyerAltitude: 1.12,
+  // beatWindows already padded a flyer's clearance by .5 over its authored altitude; keeping that
+  // constant means a moth is cleared by exactly the same jump as a drone.
+  flyerClearancePadding: .5,
+  droneBob: .16,
+  mothBob: .04,
+  mothWingOffset: .05,
+  groundBob: .03,
+});
+
+const groundEnemy = Object.freeze({
+  flyer: false,
+  stompable: true,
+  width: enemyTuning.groundWidth,
+  height: enemyTuning.groundHeight,
+  altitude: null,
+});
+const flyerEnemy = Object.freeze({
+  flyer: true,
+  stompable: false,
+  width: enemyTuning.flyerWidth,
+  height: enemyTuning.flyerHeight,
+  altitude: enemyTuning.flyerAltitude,
+});
+
+export const enemyProfiles = Object.freeze({
+  crawler: groundEnemy,
+  beetle: groundEnemy,
+  bunny: groundEnemy,
+  drone: flyerEnemy,
+  moth: flyerEnemy,
+});
+
+export function getEnemyProfile(type = 'crawler') {
+  return enemyProfiles[type] ?? enemyProfiles.crawler;
+}
+
+export function isStompableEnemy(type) {
+  return getEnemyProfile(type).stompable;
 }
 
 export function shouldStompEnemy(

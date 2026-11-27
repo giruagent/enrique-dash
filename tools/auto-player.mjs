@@ -1,6 +1,7 @@
 import { pathToFileURL } from 'node:url';
 import {
-  getHazardProfile,
+  getEnemyProfile,
+  getObstacleProfile,
   isCollectibleContact,
   isObstacleCollision,
   jumpTuning,
@@ -22,17 +23,16 @@ import {
 export const FIXED_STEP = 1 / 120;
 const BASE_HEIGHT = 0;
 const PLAYER_HEIGHT = 1.35;
-const DRONE_HEIGHT = .68;
-const CRAWLER_HEIGHT = .58;
 const DRONE_BOB = .16;
 const HOVER_BOB = .1;
 
 function prepareLevel(level) {
-  const hazards = (level.obstacles ?? []).flatMap(([at, count], group) => {
-    const profile = getHazardProfile(level.hazardStyle);
+  const hazards = (level.obstacles ?? []).flatMap((group, groupIndex) => {
+    const [at, count] = group;
+    const profile = getObstacleProfile(level, group);
     return Array.from({ length: count }, (_, index) => ({
-      id: `hazard-${group}.${index}`,
-      group,
+      id: `hazard-${groupIndex}.${index}`,
+      group: groupIndex,
       at: at + index * OBSTACLE_SPACING,
       width: profile.width,
       clearanceHeight: profile.clearanceHeight,
@@ -53,13 +53,16 @@ function prepareLevel(level) {
     phase: (platform.at - 3 + platform.width / 2) * .17,
   }));
   const portals = (level.portals ?? []).map((portal, index) => ({ ...portal, id: `portal-${index}` }));
-  const enemies = (level.enemies ?? []).map((enemy, index) => ({
-    ...enemy,
-    id: `enemy-${index}`,
-    height: enemy.type === 'crawler' ? CRAWLER_HEIGHT : DRONE_HEIGHT,
-    centerHeight: enemy.type === 'crawler' ? CRAWLER_HEIGHT / 2 : (enemy.height ?? 1.12),
-    phase: (enemy.at - 3) * .11,
-  }));
+  const enemies = (level.enemies ?? []).map((enemy, index) => {
+    const profile = getEnemyProfile(enemy.type);
+    return {
+      ...enemy,
+      id: `enemy-${index}`,
+      height: profile.height,
+      centerHeight: profile.stompable ? profile.height / 2 : (enemy.height ?? profile.altitude),
+      phase: (enemy.at - 3) * .11,
+    };
+  });
   const collectibles = (level.collectibles ?? []).map((collectible, index) => ({
     ...collectible,
     id: `collectible-${index}`,
@@ -228,11 +231,12 @@ function failureReasonForGap(prepared, distance) {
 }
 
 /** Play one deterministic attempt. No retries or collision relaxation are used. */
-export function playLevel(level) {
+export function playLevel(level, { trace = false } = {}) {
   const prepared = prepareLevel(level);
   const windows = beatWindows(level);
   const state = initialState();
   const events = [];
+  const samples = [];
   const removedHazards = new Set();
   const removedEnemies = new Set();
   const collected = new Set();
@@ -259,8 +263,21 @@ export function playLevel(level) {
     }
 
     const motion = advanceMotion(state, level, prepared, events);
+    if (trace) {
+      // The exact shared-physics position of the runner this frame. Collectible arcs are sampled
+      // from these frames, never from a modelled curve of their own.
+      samples.push({
+        time: state.time,
+        at: state.distance,
+        y: state.y,
+        supportY: state.supportY,
+        grounded: state.grounded,
+        velocityY: state.velocityY,
+      });
+    }
     if (motion.steppedUp) events.push({ type: 'step-up', at: state.distance, time: state.time });
     if (motion.landed) events.push({ type: 'land', at: state.distance, time: state.time });
+    if (motion.bounced) events.push({ type: 'bounce', at: state.distance, time: state.time });
 
     if (motion.fell) {
       deaths++;
@@ -301,7 +318,7 @@ export function playLevel(level) {
         if (removedEnemies.has(enemy.id)) continue;
         if (Math.abs(enemy.at - state.distance) >= ENEMY_HORIZONTAL_RADIUS) continue;
         const jumpHeight = state.y - state.supportY;
-        if (enemy.type === 'crawler' && shouldStompEnemy(jumpHeight, state.velocityY)) {
+        if (getEnemyProfile(enemy.type).stompable && shouldStompEnemy(jumpHeight, state.velocityY)) {
           removedEnemies.add(enemy.id);
           events.push({ type: 'stomp', feature: enemy.id, at: state.distance, time: state.time });
           continue;
@@ -353,6 +370,7 @@ export function playLevel(level) {
     finishTime: state.time,
     tightestMargin: Number.isFinite(tightestMargin) ? tightestMargin : null,
     events,
+    samples,
   };
 }
 

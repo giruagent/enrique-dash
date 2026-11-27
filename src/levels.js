@@ -252,8 +252,9 @@ export const levels = [
 ];
 
 const portalTypes = new Set(['spring', 'dash', 'float', 'shield', 'phase']);
-const enemyTypes = new Set(['crawler', 'drone']);
+const enemyTypes = new Set(['crawler', 'drone', 'beetle', 'moth', 'bunny']);
 const platformKinds = new Set(['kerb', 'shelf', 'island', 'hover', 'perch', 'bounce']);
+const archAnchors = new Set(['checkpoint', 'finish']);
 
 export function validateLevels(catalog, { expected = 20 } = {}) {
   if (!Array.isArray(catalog) || catalog.length !== expected) {
@@ -278,8 +279,11 @@ export function validateLevels(catalog, { expected = 20 } = {}) {
     if (!Array.isArray(level.music.scale) || level.music.scale.length < 5 || level.music.motif?.length !== 16) throw new Error(`${level.name} has incomplete music data.`);
     if (!Array.isArray(level.obstacles) || level.obstacles.length < 3) throw new Error(`${level.name} needs at least three hazard groups.`);
     let previousEnd = 0;
-    for (const [distance, count] of level.obstacles) {
+    for (const group of level.obstacles) {
+      if (!Array.isArray(group) || group.length < 2 || group.length > 3) throw new Error(`${level.name} contains an invalid obstacle group.`);
+      const [distance, count, style] = group;
       if (!Number.isFinite(distance) || !Number.isInteger(count) || count < 1 || count > 2) throw new Error(`${level.name} contains an invalid obstacle group.`);
+      if (style !== undefined && (typeof style !== 'string' || style.length === 0)) throw new Error(`${level.name} has an invalid hazard skin.`);
       if (distance <= previousEnd || distance + (count - 1) * 1.28 >= level.length - 3) throw new Error(`${level.name} has unsorted hazards or a hazard too near the finish.`);
       previousEnd = distance + (count - 1) * 1.28;
     }
@@ -302,6 +306,12 @@ export function validateLevels(catalog, { expected = 20 } = {}) {
     }
     for (const collectible of level.collectibles) {
       if (!Number.isFinite(collectible.at) || collectible.at < 3 || collectible.at > level.length - 3 || !Number.isFinite(collectible.height ?? 1.7)) throw new Error(`${level.name} has an invalid collectible.`);
+      if (collectible.arc !== undefined && (!Number.isInteger(collectible.arc) || collectible.arc < 2 || collectible.arc > 5)) throw new Error(`${level.name} has an invalid shard arc size.`);
+    }
+    if (level.decor !== undefined) {
+      if (!level.decor || typeof level.decor !== 'object' || Array.isArray(level.decor)) throw new Error(`${level.name} has invalid scenery data.`);
+      if (level.decor.arches !== undefined && (!Array.isArray(level.decor.arches) || level.decor.arches.some((anchor) => !archAnchors.has(anchor)))) throw new Error(`${level.name} has an invalid scenery arch.`);
+      if (level.decor.pomPoms !== undefined && (!Number.isInteger(level.decor.pomPoms) || level.decor.pomPoms < 3 || level.decor.pomPoms > 5)) throw new Error(`${level.name} has an invalid pom-pom count.`);
     }
     // Every jump-triggering beat must sit in the combo band or beyond the
     // reaction gap. The 0.80–1.35 reach dead band is never allowed.
