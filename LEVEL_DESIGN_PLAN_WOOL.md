@@ -107,11 +107,18 @@ Run `npm run levels:compose:wool` to deterministically rebuild every Wool Road l
 - **Audio:** 136 BPM with the existing sixteen-step procedural motif.
 
 ### 14 — Winder's Climb (128 units)
-- **Signature:** Two spike groups on one arc.
+- **Signature:** Two pads and two portals stack the climb: a spring at 14, a bounce at 18, a kerb at 42, a dash at 64 and a second bounce at 68.5 carry the ridge.
 - **Rhythm:** 2 + 2 + 2 + 3 + 3 input beats; target 0.90 inputs/s, measured 0.89; 5 open gaps and 1 kerb and 2 bounce pads.
-- **Design hook:** Winder's Climb lays out 6 spike groups, 5 open gaps, 2 portals (spring and dash), 1 drone and 1 shard.
+- **Design hook:** Winder's Climb stacks five gaps under a spring at 13.9, a pad at 18, a kerb at 42, a dash at 64.3 and a pad at 68.5, and threads four hazard skins, a beetle, a moth and two shard arcs.
 - **Layout:** Hazard groups at 11.92 (double) [spike], 37.1 [yarn-spike], 62.27 [felt-block], 89.45 [button-bomb], 103.96 [spike]; gaps at 28.76 (2.5), 53.93 (2.5), 79.11 (2.5), 93.77 (2.5), 107.94 (2.5); platforms: kerb at 42, width 4.5, height 0.45; bounce at 18, width 3.5, height 0.35; bounce at 68.5, width 3.5, height 0.35; portals: spring at 13.94, dash at 64.29; enemies: moth at 116.28, beetle at 10.92; shards: 9.99 (height 1.59), 44.25 (height 1.65), 27.38 (height 1.24, arc of 3), 29.2 (height 1.85), 30.94 (height 1.23), 21.61 (height 1.23, arc of 3), 23.13 (height 1.66), 24.57 (height 1.24). arches: finish; pom-poms: 4
 - **Audio:** 138 BPM with the existing sixteen-step procedural motif.
+
+### 15 — Frayed Frontier (132 units)
+- **Signature:** A spike group into an open gap.
+- **Rhythm:** 2 + 2 + 3 + 3 + 3 input beats; target 0.94 inputs/s, measured 0.91; 5 open gaps and 2 hovers and 2 bounce pads.
+- **Design hook:** Frayed Frontier lays out 7 spike groups, 5 open gaps, 2 portals (float and spring), 1 drone and 1 shard.
+- **Layout:** Hazard groups at 19.47 [spike], 44.47 (double) [yarn-spike], 61.03 [felt-block], 73.4 (double) [button-bomb], 94.79 [spike], 107.63 [yarn-spike]; gaps at 36.03 (2.5), 64.97 (2.5), 86.36 (2.5), 99.05 (2.5), 111.73 (2.5); platforms: hover at 51, width 4.5, height 0.45; hover at 24, width 4.5, height 0.45; bounce at 79, width 3, height 0.35; bounce at 29.5, width 3, height 0.35; portals: float at 22.29, spring at 75.61; enemies: moth at 120.16, beetle at 11.04; shards: 9.69 (height 1.85), 53.25 (height 1.65), 26.25 (height 1.65), 31.89 (height 1.22, arc of 3), 32.2 (height 1.45), 32.43 (height 1.61), 64.78 (height 1.24, arc of 3), 66.62 (height 1.85), 68.39 (height 1.23). arches: finish; pom-poms: 4
+- **Audio:** 140 BPM with the existing sixteen-step procedural motif.
 
 ## Playtest checklist
 

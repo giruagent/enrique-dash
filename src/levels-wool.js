@@ -258,4 +258,23 @@ export const woolLevels = [
       decor: { arches: ['finish'], pomPoms: 4 },
       music: { bpm: 138, root: 61, scale: pentatonicMajor, progression: [0, 2, 3, 4], motif: motif(4, null, 2, null, 3, 2, 0, null, 4, null, 2, 4, null, 3, 2, null) },
     },
+
+  {
+      ...emptyCourse, id: 'wool-15-frayed-frontier', name: "Frayed Frontier", zone: 'YARNSTORM',
+      campaign: 'wool',
+      color: 0xd98c8c, background: 0xf6eadf, floor: 0x4a3b36,
+      speed: 9.2, length: 132,
+      environment: 'wool-frayed-frontier', scenery: 'wool',
+      palette: { sky: 0xF6EADF, lane: 0x4A3B36, accent: 0xD98C8C, platform: 0xD8CCC0 },
+    signature: 'A hover chain and two pads fray the frontier — 24, 29.5, 51, 79 — with a float and a spring splitting five gaps.', designHook: 'Frayed Frontier stacks two hovers at 24 and 51, two pads at 29.5 and 79, a float at 22.3 and a spring at 75.6 over five gaps, with five hazard skins, a beetle, a moth and two shard arcs.',
+      hazardStyle: 'spike',
+      obstacles: [[19.47, 1, 'spike'], [44.47, 2, 'yarn-spike'], [61.03, 1, 'felt-block'], [73.4, 2, 'button-bomb'], [94.79, 1, 'spike'], [107.63, 1, 'yarn-spike']],
+      gaps: [{ at: 36.03, width: 2.5 }, { at: 64.97, width: 2.5 }, { at: 86.36, width: 2.5 }, { at: 99.05, width: 2.5 }, { at: 111.73, width: 2.5 }],
+      platforms: [{ at: 51, width: 4.5, height: 0.45, kind: 'hover' }, { at: 24, width: 4.5, height: 0.45, kind: 'hover' }, { at: 79, width: 3, height: 0.35, kind: 'bounce' }, { at: 29.5, width: 3, height: 0.35, kind: 'bounce' }],
+      portals: [{ at: 22.29, type: 'float' }, { at: 75.61, type: 'spring' }],
+      enemies: [{ at: 120.16, type: 'moth', height: 1.05 }, { at: 11.04, type: 'beetle' }],
+      collectibles: [{ at: 9.69, height: 1.85 }, { at: 53.25, height: 1.65 }, { at: 26.25, height: 1.65 }, { at: 31.89, height: 1.22, arc: 3 }, { at: 32.2, height: 1.45 }, { at: 32.43, height: 1.61 }, { at: 64.78, height: 1.24, arc: 3 }, { at: 66.62, height: 1.85 }, { at: 68.39, height: 1.23 }],
+      decor: { arches: ['finish'], pomPoms: 4 },
+      music: { bpm: 140, root: 63, scale: pentatonicMajor, progression: [0, 3, 2, 4], motif: motif(null, 2, 3, null, 4, null, 2, null, 3, 2, 0, null, 0, null, 2, 4) },
+    },
 ];
