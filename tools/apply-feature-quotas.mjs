@@ -282,37 +282,33 @@ function placeHover(level, index, catalog) {
   return placePlainPlatform(level, index, catalog, 'hover', 4.5, .45);
 }
 
-// An island is a raised platform inside a gap: the runner must jump up/over it and the gap reads as
-// two holes. Both sides keep at least 1.6 units of open hole.
+// An island bridges the near half of a gap: the platform starts flush with the hole's edge, so a
+// grounded runner steps up onto it instead of falling in, and only the far part of the hole is left
+// to jump. Putting the platform in the middle of the hole (the first version) meant the runner was
+// already falling before reaching it, which made course 11 impossible to walk through.
 function placeIsland(level, index, catalog) {
   const islandWidth = 2.5;
+  const minimumHoleAfter = 2.4;
   for (const [gapIndex, gap] of level.gaps.entries()) {
-    for (const hole of [1.6, 1.7, 1.85]) {
-      const width = islandWidth + hole * 2;
-      const starts = [
-        gap.at + gap.width - width,   // keep the far edge
-        gap.at,                       // keep the near edge
-        gap.at + gap.width / 2 - width / 2, // keep the centre
-      ];
-      for (const start of starts) {
-        const at = round(start);
-        const end = at + width;
-        if (at < 3 || end > level.length - 2) continue;
-        if (level.collectibles.some((shard) => shard.at > at - .15 && shard.at < end + .15)) continue;
-        const trial = clone(level);
-        trial.gaps[gapIndex] = { at, width: round(width) };
-        trial.gaps.sort((a, b) => a.at - b.at);
-        const platform = {
-          at: round(at + hole),
-          width: islandWidth,
-          height: .9,
-          kind: 'island',
-        };
-        trial.platforms.push(platform);
-        trial.collectibles.push(platformShard(platform, 'island'));
-        if (keep(catalog, trial, index)) return trial;
-      }
-    }
+    const width = Math.max(gap.width, islandWidth + minimumHoleAfter);
+    if (width - islandWidth < minimumHoleAfter - 1e-9) continue;
+    const at = round(gap.at);
+    const end = at + width;
+    if (at < 3 || end > level.length - 2) continue;
+    if (level.collectibles.some((shard) => shard.at > at - .15 && shard.at < end + .15)) continue;
+    const trial = clone(level);
+    trial.gaps[gapIndex] = { at: round(at), width: round(width) };
+    trial.gaps.sort((a, b) => a.at - b.at);
+    const platform = {
+      at: round(at),
+      width: islandWidth,
+      // Inside the step-up limit on purpose: the platform is the landing, not a jump target.
+      height: .5,
+      kind: 'island',
+    };
+    trial.platforms.push(platform);
+    trial.collectibles.push(platformShard(platform, 'island'));
+    if (keep(catalog, trial, index)) return trial;
   }
   return null;
 }

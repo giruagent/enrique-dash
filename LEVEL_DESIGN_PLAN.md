@@ -65,43 +65,43 @@ Run `npm run levels:compose` to deterministically rebuild every layout from its 
 ### 09 — Crystal Cavern (116 units)
 - **Signature:** Phase through the wall of hazards, then jump the holes that follow.
 - **Rhythm:** 4 + 3 + 3 input beats; target 0.78 inputs/s, measured 0.78; 4 open gaps and 2 bridges.
-- **Design hook:** Crystal Cavern lays out 4 crystal beam groups, 4 gaps, 1 kerb and 1 shelf, 1 portal (phase), 1 drone and 1 crawler and 3 shards.
-- **Layout:** Hazard groups at 22.83, 31.08, 63.77, 92.14; gaps at 14.58 (2.5), 55.52 (2.5), 67.7 (2.5), 96.15 (2.5); bridges: kerb at 79, width 4.5, height 0.45; shelf at 37.5, width 10, height 0.5; portals: phase at 34.01; enemies: drone at 104.4, crawler at 10.8; shards: 9.5 (height 1.85), 81.25 (height 1.65), 46.95 (height 1.7).
+- **Design hook:** Crystal Cavern lays out 4 crystal beam groups, 4 gaps, 1 kerb and 1 island, 1 portal (phase), 1 drone and 1 crawler and 3 shards.
+- **Layout:** Hazard groups at 22.83, 31.08, 63.77, 92.14; gaps at 14.58 (2.5), 55.52 (2.5), 67.7 (4.9), 96.15 (2.5); bridges: kerb at 79, width 4.5, height 0.45; island at 67.7, width 2.5, height 0.5; portals: phase at 34.01; enemies: drone at 104.4, crawler at 10.8; shards: 9.5 (height 1.85), 81.25 (height 1.65), 68.95 (height 1.7).
 - **Audio:** 116 BPM with the existing sixteen-step procedural motif.
 
 ### 10 — Stormbreaker (120 units)
 - **Signature:** Float opens the gaps up, dash closes the last one down again.
 - **Rhythm:** 3 + 3 + 4 input beats; target 0.80 inputs/s, measured 0.79; 4 open gaps and 2 bridges.
 - **Design hook:** Stormbreaker lays out 4 storm debris groups, 4 gaps, 1 kerb and 1 island, 2 portals (float and dash), 1 drone and 1 crawler and 3 shards.
-- **Layout:** Hazard groups at 11.92, 43.5, 55.82, 93.62; gaps at 14.45 (5.7), 47.48 (2.5), 83.28 (2.5), 97.94 (2.5); bridges: kerb at 66, width 4.5, height 0.45; island at 16.05, width 2.5, height 0.9; portals: float at 19.35, dash at 59.12; enemies: drone at 108.28, crawler at 10.92; shards: 9.98 (height 1.81), 68.25 (height 1.65), 17.3 (height 2.1).
+- **Layout:** Hazard groups at 11.92, 43.5, 55.82, 93.62; gaps at 16.05 (4.9), 47.48 (2.5), 83.28 (2.5), 97.94 (2.5); bridges: kerb at 66, width 4.5, height 0.45; island at 16.05, width 2.5, height 0.5; portals: float at 19.35, dash at 59.12; enemies: drone at 108.28, crawler at 10.92; shards: 9.98 (height 1.81), 68.25 (height 1.65), 17.3 (height 1.7).
 - **Audio:** 144 BPM with the existing sixteen-step procedural motif.
 
 ### 11 — Final Orbit (124 units)
 - **Signature:** Spring into a dash: one arc is long, the next is fast.
 - **Rhythm:** 4 + 4 + 3 input beats; target 0.82 inputs/s, measured 0.85; 4 open gaps and 2 bridges.
 - **Design hook:** Final Orbit lays out 5 asteroid groups, 4 gaps, 1 kerb and 1 island, 2 portals (spring and dash), 1 drone and 1 crawler and 3 shards.
-- **Layout:** Hazard groups at 23.73, 32.16, 62.78, 75.15 (double), 97.34; gaps at 15.3 (2.5), 54.34 (2.5), 66.72 (2.5), 100.1 (5.7); bridges: kerb at 84.5, width 4.5, height 0.45; island at 101.7, width 2.5, height 0.9; portals: spring at 34.82, dash at 77.82; enemies: drone at 112.16, crawler at 11.04; shards: 9.69 (height 1.85), 86.75 (height 1.65), 102.95 (height 2.1).
+- **Layout:** Hazard groups at 23.73, 32.16, 62.78, 75.15 (double), 97.34; gaps at 15.3 (2.5), 54.34 (2.5), 66.72 (2.5), 101.7 (4.9); bridges: kerb at 84.5, width 4.5, height 0.45; island at 101.7, width 2.5, height 0.5; portals: spring at 34.82, dash at 77.82; enemies: drone at 112.16, crawler at 11.04; shards: 9.69 (height 1.85), 86.75 (height 1.65), 102.95 (height 1.7).
 - **Audio:** 150 BPM with the existing sixteen-step procedural motif.
 
 ### 12 — Mosslight Hollow (128 units)
 - **Signature:** Five holes and two kerbs: the shards are all above the step-ups.
 - **Rhythm:** 4 + 4 + 4 input beats; target 0.84 inputs/s, measured 0.86; 4 open gaps and 3 bridges.
 - **Design hook:** Mosslight Hollow lays out 5 moss stump groups, 4 gaps, 1 kerb, 1 island and 1 perch, 1 portal (float), 1 drone and 2 crawlers and 4 shards.
-- **Layout:** Hazard groups at 12.04, 24.34, 63.94, 95.27, 103.7; gaps at 15.91 (2.5), 55.51 (2.5), 68.2 (5.7), 107.73 (2.5); bridges: kerb at 35.5, width 4.5, height 0.45; island at 69.8, width 2.5, height 0.9; perch at 49.16, width 4.5, height 0.45; portals: float at 27.59; enemies: drone at 116.16, crawler at 11.04, crawler at 51.41; shards: 10.1 (height 1.84), 15.79 (height 1.75), 37.75 (height 1.65), 71.05 (height 2.1).
+- **Layout:** Hazard groups at 12.04, 24.34, 63.94, 95.27, 103.7; gaps at 15.91 (2.5), 55.51 (2.5), 68.2 (4.9), 107.73 (2.5); bridges: kerb at 35.5, width 4.5, height 0.45; island at 68.2, width 2.5, height 0.5; perch at 49.16, width 4.5, height 0.45; portals: float at 27.59; enemies: drone at 116.16, crawler at 11.04, crawler at 51.41; shards: 10.1 (height 1.84), 15.79 (height 1.75), 37.75 (height 1.65), 69.45 (height 1.7).
 - **Audio:** 112 BPM with the existing sixteen-step procedural motif.
 
 ### 13 — Clockwork Orchard (132 units)
 - **Signature:** Dash into spring, with gears turning between the five holes.
 - **Rhythm:** 4 + 4 + 4 input beats; target 0.86 inputs/s, measured 0.88; 5 open gaps and 3 bridges.
 - **Design hook:** Clockwork Orchard lays out 4 gear fruit groups, 5 gaps, 1 kerb, 1 island and 1 perch, 2 portals (dash and spring), 1 drone and 2 crawlers and 4 shards.
-- **Layout:** Hazard groups at 32.28, 63.43, 78.42 (double), 107.53; gaps at 15.23 (2.5), 52.86 (2.5), 66.25 (5.7), 99 (2.5), 111.52 (2.5); bridges: kerb at 39, width 4.5, height 0.45; island at 67.85, width 2.5, height 0.9; perch at 21.5, width 4.5, height 0.45; portals: dash at 34.75, spring at 80.89; enemies: drone at 120.04, crawler at 11.16, crawler at 23.75; shards: 9.81 (height 1.85), 15.06 (height 1.66), 41.25 (height 1.65), 69.1 (height 2.1).
+- **Layout:** Hazard groups at 32.28, 63.43, 78.42 (double), 107.53; gaps at 15.23 (2.5), 52.86 (4.9), 67.85 (2.5), 99 (2.5), 111.52 (2.5); bridges: kerb at 39, width 4.5, height 0.45; island at 52.86, width 2.5, height 0.5; perch at 21.5, width 4.5, height 0.45; portals: dash at 34.75, spring at 80.89; enemies: drone at 120.04, crawler at 11.16, crawler at 23.75; shards: 9.81 (height 1.85), 15.06 (height 1.66), 41.25 (height 1.65), 54.11 (height 1.7).
 - **Audio:** 120 BPM with the existing sixteen-step procedural motif.
 
 ### 14 — Tidal Foundry (136 units)
 - **Signature:** One dash portal, five gaps, no second chances on the landing.
 - **Rhythm:** 4 + 4 + 4 input beats; target 0.88 inputs/s, measured 0.85; 5 open gaps and 3 bridges.
-- **Design hook:** Tidal Foundry lays out 4 foundry pipe groups, 5 gaps, 1 kerb, 1 shelf and 1 perch, 1 portal (dash), 1 drone and 2 crawlers and 4 shards.
-- **Layout:** Hazard groups at 32.12, 65.31, 80.3 (double), 111.45; gaps at 15.07 (2.5), 54.74 (2.5), 69.73 (2.5), 102.92 (2.5), 115.52 (2.5); bridges: kerb at 40, width 4.5, height 0.45; shelf at 86, width 10, height 0.5; perch at 21.34, width 4.5, height 0.45; portals: dash at 34.83; enemies: drone at 124.04, crawler at 11.16, crawler at 23.59; shards: 9.81 (height 1.85), 14.91 (height 1.61), 42.25 (height 1.65), 95.45 (height 1.7).
+- **Design hook:** Tidal Foundry lays out 4 foundry pipe groups, 5 gaps, 1 kerb, 1 island and 1 perch, 1 portal (dash), 1 drone and 2 crawlers and 4 shards.
+- **Layout:** Hazard groups at 32.12, 65.31, 80.3 (double), 111.45; gaps at 15.07 (2.5), 54.74 (4.9), 69.73 (2.5), 102.92 (2.5), 115.52 (2.5); bridges: kerb at 40, width 4.5, height 0.45; island at 54.74, width 2.5, height 0.5; perch at 21.34, width 4.5, height 0.45; portals: dash at 34.83; enemies: drone at 124.04, crawler at 11.16, crawler at 23.59; shards: 9.81 (height 1.85), 14.91 (height 1.61), 42.25 (height 1.65), 55.99 (height 1.7).
 - **Audio:** 138 BPM with the existing sixteen-step procedural motif.
 
 ### 15 — Paper Moon Parade (140 units)
@@ -114,15 +114,15 @@ Run `npm run levels:compose` to deterministically rebuild every layout from its 
 ### 16 — Verdant Relay (144 units)
 - **Signature:** Float through five holes and three shards spaced a beat apart.
 - **Rhythm:** 3 + 3 + 4 + 4 input beats; target 0.92 inputs/s, measured 0.91; 5 open gaps and 3 bridges.
-- **Design hook:** Verdant Relay lays out 6 thorn groups, 5 gaps, 1 island, 1 hover and 1 perch, 1 portal (float), 1 drone and 2 crawlers and 5 shards.
-- **Layout:** Hazard groups at 48.28, 56.89, 81.32, 94.29, 122.82, 131.44 (double); gaps at 15.23 (2.5), 39.66 (2.5), 72.7 (2.5), 82.47 (5.7), 114.21 (2.5); bridges: island at 84.07, width 2.5, height 0.9; hover at 99.5, width 4.5, height 0.45; perch at 24.5, width 4.5, height 0.45; portals: float at 61.16; enemies: drone at 110.1, crawler at 11.28, crawler at 26.75; shards: 9.92 (height 1.85), 15.1 (height 1.62), 24.3 (height 1.47), 85.32 (height 2.1), 101.75 (height 1.65).
+- **Design hook:** Verdant Relay lays out 6 thorn groups, 5 gaps, 2 hovers and 1 perch, 1 portal (float), 1 drone and 2 crawlers and 5 shards.
+- **Layout:** Hazard groups at 23.85, 56.89, 81.32, 94.29, 122.82, 131.44 (double); gaps at 15.23 (2.5), 39.66 (2.5), 72.7 (2.5), 85.67 (2.5), 114.21 (2.5); bridges: hover at 99.5, width 4.5, height 0.45; hover at 28.5, width 4.5, height 0.45; perch at 46.03, width 4.5, height 0.45; portals: float at 61.16; enemies: drone at 110.1, crawler at 11.28, crawler at 48.28; shards: 9.92 (height 1.85), 15.1 (height 1.62), 22.77 (height 1.85), 101.75 (height 1.65), 30.75 (height 1.65).
 - **Audio:** 120 BPM with the existing sixteen-step procedural motif.
 
 ### 17 — Shatterglass Express (146 units)
 - **Signature:** Phase then dash: skip a hazard wall, then outrun the glass.
 - **Rhythm:** 3 + 3 + 4 + 4 input beats; target 0.95 inputs/s, measured 0.94; 5 open gaps and 3 bridges.
-- **Design hook:** Shatterglass Express lays out 6 glass shard groups, 5 gaps, 1 island, 1 hover and 1 perch, 2 portals (phase and dash), 1 drone and 2 crawlers and 4 shards.
-- **Layout:** Hazard groups at 24.42, 56.22, 81.82, 97.12, 124.61, 133.32 (double); gaps at 15.72 (2.5), 38.81 (2.5), 71.02 (2.5), 84.73 (5.7), 115.9 (2.5); bridges: island at 86.33, width 2.5, height 0.9; hover at 102, width 4.5, height 0.45; perch at 45.27, width 4.5, height 0.45; portals: phase at 26.15, dash at 58; enemies: drone at 111.51, crawler at 11.4, crawler at 47.52; shards: 9.99 (height 1.85), 15.58 (height 1.73), 87.58 (height 2.1), 104.25 (height 1.65).
+- **Design hook:** Shatterglass Express lays out 6 glass shard groups, 5 gaps, 2 islands and 1 perch, 2 portals (phase and dash), 1 drone and 2 crawlers and 4 shards.
+- **Layout:** Hazard groups at 24.42, 56.22, 81.82, 97.12, 124.61, 133.32 (double); gaps at 15.72 (2.5), 38.81 (2.5), 71.02 (4.9), 86.33 (4.9), 115.9 (2.5); bridges: island at 71.02, width 2.5, height 0.5; island at 86.33, width 2.5, height 0.5; perch at 45.27, width 4.5, height 0.45; portals: phase at 26.15, dash at 58; enemies: drone at 111.51, crawler at 11.4, crawler at 47.52; shards: 9.99 (height 1.85), 15.58 (height 1.73), 72.27 (height 1.7), 87.58 (height 1.7).
 - **Audio:** 148 BPM with the existing sixteen-step procedural motif.
 
 ### 18 — Cloudbreaker Causeway (148 units)
@@ -135,8 +135,8 @@ Run `npm run levels:compose` to deterministically rebuild every layout from its 
 ### 19 — Magnetar Foundry (149 units)
 - **Signature:** Two dash portals, five holes, and a drone waiting after the second.
 - **Rhythm:** 5 + 5 + 5 input beats; target 1.00 inputs/s, measured 1.04; 5 open gaps and 3 bridges.
-- **Design hook:** Magnetar Foundry lays out 7 magnetic core groups, 5 gaps, 1 island, 1 hover and 1 perch, 2 portals (dash), 1 drone and 2 crawlers and 4 shards.
-- **Layout:** Hazard groups at 37.68 (double), 63.53, 79, 87.8, 113.65, 124.56, 137.48; gaps at 15.72 (2.5), 28.88 (2.5), 52.62 (2.5), 66.49 (5.7), 128.68 (2.5); bridges: island at 68.09, width 2.5, height 0.9; hover at 93, width 4.5, height 0.45; perch at 22.27, width 4.5, height 0.45; portals: dash at 39.47, dash at 89.59; enemies: drone at 102.74, crawler at 11.52, crawler at 24.52; shards: 10.03 (height 1.85), 15.59 (height 1.7), 69.34 (height 2.1), 95.25 (height 1.65).
+- **Design hook:** Magnetar Foundry lays out 7 magnetic core groups, 5 gaps, 2 islands and 1 perch, 2 portals (dash), 1 drone and 2 crawlers and 4 shards.
+- **Layout:** Hazard groups at 37.68 (double), 63.53, 79, 87.8, 113.65, 124.56, 137.48; gaps at 15.72 (2.5), 28.88 (2.5), 52.62 (4.9), 68.09 (4.9), 128.68 (2.5); bridges: island at 52.62, width 2.5, height 0.5; island at 68.09, width 2.5, height 0.5; perch at 22.27, width 4.5, height 0.45; portals: dash at 39.47, dash at 89.59; enemies: drone at 102.74, crawler at 11.52, crawler at 24.52; shards: 10.03 (height 1.85), 15.59 (height 1.7), 53.87 (height 1.7), 69.34 (height 1.7).
 - **Audio:** 152 BPM with the existing sixteen-step procedural motif.
 
 ### 20 — Eclipse Crown (150 units)
