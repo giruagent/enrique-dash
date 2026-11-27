@@ -444,7 +444,8 @@ test('Thimble Meadow is the gentle tier-1 opener the Wool Road brief asks for', 
   assert.equal(level.hazardStyle, 'spike');
   assert.equal(level.environment, 'wool-meadow');
   assert.equal(level.gaps.length, 3, 'the opener needs three open gaps');
-  assert.equal(level.platforms.length, 0, 'the opener needs no bridges or platforms');
+  assert.equal(level.platforms.length, 1, 'the opener gains exactly one plush pad');
+  assert.equal(level.platforms[0].kind, 'bounce', 'the opener pad must be a bounce pad');
   assert.equal(level.portals.length, 0, 'the opener needs no portals');
   assert.equal(level.enemies.length, 0, 'the opener needs no enemies');
   assert.equal(level.collectibles.length, 1, 'the opener carries one shard');
@@ -463,4 +464,107 @@ test('Thimble Meadow is the gentle tier-1 opener the Wool Road brief asks for', 
   assert.ok(level.designHook);
   const measured = analyzeLevel(level).inputsPerSecond;
   assert.ok(Math.abs(measured / .62 - 1) <= .05, `Thimble Meadow measured ${measured.toFixed(3)} inputs/s`);
+});
+
+test('the core campaign contains zero bounce pads', () => {
+  for (const level of levels) {
+    assert.equal(
+      level.platforms.some(({ kind }) => kind === 'bounce'),
+      false,
+      `${level.id} must not gain a bounce pad`,
+    );
+  }
+});
+
+function woolTierOf(index) {
+  if (index < 5) return 1;
+  if (index < 10) return 2;
+  if (index < 15) return 3;
+  return 4;
+}
+
+test('every wool bounce pad sits on plain track and matches its tier quota', () => {
+  woolLevels.forEach((level, index) => {
+    const pads = level.platforms.filter(({ kind }) => kind === 'bounce');
+    assert.equal(pads.length, woolTierOf(index) <= 2 ? 1 : 2, `${level.id} has the wrong bounce-pad count`);
+    for (const pad of pads) {
+      assert.ok(pad.width >= 3 && pad.width <= 4, `${level.id} bounce pad width is outside 3–4`);
+      assert.equal(pad.height, .35, `${level.id} bounce pad should be .35 high`);
+      for (const gap of level.gaps) {
+        assert.ok(
+          pad.at >= gap.at + gap.width || pad.at + pad.width <= gap.at,
+          `${level.id} bounce pad overlaps the gap at ${gap.at}`,
+        );
+      }
+      for (const beat of beatWindows(level).filter(({ kind }) => kind === 'hazard' || kind === 'enemy')) {
+        assert.ok(
+          pad.at >= beat.end || pad.at + pad.width <= beat.start,
+          `${level.id} bounce pad overlaps ${beat.id}`,
+        );
+      }
+      for (const portal of level.portals) {
+        assert.ok(
+          Math.abs(pad.at + pad.width / 2 - portal.at) > pad.width / 2 + .5,
+          `${level.id} bounce pad overlaps the portal at ${portal.at}`,
+        );
+      }
+      const reach = jumpReach(courseSpeedTimeline(level).advance(pad.at + pad.width / 2).speed);
+      const clearance = .5 * reach;
+      for (const beat of inputBeats(level)) {
+        assert.ok(
+          beat.courseEnd <= pad.at - clearance + 1e-9
+            || beat.courseStart >= pad.at + pad.width + clearance - 1e-9,
+          `${level.id} bounce pad at ${pad.at} has less than half a reach of track by ${beat.id}`,
+        );
+      }
+    }
+  });
+});
+
+test('Button Bush is the sage tier-1 wool course with a wide gap and a pad under its shard', () => {
+  const level = woolLevels.find(({ id }) => id === 'wool-02-button-bush');
+  assert.ok(level, 'Button Bush is missing');
+  assert.equal(level.name, 'Button Bush');
+  assert.equal(level.zone, 'FIRST STITCHES');
+  assert.equal(level.campaign, 'wool');
+  assert.equal(level.length, 82);
+  assert.equal(level.speed, 7.9);
+  assert.equal(level.hazardStyle, 'spike');
+  assert.deepEqual(level.palette, {
+    sky: 0xF6EADF,
+    lane: 0x4A3B36,
+    accent: 0x8FBF9F,
+    platform: 0xD8CCC0,
+  });
+  assert.equal(level.music.bpm, 112);
+  assert.deepEqual(level.music.scale, [0, 2, 4, 7, 9]);
+  assert.equal(level.music.motif.length, 16);
+  assert.equal(level.portals.length, 0, 'Button Bush has no portals');
+  assert.equal(level.enemies.length, 0, 'Button Bush has no enemies');
+  assert.ok(level.obstacles.length >= 3, 'Button Bush needs at least three hazard groups');
+
+  const pads = level.platforms.filter(({ kind }) => kind === 'bounce');
+  assert.equal(pads.length, 1, 'Button Bush carries exactly one bounce pad');
+  const [pad] = pads;
+  const wideGaps = level.gaps.filter(({ width }) => width >= 4);
+  assert.equal(wideGaps.length, 1, 'Button Bush needs one wide gap');
+  assert.ok(level.gaps.length >= 2, 'Button Bush needs its open gaps');
+
+  assert.equal(level.collectibles.length, 1, 'Button Bush carries one shard');
+  const [shard] = level.collectibles;
+  assert.ok(
+    shard.at >= pad.at && shard.at <= pad.at + pad.width,
+    'the shard must hang above the pad',
+  );
+  assert.ok(shard.height > pad.height + .6, 'the shard must hang above the pad surface');
+
+  const measured = analyzeLevel(level).inputsPerSecond;
+  assert.ok(
+    Math.abs(measured / woolBlueprint[1].target - 1) <= .05,
+    `Button Bush measured ${measured.toFixed(3)} inputs/s`,
+  );
+  assert.ok(
+    Math.abs(woolBlueprint[1].target / .64 - 1) <= .05,
+    `Button Bush target ${woolBlueprint[1].target} must stay within 5% of the .64 brief`,
+  );
 });

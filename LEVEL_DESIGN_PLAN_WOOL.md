@@ -17,10 +17,17 @@ Run `npm run levels:compose:wool` to deterministically rebuild every Wool Road l
 
 ### 01 — Thimble Meadow (76 units)
 - **Signature:** Three open gaps in the meadow, each one a single soft landing.
-- **Rhythm:** 1 + 2 + 1 + 2 input beats; target 0.62 inputs/s, measured 0.62; 3 open gaps and 0 bridges.
-- **Design hook:** Thimble Meadow lays out 3 spike groups, 3 gaps and 1 shard.
-- **Layout:** Hazard groups at 9.36, 33.86, 65.36 (double); gaps at 26.52 (2.5), 50.69 (2.5), 58.02 (2.5); bridges: none; portals: none; enemies: none; shards: 8.36 (height 1.85).
+- **Rhythm:** 1 + 2 + 1 + 2 input beats; target 0.62 inputs/s, measured 0.62; 3 open gaps and 1 bounce pad.
+- **Design hook:** Thimble Meadow lays out 3 spike groups, 3 gaps, 1 bounce pad and 1 shard.
+- **Layout:** Hazard groups at 9.36, 33.86, 65.36 (double); gaps at 26.52 (2.5), 50.69 (2.5), 58.02 (2.5); platforms: bounce at 15, width 3.5, height 0.35; portals: none; enemies: none; shards: 8.36 (height 1.85).
 - **Audio:** 108 BPM with the existing sixteen-step procedural motif.
+
+### 02 — Button Bush (82 units)
+- **Signature:** A plush pad under the first shard launches you at the wide gap; two open holes follow.
+- **Rhythm:** 1 + 1 + 1 + 2 + 2 input beats; target 0.67 inputs/s, measured 0.67; 3 open gaps and 1 bounce pad.
+- **Design hook:** Button Bush lays out 4 spike groups, 3 gaps, 1 bounce pad and 1 shard.
+- **Layout:** Hazard groups at 9.48, 43.16, 57.84, 72.52; gaps at 26.86 (4), 50.44 (2.5), 65.12 (2.5); platforms: bounce at 20.5, width 3.5, height 0.35; portals: none; enemies: none; shards: 22.25 (height 1.7).
+- **Audio:** 112 BPM with the existing sixteen-step procedural motif.
 
 ## Playtest checklist
 

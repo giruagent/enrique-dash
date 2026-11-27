@@ -172,3 +172,68 @@ test('float-portal gravity extends jump air time by the expected ratio', () => {
   const actualRatio = floating.airTime / normal.airTime;
   assert.ok(Math.abs(actualRatio - expectedRatio) <= expectedRatio * .15);
 });
+
+const BOUNCE_HEIGHT = .35;
+
+function bounceCourse() {
+  return makeCourse({
+    platforms: [{ center: 0, width: 3.5, height: BOUNCE_HEIGHT, kind: 'bounce' }],
+  });
+}
+
+test('a bounce pad launches a grounded runner exactly once and returns them to the lane', () => {
+  const course = bounceCourse();
+  const launch = stepPlayerMotion(makePlayer(), STEP, course);
+  assert.equal(launch.bounced, true);
+  assert.equal(launch.grounded, false);
+  assert.equal(launch.fell, false);
+  assert.equal(launch.y, BASE_HEIGHT + BOUNCE_HEIGHT);
+  assert.ok(Math.abs(launch.velocityY - motionTuning.bounceVelocity) < 1e-9);
+
+  // The same contact cannot fire again: the runner is already airborne on the next step.
+  let player = {
+    ...makePlayer({ x: .5 }),
+    y: launch.y,
+    velocityY: launch.velocityY,
+    grounded: launch.grounded,
+    coyoteTimer: launch.coyoteTimer,
+  };
+  const airborne = stepPlayerMotion(player, STEP, course);
+  assert.equal(airborne.bounced, false);
+  player = { ...player, ...airborne };
+
+  let launches = 1;
+  let apex = player.y;
+  for (let frame = 0; frame < 240; frame++) {
+    player.x += .3;
+    player = { ...player, ...stepPlayerMotion(player, STEP, course) };
+    if (player.bounced) launches++;
+    apex = Math.max(apex, player.y);
+  }
+  assert.equal(launches, 1);
+  assert.ok(Math.abs((apex - (BASE_HEIGHT + BOUNCE_HEIGHT)) - 1.31) <= .05);
+  assert.equal(player.y, BASE_HEIGHT);
+  assert.equal(player.grounded, true);
+  assert.equal(player.supportY, BASE_HEIGHT);
+});
+
+test('a normal platform holds a grounded runner instead of launching', () => {
+  const course = makeCourse({
+    platforms: [{ center: 0, width: 3.5, height: BOUNCE_HEIGHT, kind: 'kerb' }],
+  });
+  const result = stepPlayerMotion(makePlayer(), STEP, course);
+  assert.equal(result.bounced, false);
+  assert.equal(result.grounded, true);
+  assert.equal(result.y, BASE_HEIGHT + BOUNCE_HEIGHT);
+});
+
+test('a bounce pad never launches a runner who is already airborne above it', () => {
+  const course = bounceCourse();
+  const result = stepPlayerMotion(
+    makePlayer({ y: BASE_HEIGHT + 2, velocityY: 1, grounded: false }),
+    STEP,
+    course,
+  );
+  assert.equal(result.bounced, false);
+  assert.equal(result.grounded, false);
+});

@@ -368,6 +368,12 @@ function update(dt) {
   player.userData.grounded = result.grounded;
   player.userData.coyoteTimer = result.coyoteTimer;
   player.userData.supportY = result.supportY;
+  if (result.bounced) {
+    const pad = platforms.find((feature) => feature.kind === 'bounce'
+      && Math.abs(player.position.x - feature.center) <= feature.width / 2);
+    if (pad) pad.squashTimer = .12;
+    gameStatus.textContent = 'Bounce pad launched you.';
+  }
   consumeBufferedJump();
   if (result.fell) {
     crash('Missed the jump.');
@@ -415,6 +421,15 @@ function moveFeatureGroup(group, dt, speed, removeFeature) {
     if (!reducedMotion && group === platforms && feature.bob > 0) {
       feature.currentHeight = feature.height + Math.sin(simulationTime * 2 + feature.phase) * feature.bob;
       feature.mesh.position.y = laneY + feature.currentHeight - .14;
+    }
+    if (group === platforms && feature.kind === 'bounce') {
+      // Presentation only: the cushion compresses for 120 ms after a launch, never collision.
+      if (!reducedMotion && feature.squashTimer > 0) {
+        feature.squashTimer = Math.max(0, feature.squashTimer - dt);
+        feature.mesh.scale.y = .82;
+      } else if (feature.mesh.scale.y !== 1) {
+        feature.mesh.scale.y = 1;
+      }
     }
     if (group === enemies) {
       feature.mesh.rotation.y += dt * (feature.type === 'drone' ? 1.7 : .8);
@@ -904,7 +919,40 @@ function spawnCourseFeatures() {
       roughness: .48,
     });
     let mesh;
-    if (kind === 'island') {
+    if (kind === 'bounce') {
+      // A stitched cushion: a squat accent cylinder, a darker rim torus and a cream stitch line.
+      material.dispose(); // The cushion below builds its own accent/rim materials.
+      const accent = level.palette?.accent ?? level.color;
+      const cushionMaterial = new THREE.MeshStandardMaterial({
+        color: accent,
+        emissive: accent,
+        emissiveIntensity: .16,
+        metalness: .08,
+        roughness: .86,
+      });
+      const rimColor = new THREE.Color(accent).multiplyScalar(.68);
+      const rimMaterial = new THREE.MeshStandardMaterial({
+        color: rimColor,
+        emissive: rimColor,
+        emissiveIntensity: .12,
+        metalness: .2,
+        roughness: .7,
+      });
+      mesh = new THREE.Group();
+      const cushion = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, .35, 14), cushionMaterial);
+      mesh.add(cushion);
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(1.55, .09, 8, 28), rimMaterial);
+      rim.rotation.x = Math.PI / 2;
+      rim.position.y = .14;
+      mesh.add(rim);
+      const stitchMaterial = new THREE.MeshBasicMaterial({ color: 0xFFF3E2 });
+      for (let stitch = -2; stitch <= 2; stitch++) {
+        const dash = new THREE.Mesh(new THREE.BoxGeometry(.28, .022, .055), stitchMaterial);
+        dash.position.set(stitch * .52, .181, 0);
+        mesh.add(dash);
+      }
+      mesh.position.set(center, laneY + height - .175, -.12);
+    } else if (kind === 'island') {
       // Six-sided prism: reads as floating rock instead of a box bridge.
       mesh = new THREE.Mesh(new THREE.CylinderGeometry(definition.width / 2, definition.width / 2 * .84, .34, 6), material);
       mesh.position.set(center, laneY + height - .17, -.12);
@@ -939,6 +987,7 @@ function spawnCourseFeatures() {
       kind,
       bob: kind === 'hover' ? .1 : 0,
       phase: center * .17,
+      squashTimer: 0,
       mesh,
     });
   }
@@ -1083,7 +1132,7 @@ function renderScenery() {
     const groveEnvironments = ['gravity-garden', 'mosslight-hollow', 'clockwork-orchard', 'verdant-greenhouse'];
     const crystalEnvironments = ['crystal-cavern', 'shatterglass'];
     const foundryEnvironments = ['tidal-foundry', 'magnetar-forge'];
-    if (environment === 'wool-meadow') {
+    if (environment === 'wool-meadow' || environment === 'wool-button-bush') {
       // Soft thimble mounds and stitch flowers, kept low so the empty
       // foreground lane stays the calmest part of the frame.
       const mound = addPart(new THREE.SphereGeometry(.52 + (index % 3) * .12, 9, 7), index % 2 ? accent : muted, x, groundY + .2);
