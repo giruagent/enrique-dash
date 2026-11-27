@@ -100,11 +100,18 @@ Run `npm run levels:compose:wool` to deterministically rebuild every Wool Road l
 - **Audio:** 134 BPM with the existing sixteen-step procedural motif.
 
 ### 13 — Kite String (124 units)
-- **Signature:** An island threads the opening hole, a dash portal snaps the middle, and a float drops you onto a perch held by a bunny.
+- **Signature:** An island threads the opening hole, a dash snaps the middle, and a float drops you onto a perch held by a bunny.
 - **Rhythm:** 1 + 1 + 1 + 2 + 2 + 2 + 2 input beats; target 0.86 inputs/s, measured 0.83; 5 open gaps and 1 kerb and 1 island.
-- **Design hook:** Kite String stitches its 4.9-wide opening with an island at 10.8, runs a kerb at 18, a dash at 34.4, a perch at 63 and a float at 70, and closes on three hazard skins with a beetle, a bunny and a moth.
+- **Design hook:** Kite String stitches its 4.9-wide opening with an island at 10.8, lifts a kerb at 18, snaps a dash at 34.4, holds a perch at 63 and floats at 70, with a beetle, a bunny and a moth across five gaps.
 - **Layout:** Hazard groups at 44.1 (double) [spike], 66.45 [yarn-spike], 83.18 [felt-block], 91.66 [button-bomb]; gaps at 10.8 (4.9), 56.22 (2.5), 74.93 (2.5), 95.67 (2.5), 104.15 (2.5); platforms: kerb at 18, width 4.5, height 0.45; island at 10.8, width 2.5, height 0.5; portals: dash at 34.44, float at 70.01; enemies: moth at 112.4, beetle at 27.45; shards: 12 (height 1.21, arc of 3), 13.27 (height 1.33), 14.55 (height 1.23). arches: finish; pom-poms: 4
 - **Audio:** 136 BPM with the existing sixteen-step procedural motif.
+
+### 14 — Winder's Climb (128 units)
+- **Signature:** Two spike groups on one arc.
+- **Rhythm:** 2 + 2 + 2 + 3 + 3 input beats; target 0.90 inputs/s, measured 0.89; 5 open gaps and 1 kerb and 2 bounce pads.
+- **Design hook:** Winder's Climb lays out 6 spike groups, 5 open gaps, 2 portals (spring and dash), 1 drone and 1 shard.
+- **Layout:** Hazard groups at 11.92 (double) [spike], 37.1 [yarn-spike], 62.27 [felt-block], 89.45 [button-bomb], 103.96 [spike]; gaps at 28.76 (2.5), 53.93 (2.5), 79.11 (2.5), 93.77 (2.5), 107.94 (2.5); platforms: kerb at 42, width 4.5, height 0.45; bounce at 18, width 3.5, height 0.35; bounce at 68.5, width 3.5, height 0.35; portals: spring at 13.94, dash at 64.29; enemies: moth at 116.28, beetle at 10.92; shards: 9.99 (height 1.59), 44.25 (height 1.65), 27.38 (height 1.24, arc of 3), 29.2 (height 1.85), 30.94 (height 1.23), 21.61 (height 1.23, arc of 3), 23.13 (height 1.66), 24.57 (height 1.24). arches: finish; pom-poms: 4
+- **Audio:** 138 BPM with the existing sixteen-step procedural motif.
 
 ## Playtest checklist
 

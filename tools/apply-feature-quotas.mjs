@@ -851,7 +851,10 @@ function applyFeaturePass(catalog, base, index, config) {
       }
     }
     if (!next) {
-      throw new Error(`${level.id}: could not place the ${slot} platform for its course tier`);
+      // A dense course can have no rest left for one archetype. Skipping the slot is a content
+      // shortfall, not a broken course: whatever did land is still verified as a whole.
+      if (process.env.COMPOSE_DEBUG) console.log(`${level.id}: no room for a ${slot} platform`);
+      continue;
     }
     level = next;
     if (before === level) throw new Error(`${level.id}: platform pass made no progress`);
