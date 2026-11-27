@@ -239,4 +239,23 @@ export const woolLevels = [
     decor: { arches: ['finish'], pomPoms: 4 },
     music: { bpm: 136, root: 59, scale: pentatonicMajor, progression: [0, 3, 4, 2], motif: motif(2, 4, null, 2, 3, null, 4, null, 2, null, 3, 2, 0, null, 0, null) },
   },
+
+  {
+      ...emptyCourse, id: 'wool-14-winders-climb', name: "Winder's Climb", zone: 'YARNSTORM',
+      campaign: 'wool',
+      color: 0xc79bd8, background: 0xf6eadf, floor: 0x4a3b36,
+      speed: 9.1, length: 128,
+      environment: 'wool-winders-climb', scenery: 'wool',
+      palette: { sky: 0xF6EADF, lane: 0x4A3B36, accent: 0xC79BD8, platform: 0xD8CCC0 },
+    signature: 'Two pads and two portals stack the climb: a spring at 14, a bounce at 18, a kerb at 42, a dash at 64 and a second bounce at 68.5 carry the ridge.', designHook: "Winder's Climb stacks five gaps under a spring at 13.9, a pad at 18, a kerb at 42, a dash at 64.3 and a pad at 68.5, and threads four hazard skins, a beetle, a moth and two shard arcs.",
+      hazardStyle: 'spike',
+      obstacles: [[11.92, 2, 'spike'], [37.1, 1, 'yarn-spike'], [62.27, 1, 'felt-block'], [89.45, 1, 'button-bomb'], [103.96, 1, 'spike']],
+      gaps: [{ at: 28.76, width: 2.5 }, { at: 53.93, width: 2.5 }, { at: 79.11, width: 2.5 }, { at: 93.77, width: 2.5 }, { at: 107.94, width: 2.5 }],
+      platforms: [{ at: 42, width: 4.5, height: 0.45, kind: 'kerb' }, { at: 18, width: 3.5, height: 0.35, kind: 'bounce' }, { at: 68.5, width: 3.5, height: 0.35, kind: 'bounce' }],
+      portals: [{ at: 13.94, type: 'spring' }, { at: 64.29, type: 'dash' }],
+      enemies: [{ at: 116.28, type: 'moth', height: 1.05 }, { at: 10.92, type: 'beetle' }],
+      collectibles: [{ at: 9.99, height: 1.59 }, { at: 44.25, height: 1.65 }, { at: 27.38, height: 1.24, arc: 3 }, { at: 29.2, height: 1.85 }, { at: 30.94, height: 1.23 }, { at: 21.61, height: 1.23, arc: 3 }, { at: 23.13, height: 1.66 }, { at: 24.57, height: 1.24 }],
+      decor: { arches: ['finish'], pomPoms: 4 },
+      music: { bpm: 138, root: 61, scale: pentatonicMajor, progression: [0, 2, 3, 4], motif: motif(4, null, 2, null, 3, 2, 0, null, 4, null, 2, 4, null, 3, 2, null) },
+    },
 ];

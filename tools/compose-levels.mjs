@@ -763,7 +763,11 @@ export function composeLevels(catalog = levels, blueprintList = blueprint, optio
 }
 
 function quote(value) {
-  return `'${value.replaceAll('\\', '\\\\').replaceAll("'", "\\'")}'`;
+  // A name with an apostrophe can reach this point already escaped once (the reward text is
+  // rebuilt from a block that was written before). Collapse any existing backslash run before
+  // a quote so the escaping is applied exactly once and the emitted string stays valid.
+  const normalized = String(value).replace(/\\+'/g, "'");
+  return `'${normalized.replaceAll('\\', '\\\\').replaceAll("'", "\\'")}'`;
 }
 
 function formatValue(value) {
@@ -779,11 +783,27 @@ export function rewriteLevels(source, composed, label = 'src/levels.js') {
   const replacements = composed.map(({ level }) => {
     const idIndex = source.indexOf(`id: '${level.id}'`);
     if (idIndex < 0) throw new Error(`Cannot find ${level.id} in ${label}`);
-    const start = source.lastIndexOf('  {', idIndex);
-    const end = source.indexOf('\n  },', idIndex);
+    // Anchoring on indentation made the rewriter depend on the exact formatting of the file: one
+    // block appended with a different indent shifted every later slice and produced invalid JS.
+    // Brace-match from the object that owns the id instead, so formatting cannot break the rewrite.
+    const start = source.lastIndexOf('{', idIndex);
+    let depth = 0;
+    let end = -1;
+    for (let index = start; index < source.length; index++) {
+      if (source[index] === '{') depth++;
+      else if (source[index] === '}') {
+        depth--;
+        if (depth === 0) { end = index + 1; break; }
+      }
+    }
     if (start < 0 || end < 0) throw new Error(`Cannot parse ${level.id}'s course block`);
-    let block = source.slice(start, end);
-    block = block.replace(/signature: '(?:\\.|[^'])*', designHook: '(?:\\.|[^'])*',/, `signature: ${quote(level.signature)}, designHook: ${quote(level.designHook)},`);
+    let block = source.slice(start, end - (source[end] === ',' ? 0 : 0));
+    // The pair is matched in either quote style: a course name may carry an apostrophe, and a
+    // hand-written placeholder written with double quotes must still be replaceable.
+    block = block.replace(
+      /signature: (?:'(?:\\.|[^'])*'|"(?:\\.|[^"])*"), designHook: (?:'(?:\\.|[^'])*'|"(?:\\.|[^"])*"),/,
+      `signature: ${quote(level.signature)}, designHook: ${quote(level.designHook)},`,
+    );
     const keys = ['obstacles', 'gaps', 'platforms', 'portals', 'enemies', 'collectibles'];
     if (level.decor !== undefined) keys.push('decor');
     const lines = block.split('\n').filter((line) => !keys.some((key) => line.startsWith(`    ${key}:`)));
