@@ -353,4 +353,23 @@ export const woolLevels = [
       decor: { arches: ['checkpoint', 'finish'], pomPoms: 5 },
       music: { bpm: 150, root: 61, scale: pentatonicMajor, progression: [0, 3, 2, 4], motif: motif(0, null, 2, 4, null, 2, 3, null, 4, null, 2, null, 3, 2, 0, null) },
     },
+
+  {
+      ...emptyCourse, id: 'wool-20-great-unravel', name: "The Great Unravel", zone: 'THE ATTIC',
+      campaign: 'wool',
+      color: 0xe8a0a8, background: 0xf6eadf, floor: 0x4a3b36,
+      speed: 9.6, length: 150,
+      environment: 'wool-great-unravel', scenery: 'wool',
+      palette: { sky: 0xF6EADF, lane: 0x4A3B36, accent: 0xE8A0A8, platform: 0xD8CCC0 },
+    signature: 'Nine hazard groups, three enemies, two portals, a pad, an island and a hover — the whole vocabulary unravelling at once.', designHook: 'The Great Unravel carries nine hazard groups across four skins, a pad at 25, a float at 44.3, a dash at 82.2, an island inside the 4.9-wide hole at 90.2 and a hover at 104.5, with a beetle, a bunny, a moth, two shard arcs and both arches.',
+      hazardStyle: 'spike',
+      obstacles: [[20.32, 2, 'spike'], [59.58, 1, 'yarn-spike'], [60.58, 1, 'felt-block'], [78.23, 1, 'button-bomb'], [79.23, 1, 'spike'], [101.12, 1, 'yarn-spike'], [112.03, 1, 'felt-block'], [129.68, 1, 'button-bomb'], [138.48, 1, 'spike']],
+      gaps: [{ at: 33.13, width: 2.5 }, { at: 50.78, width: 2.5 }, { at: 69.43, width: 2.5 }, { at: 90.21, width: 4.9 }],
+      platforms: [{ at: 90.21, width: 2.5, height: 0.5, kind: 'island' }, { at: 104.5, width: 4.5, height: 0.45, kind: 'hover' }, { at: 25, width: 3.5, height: 0.35, kind: 'bounce' }],
+      portals: [{ at: 44.32, type: 'float' }, { at: 82.2, type: 'dash' }],
+      enemies: [{ at: 120.88, type: 'moth', height: 1.05 }, { at: 11.52, type: 'beetle' }, { at: 41.93, type: 'bunny' }],
+      collectibles: [{ at: 10.03, height: 1.85 }, { at: 91.46, height: 1.7 }, { at: 106.75, height: 1.65 }, { at: 32.4, height: 1.24, arc: 3 }, { at: 34.32, height: 1.85 }, { at: 36.16, height: 1.23 }, { at: 27.2, height: 1.21, arc: 3 }, { at: 28.32, height: 1.29 }, { at: 29.44, height: 1.24 }],
+      decor: { arches: ['checkpoint', 'finish'], pomPoms: 5 },
+      music: { bpm: 154, root: 63, scale: pentatonicMajor, progression: [0, 2, 3, 4], motif: motif(null, 2, 4, null, 2, 3, null, 4, null, 2, null, 3, 2, 0, null, 0) },
+    },
 ];
