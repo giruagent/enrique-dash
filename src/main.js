@@ -5,6 +5,7 @@ import { campaigns } from './campaigns.js';
 import { createLossCue, playOneShot, primeOneShot, stopOneShot } from './audio-cues.js';
 import { activeEffects, canConsumeJumpBuffer, courseMedal, effectCopy, emptyProgress, enemyTuning, finishGateDistance, getEnemyProfile, getObstacleProfile, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeRunProgress, parseProgress, portalEffects, portalLabel, safeCheckpointDistance, shouldAcceptJumpInput, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy, stepPlayerMotion } from './game-logic.js';
 import { MusicEngine } from './music.js';
+import { createSfxEngine, nextStreak, shardChimeDegree } from './sfx.js';
 import './style.css';
 
 const stage = document.querySelector('#game-canvas');
@@ -21,6 +22,7 @@ const collectibleCountDisplay = document.querySelector('#collectible-count');
 const finishChip = document.querySelector('#finish-chip');
 const effectHud = document.querySelector('#effect-hud');
 effectHud.hidden = true;
+const damageVignette = document.querySelector('#damage-vignette');
 const message = document.querySelector('#game-message');
 const gameStatus = document.querySelector('#game-status');
 const levelName = document.querySelector('#level-name');
@@ -58,6 +60,14 @@ let running = false, started = false, dead = false, completed = false, distance 
 let checkpointDistance = null, checkpointPassed = false, attemptStart = 0;
 let simulationTime = 0, graphicsUnavailable = false;
 let musicEnabled = true, pseudoFullscreen = false, activeAnimation = '', animationTime = 0;
+let particlePool = null;
+let createParticlePool = null;
+let emitBurst = null;
+let emitRing = null;
+let sfxEngine = null, sfxContext = null;
+const sfxCueLog = [];
+let shardStreak = 0, lastShardAt = -Infinity;
+let damageTimer = null;
 const obstacles = [];
 const gaps = [];
 const platforms = [];
@@ -111,6 +121,95 @@ function readProgress() {
   }
   return { ...emptyProgress(), courses };
 }
+
+// Sound effects get their own context and master gain, so they can never move the music's gain.
+// The context is created on the first user-initiated start; a suspended context makes the engine
+// drop cues until the browser allows it to run.
+function ensureSfx() {
+  if (sfxEngine) {
+    if (sfxContext?.state === 'suspended') void sfxContext.resume().catch(() => {});
+    return sfxEngine;
+  }
+  const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextConstructor) return null;
+  try {
+    sfxContext = new AudioContextConstructor();
+    sfxEngine = createSfxEngine({
+      context: sfxContext,
+      destination: sfxContext.destination,
+      reducedMotion,
+      onSchedule: (entry) => {
+        if (!import.meta.env.DEV) return;
+        sfxCueLog.push(entry);
+        if (sfxCueLog.length > 64) sfxCueLog.shift();
+        if (entry.name === 'shard' || entry.name === 'shardArc') {
+          console.info(`[sfx] ${entry.name} degree ${entry.degree}`, entry);
+        } else {
+          console.debug(`[sfx] ${entry.name}`, entry);
+        }
+      },
+    });
+    sfxEngine.setEnabled(musicEnabled);
+    if (sfxContext.state === 'suspended') void sfxContext.resume().catch(() => {});
+    return sfxEngine;
+  } catch (error) {
+    console.warn('Sound effects could not start.', error);
+    sfxEngine = null;
+    sfxContext = null;
+    return null;
+  }
+}
+
+function playSfx(name, options = {}) {
+  if (!musicEnabled || !sfxEngine) return false;
+  return sfxEngine.play(name, options);
+}
+
+function burstFeedback(options) {
+  if (!emitBurst) return 0;
+  return emitBurst(particlePool, options, { reducedMotion });
+}
+
+function ringFeedback(options) {
+  if (!emitRing) return false;
+  return emitRing(particlePool, options, { reducedMotion });
+}
+
+function popCollectibleHud() {
+  if (reducedMotion || !collectibleCountDisplay) return;
+  collectibleCountDisplay.classList.remove('is-pop');
+  void collectibleCountDisplay.offsetWidth;
+  collectibleCountDisplay.classList.add('is-pop');
+}
+
+function pulseFinishChip() {
+  if (reducedMotion || !finishChip) return;
+  finishChip.classList.remove('is-pop');
+  void finishChip.offsetWidth;
+  finishChip.classList.add('is-pop');
+}
+
+function flashDamage() {
+  if (reducedMotion || !damageVignette || !gameWrap) return;
+  damageVignette.classList.remove('is-active');
+  gameWrap.classList.remove('is-shaking');
+  void damageVignette.offsetWidth;
+  damageVignette.classList.add('is-active');
+  gameWrap.classList.add('is-shaking');
+  clearTimeout(damageTimer);
+  damageTimer = setTimeout(() => {
+    damageVignette.classList.remove('is-active');
+    gameWrap.classList.remove('is-shaking');
+    damageTimer = null;
+  }, 220);
+}
+
+collectibleCountDisplay?.addEventListener('animationend', () => {
+  collectibleCountDisplay.classList.remove('is-pop');
+});
+finishChip?.addEventListener('animationend', () => {
+  finishChip.classList.remove('is-pop');
+});
 
 function initScene() {
   scene = new THREE.Scene();
@@ -187,6 +286,7 @@ function initScene() {
   effectHalo.position.set(0, 3.35, 0);
   effectHalo.visible = false;
   player.add(effectHalo);
+  particlePool = createParticlePool(scene, { capacity: 40 });
   resizeObserver = new ResizeObserver(resize);
   resizeObserver.observe(stage);
   clock = new THREE.Clock();
@@ -213,7 +313,14 @@ async function ensureScene() {
   showOverlay('Loading your level…', 'Getting the 3D world ready.');
   scenePromise = (async () => {
     try {
-      THREE = await import('three');
+      const [threeModule, particlesModule] = await Promise.all([
+        import('three'),
+        import('./particles.js'),
+      ]);
+      THREE = threeModule;
+      createParticlePool = particlesModule.createParticlePool;
+      emitBurst = particlesModule.emitBurst;
+      emitRing = particlesModule.emitRing;
       sceneStarted = initScene();
       if (!sceneStarted) {
         showOverlay('WebGL is unavailable.', 'Try a browser with WebGL enabled.');
@@ -326,6 +433,7 @@ function draw() {
   }
   if (running || dead || completed) {
     updateAnimation(dt);
+    particlePool?.update(dt);
     renderScene();
     raf = requestAnimationFrame(draw);
     return;
@@ -356,6 +464,7 @@ function update(dt) {
   updateScenery(dt);
   triggerPortals();
   updateCheckpoint();
+  const fallVelocity = Math.max(0, -player.userData.vy);
   const result = stepPlayerMotion({
     x: player.position.x,
     y: player.position.y,
@@ -377,8 +486,28 @@ function update(dt) {
   if (result.bounced) {
     const pad = platforms.find((feature) => feature.kind === 'bounce'
       && Math.abs(player.position.x - feature.center) <= feature.width / 2);
-    if (pad) pad.squashTimer = .12;
+    if (pad) {
+      pad.squashTimer = .12;
+      playSfx('bounce');
+      ringFeedback({
+        position: { x: pad.center, y: laneY + pad.height + .04, z: 0 },
+        colour: level.palette?.accent ?? level.color,
+        life: .42,
+      });
+    }
     gameStatus.textContent = 'Bounce pad launched you.';
+  } else if (result.landed) {
+    playSfx('land', { impact: Math.min(1, fallVelocity / 9) });
+    if (fallVelocity > .45) {
+      burstFeedback({
+        position: { x: player.position.x, y: player.position.y, z: 0 },
+        count: 4,
+        colour: level.palette?.accent ?? 0xd8ccc0,
+        speed: 1.1,
+        life: .38,
+        gravity: -3,
+      });
+    }
   }
   consumeBufferedJump();
   if (result.fell) {
@@ -398,6 +527,7 @@ function update(dt) {
       if (effects.shieldCharges > 0) {
         effects.shieldCharges--;
         removeObstacle(obstacle, index);
+        playSfx('shield');
         message.textContent = 'SHIELD SAVED YOU';
         continue;
       }
@@ -437,7 +567,31 @@ function moveFeatureGroup(group, dt, speed, removeFeature) {
         feature.mesh.scale.y = 1;
       }
     }
+    if (group === checkpointFlags) {
+      if (feature.hopTimer > 0) {
+        feature.hopTimer = Math.max(0, feature.hopTimer - dt);
+        const phase = 1 - feature.hopTimer / .3;
+        feature.mesh.position.y = laneY + Math.sin(phase * Math.PI) * .3;
+        if (feature.hopTimer === 0) feature.mesh.position.y = laneY;
+      } else if (feature.mesh.position.y !== laneY) {
+        feature.mesh.position.y = laneY;
+      }
+    }
     if (group === enemies) {
+      if (feature.defeated) {
+        // A shield hit holds the silhouette for a 120 ms white flash, then recycles it.
+        if (feature.flashTimer > 0) {
+          feature.flashTimer = Math.max(0, feature.flashTimer - dt);
+          applyEnemyFlash(feature, feature.flashTimer > 0);
+          if (feature.flashTimer === 0) {
+            removeMeshFeature(feature, index, group);
+            continue;
+          }
+        } else {
+          removeMeshFeature(feature, index, group);
+          continue;
+        }
+      }
       feature.mesh.rotation.y += dt * (feature.mesh.userData.rotationSpeed ?? 1);
       if (feature.type === 'drone') feature.mesh.position.y = feature.baseY + Math.sin(simulationTime * 2.2 + feature.phase) * enemyTuning.droneBob;
       if (!reducedMotion) {
@@ -502,6 +656,16 @@ function updateCheckpoint() {
   if (checkpointPassed || checkpointDistance === null) return;
   if (distance < checkpointDistance) return;
   checkpointPassed = true;
+  playSfx('checkpoint');
+  const flag = checkpointFlags[0];
+  if (flag) {
+    if (!reducedMotion) flag.hopTimer = .3;
+    ringFeedback({
+      position: { x: flag.center, y: laneY + .16, z: 0 },
+      colour: 0x7dff9c,
+      life: .5,
+    });
+  }
   message.textContent = 'Checkpoint.';
   gameStatus.textContent = 'Checkpoint.';
 }
@@ -511,6 +675,12 @@ function triggerPortals() {
     if (portal.triggered || Math.abs(portal.center - player.position.x) > .62) continue;
     portal.triggered = true;
     portal.mesh.visible = false;
+    playSfx('portal');
+    ringFeedback({
+      position: { x: portal.center, y: laneY + 1.15, z: 0 },
+      colour: GAMEPLAY_COLORS.portal[portal.type] ?? GAMEPLAY_COLORS.portal.dash,
+      life: .55,
+    });
     const effects = player.userData.effects;
     // One announcement per portal: the entry is shared by the label, the HUD and the live region.
     const copy = portalLabel(portal.type);
@@ -546,6 +716,7 @@ function handleEnemyCollisions() {
   const effects = player.userData.effects;
   for (let index = enemies.length - 1; index >= 0; index--) {
     const enemy = enemies[index];
+    if (enemy.defeated) continue;
     if (Math.abs(enemy.center - player.position.x) >= .8) continue;
     const playerHeight = player.position.y - player.userData.supportY;
     if (getEnemyProfile(enemy.type).stompable && shouldStompEnemy(playerHeight, player.userData.vy)) {
@@ -561,7 +732,9 @@ function handleEnemyCollisions() {
     if (!verticalOverlap) continue;
     if (effects.shieldCharges > 0) {
       effects.shieldCharges--;
-      removeMeshFeature(enemy, index, enemies);
+      playSfx('shield');
+      flashEnemy(enemy);
+      enemy.defeated = true;
       message.textContent = 'SHIELD SAVED YOU';
       continue;
     }
@@ -571,13 +744,51 @@ function handleEnemyCollisions() {
   return false;
 }
 
+// The flash swaps colour/emissive in place; no material is cloned or created at hit time.
+function flashEnemy(enemy) {
+  if (reducedMotion || !enemy?.flashMaterials?.length) return;
+  enemy.flashTimer = .12;
+}
+
+function applyEnemyFlash(enemy, white) {
+  for (const entry of enemy.flashMaterials) {
+    entry.material.color.setHex(white ? 0xffffff : entry.colour);
+    if (entry.emissive !== null && entry.material.emissive) {
+      entry.material.emissive.setHex(white ? 0xffffff : entry.emissive);
+    }
+  }
+}
+
 function handleCollectibleCollisions() {
   for (let index = collectibles.length - 1; index >= 0; index--) {
     const shard = collectibles[index];
     if (!isCollectibleContact(player.position.x, shard.center, player.position.y - laneY, shard.height)) continue;
+    const position = {
+      x: shard.mesh.position.x,
+      y: shard.mesh.position.y,
+      z: shard.mesh.position.z,
+    };
     removeMeshFeature(shard, index, collectibles);
     collectedCount++;
+    const streak = nextStreak(shardStreak, simulationTime - lastShardAt);
+    shardStreak = streak;
+    lastShardAt = simulationTime;
+    const degree = shardChimeDegree(collectedCount, streak, level.music?.scale);
+    playSfx(shard.arcEnd ? 'shardArc' : 'shard', {
+      degree,
+      scale: level.music?.scale,
+    });
+    burstFeedback({
+      position,
+      count: 8,
+      colour: GAMEPLAY_COLORS.shard,
+      speed: 2.6,
+      life: .62,
+      gravity: -5.5,
+    });
+    ringFeedback({ position, colour: GAMEPLAY_COLORS.shard, life: .42 });
     updateCollectibleHud();
+    popCollectibleHud();
     message.textContent = `SHARD ${collectedCount} / ${level.collectibles.length}`;
   }
 }
@@ -1035,7 +1246,7 @@ function spawnCheckpointFlag(distanceAlongTrack) {
   strip.position.y = .035;
   group.add(strip);
   scene.add(group);
-  checkpointFlags.push({ center: group.position.x, width: 2, height: 2.2, mesh: group });
+  checkpointFlags.push({ center: group.position.x, width: 2, height: 2.2, mesh: group, hopTimer: 0 });
 }
 
 function createThreadArch() {
@@ -1252,6 +1463,18 @@ function spawnCourseFeatures() {
       : (perch?.height ?? 0) + profile.height / 2;
     mesh.position.set(center, laneY + altitude, -.05);
     mesh.userData.rotationSpeed = profile.flyer ? 1.7 : .8;
+    const flashMaterials = [];
+    mesh.traverse((child) => {
+      const materials = Array.isArray(child.material) ? child.material : child.material ? [child.material] : [];
+      for (const material of materials) {
+        if (!material?.color) continue;
+        flashMaterials.push({
+          material,
+          colour: material.color.getHex(),
+          emissive: material.emissive?.getHex?.() ?? null,
+        });
+      }
+    });
     scene.add(mesh);
     enemies.push({
       center,
@@ -1263,12 +1486,20 @@ function spawnCourseFeatures() {
       mesh,
       body: mesh.userData.body ?? null,
       wings: mesh.userData.wings ?? null,
+      flashMaterials,
+      flashTimer: 0,
+      defeated: false,
     });
   }
 
+  let arcFollowersLeft = 0;
   for (const definition of level.collectibles ?? []) {
     const center = definition.at - 3;
     const height = definition.height ?? 1.7;
+    const arcLeader = Number.isInteger(definition.arc) && definition.arc >= 2;
+    const arcEnd = !arcLeader && arcFollowersLeft === 1;
+    if (arcFollowersLeft > 0) arcFollowersLeft--;
+    if (arcLeader) arcFollowersLeft = definition.arc - 1;
     const group = new THREE.Group();
     group.position.set(center, laneY + height, -.02);
     const crystal = new THREE.Mesh(
@@ -1284,7 +1515,7 @@ function spawnCourseFeatures() {
     crystal.scale.y = 1.35;
     group.add(crystal);
     scene.add(group);
-    collectibles.push({ center, height, mesh: group });
+    collectibles.push({ center, height, mesh: group, arcEnd });
   }
   spawnFinishGate();
   spawnSceneryObjects();
@@ -1522,6 +1753,8 @@ async function start() {
   const resuming = isGamePaused({ started, running, dead, completed });
   if (dead || completed) reset({ keepAttempt: true });
   primeOneShot(lossCue);
+  ensureSfx();
+  sfxEngine?.setEnabled(musicEnabled);
   if (musicEnabled) musicEngine.start(level.music).catch((error) => console.warn('Music could not start.', error));
   const ready = await ensureScene();
   if (!ready || graphicsUnavailable) {
@@ -1587,6 +1820,7 @@ function consumeBufferedJump() {
   player.userData.grounded = false;
   player.userData.coyoteTimer = 0;
   player.userData.jumpBufferTimer = 0;
+  playSfx('jump', { volume: .35 });
   return true;
 }
 
@@ -1620,6 +1854,8 @@ function crash(reason = 'Tap or press Space to try this level again.') {
   message.textContent = fromCheckpoint ? 'RUN ENDED — RETRY FROM THE CHECKPOINT' : 'RUN ENDED — TRY AGAIN';
   gameStatus.textContent = fromCheckpoint ? `Run ended. ${overlayReason}` : `Run ended. ${reason}`;
   syncPauseButton();
+  playSfx('death');
+  flashDamage();
   void playOneShot(lossCue);
   void musicEngine.stop();
 }
@@ -1641,6 +1877,16 @@ function finish() {
   message.textContent = totalShards ? `LEVEL COMPLETE · SHARDS ${collectedCount}/${totalShards}` : 'LEVEL COMPLETE';
   gameStatus.textContent = `${level.name} complete.`;
   syncPauseButton();
+  playSfx('finish');
+  burstFeedback({
+    position: { x: 0, y: laneY + 3.1, z: 0 },
+    count: 24,
+    colour: level.palette?.accent ?? GAMEPLAY_COLORS.shard,
+    speed: 2.2,
+    life: 1.2,
+    gravity: -4,
+  });
+  pulseFinishChip();
   void musicEngine.stop();
 }
 
@@ -1659,6 +1905,13 @@ function reset({ keepAttempt = false } = {}) {
   distance = 0;
   runBestDistance = 0;
   runRecorded = false;
+  shardStreak = 0;
+  lastShardAt = -Infinity;
+  if (particlePool) particlePool.update(10);
+  gameWrap.classList.remove('is-shaking');
+  damageVignette?.classList.remove('is-active');
+  collectibleCountDisplay?.classList.remove('is-pop');
+  finishChip?.classList.remove('is-pop');
   attempt = 1;
   if (!keepAttempt) {
     attemptStart = 0;
@@ -1865,6 +2118,8 @@ function toggleMusic() {
   musicEnabled = !musicEnabled;
   musicButton.textContent = musicEnabled ? 'MUSIC ON' : 'MUSIC OFF';
   musicButton.setAttribute('aria-pressed', String(musicEnabled));
+  if (musicEnabled) ensureSfx();
+  sfxEngine?.setEnabled(musicEnabled);
   if (musicEnabled && running) musicEngine.start(level.music).catch((error) => console.warn('Music could not start.', error));
   else if (!musicEnabled) void musicEngine.stop();
 }
@@ -1989,6 +2244,18 @@ if (import.meta.env.DEV) {
       timerActive: musicEngine.timer !== null,
       step: musicEngine.step,
     },
+    sfx: {
+      enabled: sfxEngine?.isEnabled() ?? false,
+      state: sfxContext?.state ?? null,
+      voices: sfxEngine?.activeVoiceCount() ?? 0,
+      cues: sfxCueLog.slice(),
+    },
+    particles: {
+      capacity: particlePool?.capacity ?? 0,
+      active: particlePool?.activeCount() ?? 0,
+      rings: particlePool?.ringCount() ?? 0,
+    },
+    shardStreak,
   });
 }
 document.addEventListener('visibilitychange', () => {
@@ -2017,6 +2284,19 @@ window.addEventListener('pagehide', (event) => {
   else stopRenderLoop();
   stopOneShot(lossCue);
   if (!event.persisted) {
+    clearTimeout(damageTimer);
+    particlePool?.dispose();
+    particlePool = null;
+    sfxEngine?.dispose();
+    sfxEngine = null;
+    if (sfxContext && typeof sfxContext.close === 'function') {
+      try {
+        void sfxContext.close().catch(() => {});
+      } catch {
+        // A context may already be closed when the page is going away.
+      }
+    }
+    sfxContext = null;
     resizeObserver?.disconnect();
     renderer?.dispose();
     atlasTexture?.dispose();
