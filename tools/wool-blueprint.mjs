@@ -76,4 +76,7 @@ export const woolBlueprint = [
   {
     id: 'wool-18-dust-bunny-run', target: 1.0, phrase: [3, 2], rest: 1.75, portals: ['float', 'spring'], shards: 1,
   },
+  {
+    id: 'wool-19-spoolworks', target: 1.02, phrase: [3, 2], rest: 1.7, portals: ['dash', 'float'], shards: 1,
+  },
 ];
