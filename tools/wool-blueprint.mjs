@@ -79,4 +79,7 @@ export const woolBlueprint = [
   {
     id: 'wool-19-spoolworks', target: 1.02, phrase: [3, 2], rest: 1.7, portals: ['dash', 'float'], shards: 1,
   },
+  {
+    id: 'wool-20-great-unravel', target: 1.05, phrase: [3, 2], rest: 1.7, portals: ['float', 'dash'], shards: 1,
+  },
 ];

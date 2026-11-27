@@ -142,11 +142,18 @@ Run `npm run levels:compose:wool` to deterministically rebuild every Wool Road l
 - **Audio:** 148 BPM with the existing sixteen-step procedural motif.
 
 ### 19 — Spoolworks (147 units)
-- **Signature:** Two spike groups on one arc.
+- **Signature:** A dash at 52 into an island-stitched hole, a hover at 25.5 and a float at 102: every tool in the workshop appears once.
 - **Rhythm:** 2 + 2 + 2 + 3 + 3 + 3 input beats; target 1.02 inputs/s, measured 1.01; 4 open gaps and 1 island and 1 hover.
-- **Design hook:** Spoolworks lays out 10 spike groups, 4 open gaps, 2 portals (dash and float), 1 drone and 1 shard.
+- **Design hook:** Spoolworks runs a hover at 25.5, a dash at 51.9 and a float at 102.1 around a stitched 4.9-wide hole at 61.3, and lines eight hazard groups across four skins with a beetle, a bunny, a moth and a shard arc.
 - **Layout:** Hazard groups at 20.21 (double) [spike], 72.11 [yarn-spike], 89.67 [felt-block], 98.42 [button-bomb], 115.98 [spike], 116.98 [yarn-spike], 126.79 [felt-block], 135.54 [button-bomb]; gaps at 36.45 (2.5), 61.26 (4.9), 80.92 (2.5), 107.23 (2.5); platforms: island at 61.26, width 2.5, height 0.5; hover at 25.5, width 4.5, height 0.45; portals: dash at 51.94, float at 102.12; enemies: moth at 125.79, beetle at 11.46, bunny at 45.2; shards: 10.08 (height 1.85), 62.51 (height 1.7), 27.75 (height 1.65), 33.98 (height 1.24, arc of 3), 35.89 (height 1.85), 37.72 (height 1.23). arches: checkpoint, finish; pom-poms: 5
 - **Audio:** 150 BPM with the existing sixteen-step procedural motif.
+
+### 20 — The Great Unravel (150 units)
+- **Signature:** Two spike groups on one arc.
+- **Rhythm:** 2 + 2 + 3 + 3 + 3 + 3 input beats; target 1.05 inputs/s, measured 1.06; 4 open gaps and 1 island, 1 hover and 1 bounce pad.
+- **Design hook:** The Great Unravel lays out 11 spike groups, 4 open gaps, 2 portals (float and dash), 1 drone and 1 shard.
+- **Layout:** Hazard groups at 20.32 (double) [spike], 59.58 [yarn-spike], 60.58 [felt-block], 78.23 [button-bomb], 79.23 [spike], 101.12 [yarn-spike], 112.03 [felt-block], 129.68 [button-bomb], 138.48 [spike]; gaps at 33.13 (2.5), 50.78 (2.5), 69.43 (2.5), 90.21 (4.9); platforms: island at 90.21, width 2.5, height 0.5; hover at 104.5, width 4.5, height 0.45; bounce at 25, width 3.5, height 0.35; portals: float at 44.32, dash at 82.2; enemies: moth at 120.88, beetle at 11.52, bunny at 41.93; shards: 10.03 (height 1.85), 91.46 (height 1.7), 106.75 (height 1.65), 32.4 (height 1.24, arc of 3), 34.32 (height 1.85), 36.16 (height 1.23), 27.2 (height 1.21, arc of 3), 28.32 (height 1.29), 29.44 (height 1.24). arches: checkpoint, finish; pom-poms: 5
+- **Audio:** 154 BPM with the existing sixteen-step procedural motif.
 
 ## Playtest checklist
 
