@@ -296,4 +296,23 @@ export const woolLevels = [
       decor: { arches: ['checkpoint', 'finish'], pomPoms: 5 },
       music: { bpm: 144, root: 60, scale: pentatonicMajor, progression: [0, 2, 3, 4], motif: motif(2, 3, null, 4, null, 2, null, 3, 2, 0, null, 0, null, 2, 4, null) },
     },
+
+  {
+      ...emptyCourse, id: 'wool-17-needle-nook', name: "Needle Nook", zone: 'THE ATTIC',
+      campaign: 'wool',
+      color: 0x8fbf9f, background: 0xf6eadf, floor: 0x4a3b36,
+      speed: 9.4, length: 140,
+      environment: 'wool-needle-nook', scenery: 'wool',
+      palette: { sky: 0xF6EADF, lane: 0x4A3B36, accent: 0x8FBF9F, platform: 0xD8CCC0 },
+    signature: 'Two hovers frame the needle alley, a spring at 50 and a float at 96 thread it, and eight hazard groups close in on the last stretch.', designHook: 'Needle Nook sets two hovers at 25.5 and 85.5 around a spring at 50.3 and a float at 95.8, opens four gaps, and lines eight hazard groups across four skins with a beetle, a bunny, a moth and two shard arcs.',
+      hazardStyle: 'spike',
+      obstacles: [[19.9, 2, 'spike'], [66.26, 1, 'yarn-spike'], [83.54, 1, 'felt-block'], [92.15, 1, 'button-bomb'], [109.44, 1, 'spike'], [110.44, 1, 'yarn-spike'], [120.1, 1, 'felt-block'], [128.72, 1, 'button-bomb']],
+      gaps: [{ at: 36.35, width: 2.5 }, { at: 57.64, width: 2.5 }, { at: 74.92, width: 2.5 }, { at: 100.82, width: 2.5 }],
+      platforms: [{ at: 25.5, width: 4.5, height: 0.45, kind: 'hover' }, { at: 85.5, width: 4.5, height: 0.45, kind: 'hover' }],
+      portals: [{ at: 50.29, type: 'spring' }, { at: 95.79, type: 'float' }],
+      enemies: [{ at: 119.1, type: 'moth', height: 1.05 }, { at: 11.28, type: 'beetle' }, { at: 44.96, type: 'bunny' }],
+      collectibles: [{ at: 9.92, height: 1.85 }, { at: 27.75, height: 1.65 }, { at: 87.75, height: 1.65 }, { at: 33.92, height: 1.24, arc: 3 }, { at: 35.8, height: 1.85 }, { at: 37.6, height: 1.23 }, { at: 58.12, height: 1.24, arc: 3 }, { at: 60, height: 1.85 }, { at: 61.8, height: 1.23 }],
+      decor: { arches: ['checkpoint', 'finish'], pomPoms: 5 },
+      music: { bpm: 146, root: 62, scale: pentatonicMajor, progression: [0, 3, 4, 2], motif: motif(3, null, 4, null, 2, null, 3, 2, 0, null, 0, null, 2, 4, null, 2) },
+    },
 ];
