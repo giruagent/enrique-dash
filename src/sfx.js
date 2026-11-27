@@ -221,6 +221,11 @@ export function createSfxEngine({
         tone({ type: 'sine', frequency: 120, endFrequency: 58, time, duration: .12, volume: .07 + impact * .12, cutoff: 500 });
         return .16;
       }
+      case 'tick':
+        // Menu feedback: soft, short and quiet enough to sit under a card press without masking
+        // the music. It shares the voice budget with everything else.
+        tone({ type: 'sine', frequency: 880, endFrequency: 760, time, duration: .06, volume: .06, cutoff: 2400, attack: .002 });
+        return .07;
       case 'jump': {
         const level = scaleVolume(options.volume);
         noise({ time, duration: .1, volume: .055 * level, filterType: 'bandpass', cutoff: 900, attack: .002 });
@@ -307,6 +312,7 @@ export function createSfxEngine({
       || name === 'shardArc'
       || name === 'land'
       || name === 'jump'
+      || name === 'tick'
       || name === 'bounce'
       || name === 'shield'
       || name === 'checkpoint'
