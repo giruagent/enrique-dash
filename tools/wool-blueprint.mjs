@@ -58,4 +58,7 @@ export const woolBlueprint = [
   {
     id: 'wool-12-tangled-thicket', target: 0.83, phrase: [2, 1], rest: 1.9, portals: ['spring', 'float'], shards: 1,
   },
+  {
+    id: 'wool-13-kite-string', target: 0.86, phrase: [2, 1], rest: 1.85, portals: ['dash', 'float'], shards: 1,
+  },
 ];

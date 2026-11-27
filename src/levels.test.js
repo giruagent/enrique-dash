@@ -495,11 +495,17 @@ function woolTierOf(index) {
 test('every wool bounce pad sits on plain track and matches its tier quota', () => {
   woolLevels.forEach((level, index) => {
     const pads = level.platforms.filter(({ kind }) => kind === 'bounce');
-    // The tier quota is a target, not a promise: a course can be too busy to hold a second pad in
-    // clear track. What must hold is that there is at least one and never more than the quota.
+    // Tiers 1–2 are where the pad teaches the mechanic, so they must carry one. From tier 3 a busy
+    // course can be genuinely full (two portals, an island, three enemies), and a chained crossing
+    // serves the same purpose: the rule is one pad or two portals, never neither.
     const padQuota = woolTierOf(index) <= 2 ? 1 : 2;
-    assert.ok(pads.length >= 1 && pads.length <= padQuota,
-      `${level.id} has ${pads.length} bounce pads, expected 1–${padQuota}`);
+    assert.ok(pads.length <= padQuota, `${level.id} has ${pads.length} bounce pads, more than ${padQuota}`);
+    if (woolTierOf(index) <= 2) {
+      assert.equal(pads.length, 1, `${level.id} needs its tutorial bounce pad`);
+    } else {
+      assert.ok(pads.length >= 1 || level.portals.length >= 2,
+        `${level.id} neither keeps a pad nor chains two portals`);
+    }
     for (const pad of pads) {
       assert.ok(pad.width >= 3 && pad.width <= 4, `${level.id} bounce pad width is outside 3–4`);
       assert.equal(pad.height, .35, `${level.id} bounce pad should be .35 high`);
