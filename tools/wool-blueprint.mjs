@@ -64,4 +64,7 @@ export const woolBlueprint = [
   {
     id: 'wool-14-winders-climb', target: .9, phrase: [3, 2], rest: 1.85, portals: ['spring', 'dash'], shards: 1,
   },
+  {
+    id: 'wool-15-frayed-frontier', target: 0.94, phrase: [3, 2], rest: 1.8, portals: ['float', 'spring'], shards: 1,
+  },
 ];
