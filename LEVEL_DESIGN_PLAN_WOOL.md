@@ -51,11 +51,18 @@ Run `npm run levels:compose:wool` to deterministically rebuild every Wool Road l
 - **Audio:** 118 BPM with the existing sixteen-step procedural motif.
 
 ### 06 — Patchwork Square (96 units)
-- **Signature:** A float portal lifts you over the square's second hole, a kerb stitches the seam before the last gap, and a beetle guards the first crossing.
+- **Signature:** A pad pops you over the square's first hole, a float carries the second crossing, and a beetle and a bunny share the long middle stretch.
 - **Rhythm:** 2 + 2 + 2 + 2 input beats; target 0.70 inputs/s, measured 0.69; 4 open gaps and 1 kerb and 1 bounce pad.
-- **Design hook:** Patchwork Square strings four gaps between a pad at 17.5 and a kerb at 54, threads a float portal at 32, and mixes spike, yarn spike and felt block behind one beetle and a five-shard arc.
+- **Design hook:** Patchwork Square threads four gaps around a pad at 24.5 and a kerb at 70, puts a float portal at 40.3, and fills the lane with two spike groups, a beetle at 34.6 and a bunny at 79.9 behind a five-shard arc.
 - **Layout:** Hazard groups at 17.61 (double) [spike], 62.92 (double) [yarn-spike]; gaps at 9.96 (2.5), 38.29 (2.5), 55.28 (2.5), 83.54 (2.5); platforms: kerb at 70, width 4.5, height 0.45; bounce at 24.5, width 3.5, height 0.35; portals: float at 40.33; enemies: beetle at 34.59, bunny at 79.91; shards: 9.8 (height 1.85), 72.25 (height 1.65), 26.42 (height 1.21, arc of 3), 27.32 (height 1.3), 28.36 (height 1.24). arches: none; pom-poms: 4
 - **Audio:** 120 BPM with the existing sixteen-step procedural motif.
+
+### 07 — Bobble Bridge (100 units)
+- **Signature:** A spike run of 4 hazard groups over 4 open gaps, every landing clear.
+- **Rhythm:** 1 + 2 + 1 + 1 + 2 + 2 input beats; target 0.72 inputs/s, measured 0.76; 4 open gaps and 1 kerb and 1 bounce pad.
+- **Design hook:** Bobble Bridge lays out 4 spike groups, 4 open gaps, 1 portal (spring), 1 crawler and 1 shard.
+- **Layout:** Hazard groups at 34.59 [spike], 58.21 [yarn-spike], 73.67 [felt-block]; gaps at 26.88 (2.5), 48.08 (2.5), 65.96 (2.5), 81.41 (2.5); platforms: kerb at 15, width 4.5, height 0.45; bounce at 38.5, width 3.5, height 0.35; portals: spring at 49.29; enemies: beetle at 89.12, bunny at 10.08; shards: 8.91 (height 1.85), 17.25 (height 1.65), 24.99 (height 1.24, arc of 3), 26.67 (height 1.85), 28.28 (height 1.23). arches: none; pom-poms: 4
+- **Audio:** 122 BPM with the existing sixteen-step procedural motif.
 
 ## Playtest checklist
 
