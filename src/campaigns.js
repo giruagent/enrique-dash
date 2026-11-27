@@ -3,7 +3,12 @@ import { woolLevels } from './levels-wool.js';
 
 export const campaigns = [
   { id: 'core', label: 'NEON ROAD', levels: coreLevels, chapters: null },
-  { id: 'wool', label: 'WOOL ROAD', levels: woolLevels, chapters: [{ at: 0, name: 'THIMBLE MEADOW' }] },
+  { id: 'wool', label: 'WOOL ROAD', levels: woolLevels, chapters: [
+      { at: 0, name: 'THIMBLE MEADOW' },
+      { at: 5, name: 'PATCHWORK VILLAGE' },
+      { at: 10, name: 'YARNSTORM' },
+      { at: 15, name: 'THE ATTIC' },
+    ] },
 ];
 
 export function getLevelById(id) {

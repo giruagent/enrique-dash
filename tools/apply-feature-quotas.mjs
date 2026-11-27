@@ -530,7 +530,7 @@ function withHazardSkins(level, index, catalog, config, styles) {
 // so the course's input rate is unchanged; only the silhouette and collision profile change.
 function replaceHazardWithEnemy(level, groupIndex, type, index, catalog, config) {
   if (groupIndex < 0 || groupIndex >= level.obstacles.length) return null;
-  if (level.obstacles.length <= 3) return null;
+  if (level.obstacles.length + level.enemies.length <= 3) return null;
   const [at] = level.obstacles[groupIndex];
   const trial = clone(level);
   trial.obstacles.splice(groupIndex, 1);
@@ -560,6 +560,32 @@ function applyGenericWoolEnemies(level, quota, index, catalog, config) {
     if (!replaced) break;
     next = replaced;
   }
+  return retypeWoolEnemies(next, quota);
+}
+
+// A course with only three hazard groups cannot give one away, so the quota would stay unmet and
+// the course would keep a core silhouette. Re-typing an existing enemy to a wool one is a pure
+// silhouette swap: beetle shares the crawler profile and moth shares the drone profile, so the
+// simulation cannot change. `bunny` also shares the crawler profile.
+const WOOL_TWINS = { crawler: ['beetle', 'bunny'], drone: ['moth'], beetle: ['bunny'], bunny: ['beetle'], moth: ['moth'] };
+
+// Every core silhouette that reaches a wool course is swapped for a wool twin sharing its collision
+// profile, and duplicates are spread across the twins of that same profile. A beetle and a bunny
+// are both the .9/.58 ground body, so this cannot change a single collision.
+function retypeWoolEnemies(level, quota) {
+  if (!level.enemies.length) return level;
+  const used = new Set();
+  let changed = false;
+  const enemies = level.enemies.map((enemy) => {
+    const twins = WOOL_TWINS[enemy.type] ?? [enemy.type];
+    const pick = twins.find((type) => !used.has(type)) ?? twins[0];
+    used.add(pick);
+    if (pick !== enemy.type) changed = true;
+    return { ...enemy, type: pick };
+  });
+  if (!changed) return level;
+  const next = clone(level);
+  next.enemies = enemies;
   return next;
 }
 
@@ -673,11 +699,23 @@ function applyWoolVocabulary(level, index, catalog, config) {
   // 3. Shard arcs, sampled from the auto-player's own trajectory.
   const specs = Array.isArray(vocabulary.arcs)
     ? vocabulary.arcs
-    : Array.from({ length: quota.arcs[1] }, () => ({ source: 'jump', count: 3 }));
+    : Array.from({ length: quota.arcs[1] }, () => ({ count: 3 }));
   const usedTimes = new Set();
   for (const spec of specs) {
-    const placed = placeArc(next, { ...spec, replaceShards: spec.replaceShards ?? vocabulary.replaceShards }, index, catalog, config, usedTimes);
-    if (placed) next = placed;
+    // A named source is a request, not a guarantee: a portal may already own that beat. Try the
+    // gap first, then the pad, then any jump, and accept the first placement the simulation backs.
+    const sources = spec.source ? [spec.source] : ['gap', 'pad', 'jump'];
+    for (const source of sources) {
+      const placed = placeArc(
+        next,
+        { ...spec, source, replaceShards: spec.replaceShards ?? vocabulary.replaceShards },
+        index,
+        catalog,
+        config,
+        usedTimes,
+      );
+      if (placed) { next = placed; break; }
+    }
   }
   if (process.env.COMPOSE_DEBUG) console.log(level.id, 'arcs after', JSON.stringify(next.collectibles));
 
