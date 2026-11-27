@@ -122,6 +122,36 @@ test('long courses use safeCheckpointDistance and resume attempts from the check
   assert.match(main, /checkpointPassed/);
 });
 
+test('the shelf has two campaign tabs with pressed state and arrow-key navigation', async () => {
+  const switcher = html.match(/<div[^>]*id="campaign-switcher"[^>]*>[\s\S]*?<\/div>/)?.[0] ?? '';
+  assert.notEqual(switcher, '');
+  assert.match(switcher, /role="tablist"/);
+  assert.match(switcher, /aria-label="Campaigns"/);
+  const tabs = switcher.match(/<button[^>]*class="campaign-tab"[^>]*>/g) ?? [];
+  assert.equal(tabs.length, 2, 'the shelf needs exactly two campaign tabs');
+  assert.match(switcher, /data-campaign-id="core"/);
+  assert.match(switcher, /data-campaign-id="wool"/);
+  assert.match(switcher, /NEON ROAD/);
+  assert.match(switcher, /WOOL ROAD/);
+  assert.equal((switcher.match(/aria-pressed=/g) ?? []).length, 2);
+  assert.match(styles, /\.campaign-switcher\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(styles, /\.campaign-tab\s*\{[^}]*min-height:\s*44px/);
+  const main = await readFile(new URL('./main.js', import.meta.url), 'utf8');
+  assert.match(main, /campaignSwitcher/);
+  assert.match(main, /ArrowLeft/);
+  assert.match(main, /ArrowRight/);
+});
+
+test('chapter headers render only for campaigns that define chapters', async () => {
+  const main = await readFile(new URL('./main.js', import.meta.url), 'utf8');
+  const campaigns = await readFile(new URL('./campaigns.js', import.meta.url), 'utf8');
+  assert.match(campaigns, /chapters:\s*null/, 'the core campaign must not define chapters');
+  assert.match(campaigns, /chapters:\s*\[\s*\{\s*at:\s*0,\s*name:\s*'THIMBLE MEADOW'\s*\}/, 'the wool campaign needs its Thimble Meadow chapter');
+  assert.match(main, /if \(activeCampaign\.chapters\)/);
+  assert.match(main, /activeCampaign\.chapters\.findIndex\(\(chapter\) => chapter\.at === index\)/);
+  assert.match(main, /WORLD \$\{chapterIndex \+ 1\} · \$\{chapter\.name\}/);
+});
+
 test('clearing a course advances instead of replaying the same one', async () => {
   const main = await readFile(new URL('./main.js', import.meta.url), 'utf8');
   // The old handler did `if (dead || completed) reset()`, so a tap after a clear replayed the
@@ -131,6 +161,6 @@ test('clearing a course advances instead of replaying the same one', async () =>
   assert.doesNotMatch(jumpBody, /dead \|\| completed/, 'the cleared case must be handled before the loss case');
   assert.match(main, /nextLevelButton\.addEventListener\('click', advanceAfterClear\)/);
   const helper = main.match(/function advanceAfterClear\(\) \{[\s\S]*?\n\}/)?.[0] ?? '';
-  assert.match(helper, /selectedLevelIndex < levels\.length - 1/, 'it must move to the next course');
+  assert.match(helper, /selectedLevelIndex < activeLevels\.length - 1/, 'it must move to the next course in the active campaign');
   assert.match(helper, /selectLevel\(selectedLevelIndex \+ 1\)/, 'it must select that course');
 });

@@ -9,7 +9,7 @@ import {
   shouldStompEnemy,
   stepPlayerMotion,
 } from '../src/game-logic.js';
-import { getLevel, levels } from '../src/levels.js';
+import { campaigns, getLevelById } from '../src/campaigns.js';
 import {
   beatWindows,
   ENEMY_HORIZONTAL_RADIUS,
@@ -359,7 +359,29 @@ export function playLevel(level) {
 export const autoPlay = playLevel;
 
 function main(args) {
-  const selected = args.length ? args.map((id) => ({ id, level: getLevel(id) })) : levels.map((level) => ({ id: level.id, level }));
+  const inlineCampaign = args.find((arg) => arg.startsWith('--campaign='));
+  const campaignIndex = args.indexOf('--campaign');
+  const campaignId = inlineCampaign
+    ? inlineCampaign.slice('--campaign='.length) || 'core'
+    : campaignIndex >= 0 ? (args[campaignIndex + 1] ?? 'core') : null;
+  const ids = args.filter((arg, index) => (
+    !arg.startsWith('--campaign')
+    && !(campaignIndex >= 0 && index === campaignIndex + 1)
+  ));
+  let selected;
+  if (campaignId) {
+    const campaign = campaigns.find((item) => item.id === campaignId);
+    if (!campaign) {
+      console.log(`${campaignId}: FAILED | unknown campaign`);
+      process.exitCode = 1;
+      return;
+    }
+    selected = campaign.levels.map((level) => ({ id: level.id, level }));
+  } else if (ids.length) {
+    selected = ids.map((id) => ({ id, level: getLevelById(id) }));
+  } else {
+    selected = campaigns.flatMap((campaign) => campaign.levels.map((level) => ({ id: level.id, level })));
+  }
   let failed = false;
   for (const { id, level } of selected) {
     if (!level) {

@@ -1,0 +1,12 @@
+// The Wool Road tier table and rhythm briefs. Only course 1 ships today; add
+// one entry per later course and the composer handles the rest.
+export const woolTiers = [
+  { tier: 1, courses: '1–5', length: '76–92', speed: '7.8–8.2', inputs: '0.60–0.68' },
+  { tier: 2, courses: '6–10', length: '96–112', speed: '8.3–8.7', inputs: '0.70–0.78' },
+  { tier: 3, courses: '11–15', length: '116–132', speed: '8.8–9.2', inputs: '0.80–0.94' },
+  { tier: 4, courses: '16–20', length: '136–150', speed: '9.3–9.6', inputs: '0.96–1.05' },
+];
+
+export const woolBlueprint = [
+  { id: 'wool-thimble-meadow', target: .62, phrase: [1, 2], rest: 2.2, portals: [], shards: 1 },
+];

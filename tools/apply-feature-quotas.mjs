@@ -10,8 +10,8 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { levels, validateLevels } from '../src/levels.js';
-import { blueprint, composeLevels, rewriteLevels, renderDesignPlan } from './compose-levels.mjs';
+import { validateLevels } from '../src/levels.js';
+import { campaignConfig, composeLevels, readCampaignArgument, rewriteLevels, renderDesignPlan } from './compose-levels.mjs';
 import { playLevel } from './auto-player.mjs';
 import { analyzeLevel } from './level-report.mjs';
 import {
@@ -23,9 +23,6 @@ import {
   jumpReach,
   jumpRiseTime,
 } from './level-physics.mjs';
-
-const LEVELS_PATH = new URL('../src/levels.js', import.meta.url);
-const PLAN_PATH = new URL('../LEVEL_DESIGN_PLAN.md', import.meta.url);
 
 const QUOTAS = [
   { enemies: 0, drones: 0, portals: 0, shards: 0 },   // courses 1-4
@@ -39,6 +36,10 @@ const QUOTAS = [
 // sentence; this table is the human layer, and it is written against the mix this pass leaves
 // behind (gaps, kerbs, enemies, portals and shards as listed in the design plan).
 const COPY = {
+  'wool-thimble-meadow': {
+    signature: 'Three open gaps in the meadow, each one a single soft landing.',
+    designHook: 'Thimble Meadow lays out 3 spike groups, 3 open gaps and 1 shard.',
+  },
   'neon-run': {
     signature: 'Three open gaps on a clean straight, each one a single jump.',
     designHook: 'Three spike groups and three holes, spaced so you can land and look before the next.',
@@ -121,7 +122,7 @@ const COPY = {
   },
 };
 
-const tierOf = (index) => (index < 4 ? 0 : index < 8 ? 1 : index < 14 ? 2 : 3);
+const tierOf = (index, config) => config.tierFor(index) - 1;
 
 const clone = (level) => JSON.parse(JSON.stringify(level));
 const round = (value, digits = 2) => {
@@ -142,30 +143,30 @@ function featureTypes(level) {
 
 // The same gates the test suite enforces after composition. A feature is only kept if all of them
 // still hold; this makes the pass stricter than a plain "can the auto-player finish?" check.
-function preservesGates(level, index) {
+function preservesGates(level, index, config) {
   const result = playLevel(level);
   if (!result.completed || result.deaths !== 0) return false;
   const metrics = analyzeLevel(level, result);
   if (metrics.deadBandViolations.length !== 0) return false;
   if (metrics.telegraphViolations.length !== 0) return false;
-  if (Math.abs(metrics.inputsPerSecond / blueprint[index].target - 1) > .05) return false;
+  if (Math.abs(metrics.inputsPerSecond / config.blueprint[index].target - 1) > .05) return false;
   if (metrics.jumps < .75 * metrics.beats) return false;
   if (!(metrics.tightestMargin >= .35)) return false;
-  if (tierOf(index) >= 2 && metrics.comboBeats < 1) return false;
+  if (tierOf(index, config) >= 2 && metrics.comboBeats < 1) return false;
   if (featureTypes(level).size < 3) return false;
   return true;
 }
 
 // A change is only kept when the whole catalog still validates and the course still passes every
 // fairness gate.
-function keep(catalog, trial, index) {
+function keep(catalog, trial, index, config) {
   const candidate = catalog.map((level, position) => (position === index ? trial : level));
   try {
-    validateLevels(candidate);
+    validateLevels(candidate, { expected: catalog.length });
   } catch {
     return false;
   }
-  return preservesGates(trial, index);
+  return preservesGates(trial, index, config);
 }
 
 /** Beats sorted by distance, with the end of each beat, to reason about clear track. */
@@ -245,7 +246,7 @@ function placed(level, platform, options = {}) {
   return trial;
 }
 
-function placePlainPlatform(level, index, catalog, kind, width, height, clearance = 0) {
+function placePlainPlatform(level, index, catalog, config, kind, width, height, clearance = 0) {
   const halfWidth = width / 2;
   const spots = candidatePlatformSpots(level, halfWidth, clearance);
   for (const spot of spots.slice(0, 80)) {
@@ -256,17 +257,18 @@ function placePlainPlatform(level, index, catalog, kind, width, height, clearanc
       kind,
     };
     const trial = placed(level, platform);
-    if (keep(catalog, trial, index)) return trial;
+    if (keep(catalog, trial, index, config)) return trial;
   }
   return null;
 }
 
-function placeShelf(level, index, catalog) {
+function placeShelf(level, index, catalog, config) {
   const width = 10;
   return placePlainPlatform(
     level,
     index,
     catalog,
+    config,
     'shelf',
     width,
     .5,
@@ -274,19 +276,19 @@ function placeShelf(level, index, catalog) {
   );
 }
 
-function placeKerb(level, index, catalog) {
-  return placePlainPlatform(level, index, catalog, 'kerb', 4.5, .45);
+function placeKerb(level, index, catalog, config) {
+  return placePlainPlatform(level, index, catalog, config, 'kerb', 4.5, .45);
 }
 
-function placeHover(level, index, catalog) {
-  return placePlainPlatform(level, index, catalog, 'hover', 4.5, .45);
+function placeHover(level, index, catalog, config) {
+  return placePlainPlatform(level, index, catalog, config, 'hover', 4.5, .45);
 }
 
 // An island bridges the near half of a gap: the platform starts flush with the hole's edge, so a
 // grounded runner steps up onto it instead of falling in, and only the far part of the hole is left
 // to jump. Putting the platform in the middle of the hole (the first version) meant the runner was
 // already falling before reaching it, which made course 11 impossible to walk through.
-function placeIsland(level, index, catalog) {
+function placeIsland(level, index, catalog, config) {
   const islandWidth = 2.5;
   const minimumHoleAfter = 2.4;
   for (const [gapIndex, gap] of level.gaps.entries()) {
@@ -308,14 +310,14 @@ function placeIsland(level, index, catalog) {
     };
     trial.platforms.push(platform);
     trial.collectibles.push(platformShard(platform, 'island'));
-    if (keep(catalog, trial, index)) return trial;
+    if (keep(catalog, trial, index, config)) return trial;
   }
   return null;
 }
 
 // A perch replaces one single-hazard beat: the hazard group becomes a raised kerb with a crawler
 // standing on it. Keeping the input count unchanged preserves the course's target input rate.
-function placePerch(level, index, catalog) {
+function placePerch(level, index, catalog, config) {
   const width = 4.5;
   const halfWidth = width / 2;
   const groups = level.obstacles
@@ -343,7 +345,7 @@ function placePerch(level, index, catalog) {
         at: round(platform.at + platform.width / 2),
         type: 'crawler',
       });
-      if (keep(catalog, trial, index)) return trial;
+      if (keep(catalog, trial, index, config)) return trial;
     }
   }
   return null;
@@ -378,14 +380,14 @@ function carriesShard(level, platform) {
 // The feature pass changes when the auto-player jumps (new enemies, perches and step-up surfaces).
 // Re-derive the free apex shards from the final run trace so each one still sits on a jump arc. The
 // platform shards are fixed to their platform and are kept as-is.
-function regenerateApexShards(level, index) {
+function regenerateApexShards(level, index, config) {
   const platformShards = level.collectibles.filter((shard) => (
     level.platforms.some((platform) => (
       shard.at >= platform.at - .15 && shard.at <= platform.at + platform.width + .15
     ))
   ));
   level.collectibles = [...platformShards];
-  const wanted = blueprint[index].shards;
+  const wanted = config.blueprint[index].shards;
   if (wanted === 0) return true;
 
   const result = playLevel(level);
@@ -422,8 +424,8 @@ function regenerateApexShards(level, index) {
   return true;
 }
 
-function applyFeaturePass(catalog, base, index) {
-  const quota = QUOTAS[tierOf(index)];
+function applyFeaturePass(catalog, base, index, config) {
+  const quota = QUOTAS[tierOf(index, config)];
   let level = clone(base);
 
   // 1. Enemies: convert hazard slots. A crawler is shorter than a hazard, so a jump that cleared
@@ -445,7 +447,7 @@ function applyFeaturePass(catalog, base, index) {
       ? { at: group.at, type: 'drone', height: 1.05 }
       : { at: group.at, type: 'crawler' });
     level.obstacles = level.obstacles.filter((_, i) => i !== group.groupIndex);
-    if (!keep(catalog, level, index)) {
+    if (!keep(catalog, level, index, config)) {
       level = before;
       continue;
     }
@@ -459,19 +461,19 @@ function applyFeaturePass(catalog, base, index) {
     const before = level;
     let next = null;
     if (slot === 'kerb') {
-      next = placeKerb(level, index, catalog);
+      next = placeKerb(level, index, catalog, config);
     } else if (slot === 'perch') {
-      next = placePerch(level, index, catalog);
+      next = placePerch(level, index, catalog, config);
     } else {
       // Prefer an island (two jumps), then a shelf, then the hover (final tier only).
       // A tier may repeat a special if that is the only mix the gates allow.
       const candidates = index >= 14 ? ['island', 'shelf', 'hover'] : ['island', 'shelf'];
       for (const kind of candidates) {
         next = kind === 'island'
-          ? placeIsland(level, index, catalog)
+          ? placeIsland(level, index, catalog, config)
           : kind === 'shelf'
-            ? placeShelf(level, index, catalog)
-            : placeHover(level, index, catalog);
+            ? placeShelf(level, index, catalog, config)
+            : placeHover(level, index, catalog, config);
         if (next) break;
       }
     }
@@ -488,7 +490,7 @@ function applyFeaturePass(catalog, base, index) {
     if (isBridge(platform, level.gaps) || platform.kind === 'perch') continue;
     if (!carriesShard(level, platform)) level.collectibles.push(platformShard(platform, platform.kind));
   }
-  if (!regenerateApexShards(level, index)) {
+  if (!regenerateApexShards(level, index, config)) {
     throw new Error(`${level.id}: could not re-place its apex shards after the feature pass`);
   }
 
@@ -539,20 +541,21 @@ function designHookFor(level) {
 }
 
 function main() {
-  const composed = composeLevels(levels);
+  const config = campaignConfig(readCampaignArgument());
+  const composed = composeLevels(config.levels, config.blueprint, config);
   const catalog = composed.map(({ level }) => level);
   const results = composed.map(({ level, phrases }, index) => {
-    const { level: enriched } = applyFeaturePass(catalog, level, index);
+    const { level: enriched } = applyFeaturePass(catalog, level, index, config);
     return { level: enriched, phrases, metrics: analyzeLevel(enriched) };
   });
 
-  validateLevels(results.map(({ level }) => level));
+  validateLevels(results.map(({ level }) => level), { expected: config.levels.length });
   const check = results;
-  const source = readFileSync(LEVELS_PATH, 'utf8');
-  const plan = readFileSync(PLAN_PATH, 'utf8');
+  const source = readFileSync(config.levelsPath, 'utf8');
+  const plan = readFileSync(config.planPath, 'utf8');
   const checklist = plan.slice(plan.indexOf('## Playtest checklist'));
-  writeFileSync(LEVELS_PATH, rewriteLevels(source, check));
-  writeFileSync(PLAN_PATH, renderDesignPlan(check, checklist));
+  writeFileSync(config.levelsPath, rewriteLevels(source, check, config.levelsLabel));
+  writeFileSync(config.planPath, renderDesignPlan(check, checklist, config));
 
   for (const { level } of results) {
     const jumps = playLevel(level).jumps;

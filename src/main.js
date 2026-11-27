@@ -1,6 +1,7 @@
 let THREE;
 import packageInfo from '../package.json';
-import { getLevel, levelValidationError, levels } from './levels.js';
+import { levelValidationError } from './levels.js';
+import { campaigns } from './campaigns.js';
 import { createLossCue, playOneShot, primeOneShot, stopOneShot } from './audio-cues.js';
 import { activeEffects, canConsumeJumpBuffer, courseMedal, effectCopy, emptyProgress, finishGateDistance, getHazardProfile, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeRunProgress, parseProgress, portalEffects, portalLabel, safeCheckpointDistance, shouldAcceptJumpInput, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy, stepPlayerMotion } from './game-logic.js';
 import { MusicEngine } from './music.js';
@@ -23,6 +24,7 @@ effectHud.hidden = true;
 const message = document.querySelector('#game-message');
 const gameStatus = document.querySelector('#game-status');
 const levelName = document.querySelector('#level-name');
+const campaignSwitcher = document.querySelector('#campaign-switcher');
 const fullscreenButton = document.querySelector('#fullscreen-toggle');
 const musicButton = document.querySelector('#music-toggle');
 const laneY = -1.7;
@@ -43,12 +45,15 @@ const GAMEPLAY_COLORS = Object.freeze({
 });
 const musicEngine = new MusicEngine();
 const lossCue = typeof Audio === 'function' ? createLossCue(import.meta.env.BASE_URL, Audio) : null;
+let activeCampaign = campaigns[0];
+let activeLevels = activeCampaign.levels;
 let selectedLevelIndex = 0;
-let level = levels[selectedLevelIndex];
+let level = activeLevels[selectedLevelIndex];
+const lastPlayedByCampaign = {};
 let renderer, scene, camera, player, playerSprite, spriteMaterial, atlasTexture, spriteMap, clock, raf, resizeObserver;
 let sceneStarted = false;
 let scenePromise = null;
-let floor, floorMaterial, trackEdgeMaterial, sceneryGroup;
+let floor, floorMaterial, trackEdgeMaterial, sceneryGroup, grid, hemisphereLight, directionalLight;
 let running = false, started = false, dead = false, completed = false, distance = 0, runBestDistance = 0, attempt = 1;
 let checkpointDistance = null, checkpointPassed = false, attemptStart = 0;
 let simulationTime = 0, graphicsUnavailable = false;
@@ -105,8 +110,9 @@ function readProgress() {
 
 function initScene() {
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(level.background);
-  scene.fog = new THREE.Fog(level.background, 15, 47);
+  const palette = level.palette ?? null;
+  scene.background = new THREE.Color(palette?.sky ?? level.background);
+  scene.fog = new THREE.Fog(palette?.sky ?? level.background, palette ? 14 : 15, palette ? 44 : 47);
   camera = new THREE.PerspectiveCamera(48, 1, 0.1, 100);
   camera.position.set(0, 5.6, 15);
   camera.lookAt(0, 0, 0);
@@ -120,23 +126,29 @@ function initScene() {
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.setSize(stage.clientWidth, stage.clientHeight);
   stage.appendChild(renderer.domElement);
-  scene.add(new THREE.HemisphereLight(0x99c5ff, 0x251c4a, 2));
-  const light = new THREE.DirectionalLight(0xffffff, 2.2);
-  light.position.set(-3, 8, 7);
-  scene.add(light);
-  floorMaterial = new THREE.MeshStandardMaterial({ color: level.floor, roughness: .86 });
+  hemisphereLight = new THREE.HemisphereLight(
+    palette ? 0xFFF3E2 : 0x99c5ff,
+    palette ? 0x5A4436 : 0x251c4a,
+    palette ? 1.5 : 2,
+  );
+  scene.add(hemisphereLight);
+  directionalLight = new THREE.DirectionalLight(palette ? 0xFFF6EA : 0xffffff, palette ? 1.6 : 2.2);
+  directionalLight.position.set(palette ? -4 : -3, palette ? 9 : 8, palette ? 8 : 7);
+  scene.add(directionalLight);
+  floorMaterial = new THREE.MeshStandardMaterial({ color: palette?.lane ?? level.floor, roughness: .86 });
   floor = new THREE.Mesh(new THREE.PlaneGeometry(130, 18), floorMaterial);
   floor.rotation.x = -Math.PI / 2;
   floor.position.set(22, laneY, 0);
   scene.add(floor);
-  const grid = new THREE.GridHelper(120, 64, 0x456276, 0x28374f);
+  grid = new THREE.GridHelper(120, 64, 0x456276, 0x28374f);
   grid.position.set(22, laneY + .02, 0);
   grid.material.transparent = true;
   grid.material.opacity = .35;
+  grid.visible = !palette;
   scene.add(grid);
   sceneryGroup = new THREE.Group();
   scene.add(sceneryGroup);
-  trackEdgeMaterial = new THREE.MeshBasicMaterial({ color: level.color });
+  trackEdgeMaterial = new THREE.MeshBasicMaterial({ color: palette?.accent ?? level.color });
   const edge = new THREE.Mesh(new THREE.BoxGeometry(120, .06, .12), trackEdgeMaterial);
   edge.position.set(22, laneY + .04, .15);
   scene.add(edge);
@@ -148,7 +160,8 @@ function initScene() {
   player.userData.jumpBufferTimer = 0;
   player.userData.supportY = laneY;
   player.userData.effects = { dashTimer: 0, gravityTimer: 0, shieldCharges: 0, phaseTimer: 0 };
-  const fallbackMaterial = new THREE.MeshStandardMaterial({ color: level.color, emissive: level.color, emissiveIntensity: .55 });
+  const playerAccent = palette?.accent ?? level.color;
+  const fallbackMaterial = new THREE.MeshStandardMaterial({ color: playerAccent, emissive: playerAccent, emissiveIntensity: .55 });
   const fallback = new THREE.Mesh(new THREE.BoxGeometry(.78, .78, .78), fallbackMaterial);
   fallback.position.y = .4;
   player.add(fallback);
@@ -868,7 +881,7 @@ function spawnCourseFeatures() {
     );
     hole.position.set(center, laneY + .035, 0);
     scene.add(hole);
-    const railMaterial = new THREE.MeshBasicMaterial({ color: level.color });
+    const railMaterial = new THREE.MeshBasicMaterial({ color: level.palette?.accent ?? level.color });
     const rails = [-1.32, 1.32].map((z) => {
       const rail = new THREE.Mesh(new THREE.BoxGeometry(definition.width, .055, .07), railMaterial.clone());
       rail.position.set(center, laneY + .06, z);
@@ -882,9 +895,10 @@ function spawnCourseFeatures() {
     const center = definition.at - 3 + definition.width / 2;
     const height = definition.height ?? 0;
     const kind = definition.kind ?? 'kerb';
+    const platformColor = level.palette?.platform ?? GAMEPLAY_COLORS.platform;
     const material = new THREE.MeshStandardMaterial({
-      color: GAMEPLAY_COLORS.platform,
-      emissive: GAMEPLAY_COLORS.platform,
+      color: platformColor,
+      emissive: platformColor,
       emissiveIntensity: .10,
       metalness: .35,
       roughness: .48,
@@ -1052,8 +1066,9 @@ function renderScenery() {
     else part.material?.dispose();
   }
   const environment = level.environment ?? 'skyline';
-  const accent = new THREE.MeshBasicMaterial({ color: level.color });
-  const muted = new THREE.MeshBasicMaterial({ color: level.floor });
+  const palette = level.palette ?? null;
+  const accent = new THREE.MeshBasicMaterial({ color: palette?.accent ?? level.color });
+  const muted = new THREE.MeshBasicMaterial({ color: palette?.platform ?? level.floor });
   const addPart = (geometry, material, x, y, z = -5.2) => {
     const mesh = new THREE.Mesh(geometry, material.clone());
     mesh.position.set(x, y, z);
@@ -1068,7 +1083,14 @@ function renderScenery() {
     const groveEnvironments = ['gravity-garden', 'mosslight-hollow', 'clockwork-orchard', 'verdant-greenhouse'];
     const crystalEnvironments = ['crystal-cavern', 'shatterglass'];
     const foundryEnvironments = ['tidal-foundry', 'magnetar-forge'];
-    if (groveEnvironments.includes(environment)) {
+    if (environment === 'wool-meadow') {
+      // Soft thimble mounds and stitch flowers, kept low so the empty
+      // foreground lane stays the calmest part of the frame.
+      const mound = addPart(new THREE.SphereGeometry(.52 + (index % 3) * .12, 9, 7), index % 2 ? accent : muted, x, groundY + .2);
+      mound.scale.set(1.65, .78, 1);
+      if (index % 2 === 0) addPart(new THREE.SphereGeometry(.14, 6, 5), accent, x - .3, groundY + height * .72, -4.95);
+      if (index % 3 === 0) addPart(new THREE.CylinderGeometry(.04, .06, height * .42, 5), muted, x + .42, groundY + height * .21);
+    } else if (groveEnvironments.includes(environment)) {
       addPart(new THREE.CylinderGeometry(.12, .25, height * .55, 5), muted, x, groundY + height * .275);
       addPart(new THREE.SphereGeometry(.68 + (index % 3) * .12, 7, 6), accent, x, groundY + height * .72);
       if (environment === 'clockwork-orchard' && index % 3 === 0) {
@@ -1138,15 +1160,31 @@ function renderScenery() {
 }
 
 function updateTheme() {
+  const palette = level.palette ?? null;
+  const accent = palette?.accent ?? level.color;
+  document.documentElement.style.setProperty('--level-accent', `#${accent.toString(16).padStart(6, '0')}`);
   if (!scene || !floorMaterial || !trackEdgeMaterial) return;
-  scene.background.setHex(level.background);
-  scene.fog.color.setHex(level.background);
-  floorMaterial.color.setHex(level.floor);
-  trackEdgeMaterial.color.setHex(level.color);
-  document.documentElement.style.setProperty('--level-accent', `#${level.color.toString(16).padStart(6, '0')}`);
+  const sky = palette?.sky ?? level.background;
+  scene.background.setHex(sky);
+  scene.fog.color.setHex(sky);
+  scene.fog.near = palette ? 14 : 15;
+  scene.fog.far = palette ? 44 : 47;
+  floorMaterial.color.setHex(palette?.lane ?? level.floor);
+  trackEdgeMaterial.color.setHex(accent);
+  if (grid) grid.visible = !palette;
+  if (hemisphereLight) {
+    hemisphereLight.color.setHex(palette ? 0xFFF3E2 : 0x99c5ff);
+    hemisphereLight.groundColor.setHex(palette ? 0x5A4436 : 0x251c4a);
+    hemisphereLight.intensity = palette ? 1.5 : 2;
+  }
+  if (directionalLight) {
+    directionalLight.color.setHex(palette ? 0xFFF6EA : 0xffffff);
+    directionalLight.intensity = palette ? 1.6 : 2.2;
+    directionalLight.position.set(palette ? -4 : -3, palette ? 9 : 8, palette ? 8 : 7);
+  }
   const fallbackMaterial = player?.userData.fallback?.material;
-  fallbackMaterial?.color.setHex(level.color);
-  fallbackMaterial?.emissive.setHex(level.color);
+  fallbackMaterial?.color.setHex(accent);
+  fallbackMaterial?.emissive.setHex(accent);
   renderScenery();
   renderScene();
 }
@@ -1158,10 +1196,19 @@ function showOverlay(title, instructions, showNext = false) {
   nextLevelButton.hidden = !showNext;
 }
 
+function courseLabel(campaign, index) {
+  if (campaign.id === 'wool') return `W1-${String(index + 1).padStart(2, '0')}`;
+  return String(index + 1).padStart(2, '0');
+}
+
+function updateLevelHeading() {
+  levelName.textContent = `${courseLabel(activeCampaign, selectedLevelIndex)} / ${level.name}`;
+}
+
 // Shared by the next-course button, a tap on the playfield and the jump key, so every way of
 // continuing after a clear lands on the same course.
 function advanceAfterClear() {
-  if (selectedLevelIndex < levels.length - 1) {
+  if (selectedLevelIndex < activeLevels.length - 1) {
     selectLevel(selectedLevelIndex + 1);
     void start();
     return;
@@ -1171,11 +1218,12 @@ function advanceAfterClear() {
 }
 
 function selectLevel(index) {
-  if (!Number.isInteger(index) || index < 0 || index >= levels.length) return;
+  if (!Number.isInteger(index) || index < 0 || index >= activeLevels.length) return;
   reset();
   selectedLevelIndex = index;
-  level = getLevel(levels[index].id);
-  levelName.textContent = `${String(index + 1).padStart(2, '0')} / ${level.name}`;
+  level = activeLevels[index];
+  lastPlayedByCampaign[activeCampaign.id] = index;
+  updateLevelHeading();
   attempt = 1;
   attemptDisplay.textContent = '01';
   collectedCount = 0;
@@ -1307,11 +1355,11 @@ function finish() {
   recordRunEnd(true);
   const totalShards = level.collectibles.length;
   const shardSummary = totalShards ? ` You found ${collectedCount} of ${totalShards} shards.` : '';
-  const nextCourse = levels[selectedLevelIndex + 1];
+  const nextCourse = activeLevels[selectedLevelIndex + 1];
   const continueHint = nextCourse
     ? ` Tap or press Space for ${nextCourse.name}.`
     : ' Tap or press Space to replay the finale.';
-  showOverlay(`${level.name} cleared!`, `Course ${selectedLevelIndex + 1} of ${levels.length} complete.${shardSummary}${continueHint}`, Boolean(nextCourse));
+  showOverlay(`${level.name} cleared!`, `Course ${selectedLevelIndex + 1} of ${activeLevels.length} complete.${shardSummary}${continueHint}`, Boolean(nextCourse));
   message.textContent = totalShards ? `LEVEL COMPLETE · SHARDS ${collectedCount}/${totalShards}` : 'LEVEL COMPLETE';
   gameStatus.textContent = `${level.name} complete.`;
   syncPauseButton();
@@ -1387,19 +1435,30 @@ function recordRunEnd(cleared) {
     usedCheckpoint: attemptStart > 0,
   });
   const clearedIds = Object.entries(progress.courses)
-    .filter(([id, entry]) => entry.cleared && levels.some((item) => item.id === id))
+    .filter(([id, entry]) => entry.cleared && campaigns.some((campaign) => campaign.levels.some((item) => item.id === id)))
     .map(([id]) => id);
   try {
     localStorage.setItem(progressKey, JSON.stringify(progress));
     localStorage.setItem(completionKey, JSON.stringify(clearedIds));
   } catch { /* Progress remains available for this session. */ }
   renderLevelCards();
+  updateCampaignSwitcher();
 }
 
 function renderLevelCards() {
   const list = document.querySelector('#level-list');
   list.replaceChildren();
-  levels.forEach((item, index) => {
+  activeLevels.forEach((item, index) => {
+    if (activeCampaign.chapters) {
+      const chapterIndex = activeCampaign.chapters.findIndex((chapter) => chapter.at === index);
+      if (chapterIndex >= 0) {
+        const chapter = activeCampaign.chapters[chapterIndex];
+        const heading = document.createElement('h3');
+        heading.className = 'level-chapter';
+        heading.textContent = `WORLD ${chapterIndex + 1} · ${chapter.name}`;
+        list.appendChild(heading);
+      }
+    }
     const entry = progress.courses[item.id];
     const totalShards = item.collectibles?.length ?? 0;
     const best = Number.isFinite(entry?.best) ? entry.best : 0;
@@ -1414,7 +1473,10 @@ function renderLevelCards() {
     if (percent > 0) details.push(`best ${percent} percent`);
     if (totalShards > 0) details.push(`${shards} of ${totalShards} shards`);
     if (medal) details.push(`${medal} medal`);
-    button.setAttribute('aria-label', `Play level ${index + 1}: ${item.name}${details.length ? `, ${details.join(', ')}` : ''}`);
+    const playLabel = activeCampaign.id === 'wool'
+      ? `Play ${courseLabel(activeCampaign, index)}`
+      : `Play level ${index + 1}`;
+    button.setAttribute('aria-label', `${playLabel}: ${item.name}${details.length ? `, ${details.join(', ')}` : ''}`);
     const number = document.createElement('span');
     number.className = 'level-number';
     number.textContent = `LEVEL ${String(index + 1).padStart(2, '0')}`;
@@ -1458,6 +1520,32 @@ function renderLevelCards() {
     button.addEventListener('click', () => selectLevel(index));
     list.appendChild(button);
   });
+}
+
+function campaignClearedCount(campaign) {
+  return campaign.levels.filter((course) => progress.courses[course.id]?.cleared).length;
+}
+
+function updateCampaignSwitcher() {
+  if (!campaignSwitcher) return;
+  for (const button of campaignSwitcher.querySelectorAll('.campaign-tab')) {
+    const campaign = campaigns.find((item) => item.id === button.dataset.campaignId);
+    if (!campaign) continue;
+    button.setAttribute('aria-pressed', String(campaign === activeCampaign));
+    const count = button.querySelector('.campaign-tab-count');
+    if (count) count.textContent = `${campaignClearedCount(campaign)} / ${campaign.levels.length}`;
+  }
+}
+
+function switchCampaign(id) {
+  const next = campaigns.find((campaign) => campaign.id === id);
+  if (!next || next === activeCampaign) return;
+  activeCampaign = next;
+  activeLevels = next.levels;
+  const index = Math.min(lastPlayedByCampaign[next.id] ?? 0, activeLevels.length - 1);
+  selectLevel(index);
+  renderLevelCards();
+  updateCampaignSwitcher();
 }
 
 function syncFullscreenUI() {
@@ -1545,6 +1633,24 @@ document.addEventListener('keydown', (event) => {
 fullscreenButton.addEventListener('click', () => { void toggleFullscreen(); });
 musicButton.addEventListener('click', toggleMusic);
 nextLevelButton.addEventListener('click', advanceAfterClear);
+campaignSwitcher?.addEventListener('click', (event) => {
+  const button = event.target.closest('.campaign-tab');
+  if (button) switchCampaign(button.dataset.campaignId);
+});
+campaignSwitcher?.addEventListener('keydown', (event) => {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+  const buttons = [...campaignSwitcher.querySelectorAll('.campaign-tab')];
+  if (!buttons.length) return;
+  event.preventDefault();
+  const current = Math.max(0, buttons.indexOf(document.activeElement));
+  let next = current;
+  if (event.key === 'ArrowLeft') next = (current - 1 + buttons.length) % buttons.length;
+  if (event.key === 'ArrowRight') next = (current + 1) % buttons.length;
+  if (event.key === 'Home') next = 0;
+  if (event.key === 'End') next = buttons.length - 1;
+  buttons[next].focus();
+  switchCampaign(buttons[next].dataset.campaignId);
+});
 document.addEventListener('fullscreenchange', syncFullscreenUI);
 document.addEventListener('webkitfullscreenchange', syncFullscreenUI);
 gameWrap.addEventListener('fullscreenerror', () => {
@@ -1618,6 +1724,8 @@ document.querySelector('#game-version').textContent = `v${packageInfo.version}`;
 musicButton.setAttribute('aria-pressed', String(musicEnabled));
 syncPauseButton();
 renderLevelCards();
+updateCampaignSwitcher();
+updateLevelHeading();
 if (levelValidationError) {
   showOverlay('Course data error', levelValidationError.message);
   playButton.disabled = true;

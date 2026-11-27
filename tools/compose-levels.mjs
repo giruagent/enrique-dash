@@ -2,12 +2,16 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { jumpTuning, motionTuning, portalEffects } from '../src/game-logic.js';
 import { levels, validateLevels } from '../src/levels.js';
+import { woolLevels } from '../src/levels-wool.js';
 import { playLevel } from './auto-player.mjs';
 import { analyzeLevel } from './level-report.mjs';
 import { beatWindows, courseSpeedTimeline, jumpHeightAt, jumpReach, jumpRiseTime } from './level-physics.mjs';
+import { woolBlueprint, woolTiers } from './wool-blueprint.mjs';
 
 const LEVELS_PATH = new URL('../src/levels.js', import.meta.url);
 const PLAN_PATH = new URL('../LEVEL_DESIGN_PLAN.md', import.meta.url);
+const WOOL_LEVELS_PATH = new URL('../src/levels-wool.js', import.meta.url);
+const WOOL_PLAN_PATH = new URL('../LEVEL_DESIGN_PLAN_WOOL.md', import.meta.url);
 const INTRO_SECONDS = 1.2;
 const OUTRO_SECONDS = 1.2;
 const COMBO_MAX = .8;
@@ -57,11 +61,89 @@ const platformKinds = {
   'eclipse-crown': 'observatory',
 };
 
-function tierFor(index) {
+function coreTierFor(index) {
   if (index < 4) return 1;
   if (index < 8) return 2;
   if (index < 14) return 3;
   return 4;
+}
+
+function woolTierFor(index) {
+  if (index < 5) return 1;
+  if (index < 10) return 2;
+  if (index < 15) return 3;
+  return 4;
+}
+
+function coreBridgeCap(index) {
+  return index < 4 ? 0 : index < 10 ? 1 : 2;
+}
+
+function woolBridgeCap(index) {
+  return index < 5 ? 0 : index < 10 ? 1 : 2;
+}
+
+function coreOpenGapMinimum(index) {
+  return index >= 4 ? 2 : 0;
+}
+
+function woolOpenGapMinimum(index) {
+  return index >= 5 ? 2 : 0;
+}
+
+const CORE_INTRO = 'Run `npm run levels:compose` to deterministically rebuild every layout from its level-id seed and the v0.6.0 blueprint. The composer preserves course identity, art, music, speed and length; lays deliberate combo beats and full reaction rests against the real portal speed profile; keeps bridges optional, places apex shards, and writes each signature and design hook from the layout it actually built. It rejects any layout that the unchanged auto-player cannot finish without a death, a dead-band violation or a short first-beat telegraph. See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the shared physics and checks.';
+
+const WOOL_INTRO = 'Run `npm run levels:compose:wool` to deterministically rebuild every Wool Road layout from its level-id seed and the wool blueprint. The composer keeps each course\'s identity, palette, music, speed and length, lays deliberate combo beats and full reaction rests against the real portal speed profile, and writes each signature and design hook from the layout it actually built. It rejects any layout that the unchanged auto-player cannot finish without a death, a dead-band violation or a short first-beat telegraph. See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the shared physics and checks.';
+
+export const campaignConfigs = {
+  core: {
+    id: 'core',
+    levels,
+    blueprint,
+    levelsPath: LEVELS_PATH,
+    planPath: PLAN_PATH,
+    levelsLabel: 'src/levels.js',
+    tierFor: coreTierFor,
+    bridgeCap: coreBridgeCap,
+    openGapMinimum: coreOpenGapMinimum,
+    platformKinds,
+    planTitle: '# Enrique Dash — 20-Level Course Plan',
+    planIntro: CORE_INTRO,
+    planComposeCommand: 'npm run levels:compose',
+    tierTable: null,
+  },
+  wool: {
+    id: 'wool',
+    levels: woolLevels,
+    blueprint: woolBlueprint,
+    levelsPath: WOOL_LEVELS_PATH,
+    planPath: WOOL_PLAN_PATH,
+    levelsLabel: 'src/levels-wool.js',
+    tierFor: woolTierFor,
+    bridgeCap: woolBridgeCap,
+    openGapMinimum: woolOpenGapMinimum,
+    // Wool course 1 uses no platforms, but later courses can name their own
+    // archetypes here just like the core platformKinds table.
+    platformKinds: {},
+    planTitle: '# Enrique Dash — Wool Road Course Plan',
+    planIntro: WOOL_INTRO,
+    planComposeCommand: 'npm run levels:compose:wool',
+    tierTable: woolTiers,
+  },
+};
+
+export function readCampaignArgument(args = process.argv.slice(2)) {
+  const inline = args.find((arg) => arg.startsWith('--campaign='));
+  if (inline) return inline.slice('--campaign='.length) || 'core';
+  const index = args.indexOf('--campaign');
+  if (index >= 0) return args[index + 1] ?? 'core';
+  return 'core';
+}
+
+export function campaignConfig(id = 'core') {
+  const config = campaignConfigs[id];
+  if (!config) throw new Error(`Unknown campaign: ${id}`);
+  return config;
 }
 
 function round(value, digits = 2) {
@@ -323,9 +405,9 @@ function compoundCount(level) {
   return count;
 }
 
-export function buildCandidate(base, brief, index, totalBeats, variant) {
+export function buildCandidate(base, brief, index, totalBeats, variant, options = {}) {
   const random = seededRandom(base.id, variant);
-  const tier = tierFor(index);
+  const tier = (options.tierFor ?? coreTierFor)(index);
   // Bridges are an optional accent, never the default cover for a gap.
   const requiredBridges = 0;
   const phrases = partitionBeats(totalBeats, brief.phrase, random);
@@ -582,7 +664,7 @@ export function buildCandidate(base, brief, index, totalBeats, variant) {
     if (process.env.COMPOSE_DEBUG) console.log(base.id, variant, 'bridge rejection', bridgeAts.size, requiredBridges);
     return null;
   }
-  const kind = platformKinds[base.id];
+  const kind = (options.platformKinds ?? platformKinds)[base.id] ?? 'kerb';
   layout.platforms = layout.gaps.filter((gap) => bridgeAts.has(gap.at)).map((gap, platformIndex) => ({
     at: gap.at,
     width: gap.width,
@@ -601,10 +683,10 @@ export function buildCandidate(base, brief, index, totalBeats, variant) {
   return { level: layout, phrases, result, metrics };
 }
 
-function acceptable(candidate, brief, index) {
+function acceptable(candidate, brief, index, options = {}) {
   if (!candidate) return false;
   const { level, result, metrics } = candidate;
-  const tier = tierFor(index);
+  const tier = (options.tierFor ?? coreTierFor)(index);
   if (!result.completed || result.deaths !== 0) return false;
   if (metrics.deadBandViolations.length !== 0) return false;
   if (metrics.telegraphViolations.length !== 0) return false;
@@ -615,10 +697,10 @@ function acceptable(candidate, brief, index) {
   if (tier >= 3 && compoundCount(level) < 1) return false;
   if (featureTypes(level).size < 3) return false;
 
-  const bridgeCap = index < 4 ? 0 : index < 10 ? 1 : 2;
+  const bridgeCap = (options.bridgeCap ?? coreBridgeCap)(index);
   const bridges = bridgedGapCount(level);
   if (bridges > bridgeCap || bridges * 3 > level.gaps.length) return false;
-  if (index >= 4 && level.gaps.length - bridges < 2) return false;
+  if (level.gaps.length - bridges < (options.openGapMinimum ?? coreOpenGapMinimum)(index)) return false;
 
   const inputs = beatWindows(level)
     .filter(({ kind }) => kind === 'hazard' || kind === 'gap' || kind === 'enemy')
@@ -642,7 +724,7 @@ function acceptable(candidate, brief, index) {
   return true;
 }
 
-export function composeLevel(base, brief, index) {
+export function composeLevel(base, brief, index, options = {}) {
   const dashCount = brief.portals.filter((type) => type === 'dash').length;
   const dashSaving = dashCount * portalEffects.dash.duration * (1 - 1 / portalEffects.dash.speedMultiplier);
   const estimatedTime = base.length / base.speed - dashSaving;
@@ -653,8 +735,8 @@ export function composeLevel(base, brief, index) {
   for (const total of totals) {
     if (total < 3) continue;
     for (let variant = 0; variant < 48; variant++) {
-      const candidate = buildCandidate(base, brief, index, total, variant);
-      if (acceptable(candidate, brief, index)) return candidate;
+      const candidate = buildCandidate(base, brief, index, total, variant, options);
+      if (acceptable(candidate, brief, index, options)) return candidate;
       if (candidate && !bestFailure) bestFailure = candidate;
     }
   }
@@ -662,12 +744,12 @@ export function composeLevel(base, brief, index) {
   throw new Error(`${base.id}: composer could not meet the blueprint (${failure})`);
 }
 
-export function composeLevels(catalog = levels) {
-  if (catalog.length !== blueprint.length) throw new Error('The composer expects twenty courses.');
+export function composeLevels(catalog = levels, blueprintList = blueprint, options = {}) {
+  if (catalog.length > blueprintList.length) throw new Error('The composer has no blueprint entry for every course.');
   return catalog.map((level, index) => {
-    const brief = blueprint[index];
+    const brief = blueprintList[index];
     if (level.id !== brief.id) throw new Error(`Blueprint order mismatch at ${index + 1}: ${level.id}`);
-    return composeLevel(level, brief, index);
+    return composeLevel(level, brief, index, options);
   });
 }
 
@@ -684,10 +766,10 @@ function formatValue(value) {
   return String(value);
 }
 
-export function rewriteLevels(source, composed) {
+export function rewriteLevels(source, composed, label = 'src/levels.js') {
   const replacements = composed.map(({ level }) => {
     const idIndex = source.indexOf(`id: '${level.id}'`);
-    if (idIndex < 0) throw new Error(`Cannot find ${level.id} in src/levels.js`);
+    if (idIndex < 0) throw new Error(`Cannot find ${level.id} in ${label}`);
     const start = source.lastIndexOf('  {', idIndex);
     const end = source.indexOf('\n  },', idIndex);
     if (start < 0 || end < 0) throw new Error(`Cannot parse ${level.id}'s course block`);
@@ -715,22 +797,34 @@ function featureLine(level) {
   return `- **Layout:** Hazard groups at ${hazards}; gaps at ${gaps}; bridges: ${bridges}; portals: ${portals}; enemies: ${enemies}; shards: ${shards}.`;
 }
 
-export function renderDesignPlan(composed, checklist) {
+export function renderDesignPlan(composed, checklist, options = {}) {
+  const blueprintList = options.blueprint ?? blueprint;
   const output = [
-    '# Enrique Dash — 20-Level Course Plan',
+    options.planTitle ?? '# Enrique Dash — 20-Level Course Plan',
     '',
     '## How the courses are composed',
     '',
-    'Run `npm run levels:compose` to deterministically rebuild every layout from its level-id seed and the v0.6.0 blueprint. The composer preserves course identity, art, music, speed and length; lays deliberate combo beats and full reaction rests against the real portal speed profile; keeps bridges optional, places apex shards, and writes each signature and design hook from the layout it actually built. It rejects any layout that the unchanged auto-player cannot finish without a death, a dead-band violation or a short first-beat telegraph. See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the shared physics and checks.',
-    '',
-    '## Individual designs',
+    options.planIntro ?? CORE_INTRO,
     '',
   ];
+  if (options.tierTable) {
+    output.push(
+      '## Tier table',
+      '',
+      '| Tier | Courses | Length | Speed | Target inputs/s |',
+      '| --- | --- | --- | --- | --- |',
+      ...options.tierTable.map(({ tier, courses, length, speed, inputs }) => (
+        `| ${tier} | ${courses} | ${length} | ${speed} | ${inputs} |`
+      )),
+      '',
+    );
+  }
+  output.push('## Individual designs', '');
   composed.forEach(({ level, phrases, metrics }, index) => {
     output.push(
       `### ${String(index + 1).padStart(2, '0')} — ${level.name} (${level.length} units)`,
       `- **Signature:** ${level.signature}`,
-      `- **Rhythm:** ${phrases.join(' + ')} input beats; target ${blueprint[index].target.toFixed(2)} inputs/s, measured ${metrics.inputsPerSecond.toFixed(2)}; ${plural(level.gaps.length - bridgedGapCount(level), 'open gap')} and ${plural(level.platforms.length, 'bridge')}.`,
+      `- **Rhythm:** ${phrases.join(' + ')} input beats; target ${blueprintList[index].target.toFixed(2)} inputs/s, measured ${metrics.inputsPerSecond.toFixed(2)}; ${plural(level.gaps.length - bridgedGapCount(level), 'open gap')} and ${plural(level.platforms.length, 'bridge')}.`,
       `- **Design hook:** ${level.designHook}`,
       featureLine(level),
       `- **Audio:** ${level.music.bpm} BPM with the existing sixteen-step procedural motif.`,
@@ -742,14 +836,15 @@ export function renderDesignPlan(composed, checklist) {
 }
 
 function main() {
-  const composed = composeLevels(levels);
-  validateLevels(composed.map(({ level }) => level));
-  const source = readFileSync(LEVELS_PATH, 'utf8');
-  const plan = readFileSync(PLAN_PATH, 'utf8');
+  const config = campaignConfig(readCampaignArgument());
+  const composed = composeLevels(config.levels, config.blueprint, config);
+  validateLevels(composed.map(({ level }) => level), { expected: config.levels.length });
+  const source = readFileSync(config.levelsPath, 'utf8');
+  const plan = readFileSync(config.planPath, 'utf8');
   const checklist = plan.slice(plan.indexOf('## Playtest checklist'));
-  if (!checklist) throw new Error('LEVEL_DESIGN_PLAN.md is missing its Playtest checklist.');
-  writeFileSync(LEVELS_PATH, rewriteLevels(source, composed));
-  writeFileSync(PLAN_PATH, renderDesignPlan(composed, checklist));
+  if (!checklist) throw new Error(`${config.planPath.pathname} is missing its Playtest checklist.`);
+  writeFileSync(config.levelsPath, rewriteLevels(source, composed, config.levelsLabel));
+  writeFileSync(config.planPath, renderDesignPlan(composed, checklist, config));
   for (const { level, metrics } of composed) {
     console.log(`${level.id}: ${metrics.beats} inputs | ${metrics.inputsPerSecond.toFixed(3)} inputs/s | ${metrics.result.deaths} deaths | ${metrics.deadBandViolations.length} dead-band violations`);
   }

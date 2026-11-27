@@ -1,6 +1,6 @@
 # Enrique Dash
 
-**Current test version: 0.9.2** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
+**Current test version: 1.0.0** — a touch-first Three.js rhythm platformer with twenty core courses and the first Wool Road course. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
 
 ## Play locally
 
@@ -38,6 +38,8 @@ Tap/click the playfield, or press Space, Arrow Up, or W to jump; press P or the 
 
 Each level has its own speed, obstacle sequence, color palette, tempo, scale, chord progression, and lead motif. Level clears are saved locally in the browser; no account is needed.
 
+**Wool Road** (second campaign): W1-01 Thimble Meadow — a soft, open first course with its own meadow palette and no grid.
+
 See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the auto-player, fair-spacing rules, and catalogue report.
 
 ## What changed in v0.3.0
@@ -48,6 +50,14 @@ See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the auto-playe
 - Added a mute toggle and start audio only following a user gesture.
 - Deferred loading Three.js and the 2.6 MB character atlas until the first play action, retaining a static preview and cube fallback.
 - Added Node's built-in test runner for level validation, collision/progress rules, and music theory helpers.
+
+### v1.0.0
+
+- Added **Wool Road**, a second campaign with its own shelf on the course selector, completion count, chapter header and last-played course. NEON ROAD keeps all twenty core courses unchanged; WOOL ROAD opens with **Thimble Meadow**.
+- Wool courses carry a palette (`sky`, `lane`, `accent`, `platform`) and `scenery: 'wool'`: the meadow uses a warm sky, wool-toned lane and platform colours, a warm light rig and no grid, while gameplay colours for hazards, shards and portals stay the same.
+- Added `src/campaigns.js` and `src/levels-wool.js`; `validateLevels()` now accepts an expected course count, so each campaign validates independently. The HUD names wool courses `W1-01 / Thimble Meadow`.
+- The level tools accept `--campaign wool`, writing `src/levels-wool.js` and `LEVEL_DESIGN_PLAN_WOOL.md`; `npm run levels:compose:wool` runs both stages and `npm run levels:check` verifies both campaigns.
+- Thimble Meadow: 76 units at speed 7.8, three open gaps, single and double spike groups, one shard, no portals, enemies or platforms, 108 BPM pentatonic major, target 0.62 inputs/s.
 
 ### v0.9.2
 
