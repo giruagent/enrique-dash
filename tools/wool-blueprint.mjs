@@ -49,4 +49,7 @@ export const woolBlueprint = [
   {
     id: 'wool-09-cardigan-cove', target: 0.76, phrase: [2, 1], rest: 1.95, portals: ['dash'], shards: 1,
   },
+  {
+    id: 'wool-10-tassel-terrace', target: 0.78, phrase: [2, 2], rest: 1.95, portals: ['float', 'spring'], shards: 1,
+  },
 ];

@@ -72,11 +72,18 @@ Run `npm run levels:compose:wool` to deterministically rebuild every Wool Road l
 - **Audio:** 124 BPM with the existing sixteen-step procedural motif.
 
 ### 09 — Cardigan Cove (108 units)
-- **Signature:** A spike run of 4 hazard groups over 4 open gaps, every landing clear.
+- **Signature:** A pad and a stitched island break the wide cove crossing, a kerb lifts the middle, and a dash portal flattens the back straight.
 - **Rhythm:** 1 + 1 + 1 + 2 + 2 + 2 input beats; target 0.76 inputs/s, measured 0.75; 4 open gaps and 1 kerb, 1 island and 1 bounce pad.
-- **Design hook:** Cardigan Cove lays out 4 spike groups, 4 open gaps, 1 portal (dash), 1 crawler and 1 shard.
+- **Design hook:** Cardigan Cove opens with a pad at 14.5 and an island inside its 4.9-wide gap at 27.1, adds a kerb at 34.5 and a dash portal at 45.3, and closes on three skins, a bunny at 10.3, a beetle at 96.9 and a six-shard arc.
 - **Layout:** Hazard groups at 43.86 [spike], 65.26 [yarn-spike], 81.07 [felt-block]; gaps at 27.09 (4.9), 55.48 (2.5), 73.19 (2.5), 89 (2.5); platforms: kerb at 34.5, width 4.5, height 0.45; island at 27.09, width 2.5, height 0.5; bounce at 14.5, width 3.5, height 0.35; portals: dash at 45.25; enemies: beetle at 96.88, bunny at 10.32; shards: 9.15 (height 1.85), 36.75 (height 1.65), 28.34 (height 1.7), 16.48 (height 1.21, arc of 3), 17.42 (height 1.3), 18.49 (height 1.24). arches: none; pom-poms: 4
 - **Audio:** 126 BPM with the existing sixteen-step procedural motif.
+
+### 10 — Tassel Terrace (112 units)
+- **Signature:** A spike group into an open gap.
+- **Rhythm:** 2 + 2 + 2 + 2 + 2 input beats; target 0.78 inputs/s, measured 0.78; 4 open gaps and 1 kerb, 1 island and 1 bounce pad.
+- **Design hook:** Tassel Terrace lays out 5 spike groups, 4 open gaps, 2 portals (float and spring), 1 crawler and 1 shard.
+- **Layout:** Hazard groups at 43.35 [spike], 60.32 [yarn-spike], 76.7 [felt-block], 84.68 [spike]; gaps at 10.44 (2.5), 35.38 (2.5), 64.27 (4.9), 92.79 (2.5); platforms: kerb at 49.5, width 4.5, height 0.45; island at 64.27, width 2.5, height 0.5; bounce at 26, width 3.5, height 0.35; portals: float at 21.3, spring at 66.38; enemies: beetle at 100.76, bunny at 18.41; shards: 10.23 (height 1.85), 51.75 (height 1.65), 65.52 (height 1.7), 27.55 (height 1.23, arc of 3), 28.2 (height 1.61), 28.78 (height 1.87). arches: none; pom-poms: 4
+- **Audio:** 128 BPM with the existing sixteen-step procedural motif.
 
 ## Playtest checklist
 
