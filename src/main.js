@@ -6,6 +6,7 @@ import { createLossCue, playOneShot, primeOneShot, stopOneShot } from './audio-c
 import { activeEffects, canConsumeJumpBuffer, courseMedal, effectCopy, emptyProgress, enemyTuning, finishGateDistance, getEnemyProfile, getObstacleProfile, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeRunProgress, parseProgress, portalEffects, portalLabel, safeCheckpointDistance, shouldAcceptJumpInput, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy, stepPlayerMotion } from './game-logic.js';
 import { MusicEngine } from './music.js';
 import { createSfxEngine, nextStreak, shardChimeDegree } from './sfx.js';
+import { isNewBest, medalFor, medalLabel, streakLabel } from './medals.js';
 import './style.css';
 
 const stage = document.querySelector('#game-canvas');
@@ -19,6 +20,10 @@ const progressTrack = document.querySelector('#progress-track');
 const attemptDisplay = document.querySelector('#attempt');
 const collectibleHud = document.querySelector('#collectible-hud');
 const collectibleCountDisplay = document.querySelector('#collectible-count');
+const shardStreakChip = document.querySelector('#shard-streak');
+const overlayMedal = document.querySelector('#overlay-medal');
+const overlayMedalLabel = document.querySelector('#overlay-medal-label');
+const overlayBest = document.querySelector('#overlay-best');
 const finishChip = document.querySelector('#finish-chip');
 const effectHud = document.querySelector('#effect-hud');
 effectHud.hidden = true;
@@ -789,6 +794,7 @@ function handleCollectibleCollisions() {
     ringFeedback({ position, colour: GAMEPLAY_COLORS.shard, life: .42 });
     updateCollectibleHud();
     popCollectibleHud();
+    updateStreakChip(streak);
     message.textContent = `SHARD ${collectedCount} / ${level.collectibles.length}`;
   }
 }
@@ -797,6 +803,21 @@ function updateCollectibleHud() {
   const total = level.collectibles?.length ?? 0;
   collectibleHud.hidden = total === 0;
   collectibleCountDisplay.textContent = `${String(collectedCount).padStart(2, '0')} / ${String(total).padStart(2, '0')}`;
+}
+
+// The chip mirrors the chime ladder: it appears on the second pickup in a run and clears itself
+// after the streak window, so the sound and the number never disagree.
+let streakChipTimer = 0;
+function updateStreakChip(streak) {
+  const label = streakLabel(streak);
+  clearTimeout(streakChipTimer);
+  if (!label) {
+    shardStreakChip.hidden = true;
+    return;
+  }
+  shardStreakChip.textContent = label;
+  shardStreakChip.hidden = false;
+  streakChipTimer = setTimeout(() => { shardStreakChip.hidden = true; }, 1400);
 }
 
 function updateProgress(percent) {
@@ -1698,7 +1719,24 @@ function updateTheme() {
   renderScene();
 }
 
+function showMedal(medal, best) {
+  const label = medalLabel(medal);
+  overlayMedal.hidden = !label;
+  overlayMedal.className = `overlay-medal ${medal}`;
+  overlayMedalLabel.textContent = label;
+  overlayBest.hidden = !best;
+  overlay.classList.toggle('is-celebrating', Boolean(label));
+}
+
+function clearMedal() {
+  overlayMedal.hidden = true;
+  overlayBest.hidden = true;
+  overlay.classList.remove('is-celebrating');
+}
+
 function showOverlay(title, instructions, showNext = false) {
+  // Every overlay that is not the finish result starts clean: the medal belongs to one run only.
+  clearMedal();
   overlay.hidden = false;
   overlay.querySelector('h2').textContent = title;
   overlay.querySelector('p').textContent = instructions;
@@ -1866,14 +1904,20 @@ function finish() {
   distance = level.length;
   runBestDistance = level.length;
   updateProgress(100);
-  recordRunEnd(true);
+  // Read the stored run *before* recording this one: `mergeRunProgress` folds the new shard count
+  // into the entry, so asking afterwards always answers "not a new best".
+  const previousRun = progress.courses?.[level.id];
   const totalShards = level.collectibles.length;
   const shardSummary = totalShards ? ` You found ${collectedCount} of ${totalShards} shards.` : '';
+  const medal = medalFor({ shards: collectedCount, totalShards, usedCheckpoint: attemptStart > 0 });
+  const best = isNewBest(previousRun, { shards: collectedCount });
+  recordRunEnd(true);
   const nextCourse = activeLevels[selectedLevelIndex + 1];
   const continueHint = nextCourse
     ? ` Tap or press Space for ${nextCourse.name}.`
     : ' Tap or press Space to replay the finale.';
   showOverlay(`${level.name} cleared!`, `Course ${selectedLevelIndex + 1} of ${activeLevels.length} complete.${shardSummary}${continueHint}`, Boolean(nextCourse));
+  showMedal(medal, best);
   message.textContent = totalShards ? `LEVEL COMPLETE · SHARDS ${collectedCount}/${totalShards}` : 'LEVEL COMPLETE';
   gameStatus.textContent = `${level.name} complete.`;
   syncPauseButton();
@@ -2049,7 +2093,7 @@ function renderLevelCards() {
       stats.append(dot);
     }
     button.append(number, title, zone, stats);
-    button.addEventListener('click', () => selectLevel(index));
+    button.addEventListener('click', () => { playSfx('tick'); selectLevel(index); });
     list.appendChild(button);
   });
 }
@@ -2169,7 +2213,10 @@ musicButton.addEventListener('click', toggleMusic);
 nextLevelButton.addEventListener('click', advanceAfterClear);
 campaignSwitcher?.addEventListener('click', (event) => {
   const button = event.target.closest('.campaign-tab');
-  if (button) switchCampaign(button.dataset.campaignId);
+  if (button) {
+    playSfx('tick');
+    switchCampaign(button.dataset.campaignId);
+  }
 });
 campaignSwitcher?.addEventListener('keydown', (event) => {
   if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
@@ -2193,6 +2240,9 @@ gameWrap.addEventListener('fullscreenerror', () => {
 });
 window.addEventListener('resize', resize);
 if (import.meta.env.DEV) {
+  // Dev-only handles for the browser checks: reading state is not enough when a delegated
+  // listener swallows an exception, so expose the functions the handlers call.
+  window.__dashInternals = { switchCampaign, selectLevel, playSfx, campaigns: () => campaigns };
   window.__enriqueDashDebug = () => ({
     levelId: level.id,
     distance,

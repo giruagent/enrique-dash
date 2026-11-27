@@ -212,3 +212,26 @@ test('the MUSIC toggle gates SFX and the death feedback is reduced-motion aware'
   assert.match(styles, /@keyframes screen-shake/);
   assert.match(styles, /@keyframes chip-pulse/);
 });
+
+test('the results overlay and the shard streak chip are wired to the medal rules', async () => {
+  const main = await readFile(new URL('./main.js', import.meta.url), 'utf8');
+  assert.match(html, /id="overlay-medal"/);
+  assert.match(html, /id="overlay-medal-label"/);
+  assert.match(html, /id="overlay-best"[^>]*hidden/);
+  assert.match(html, /id="shard-streak"[^>]*hidden/);
+  assert.match(main, /import \{ isNewBest, medalFor, medalLabel, streakLabel \} from '\.\/medals\.js'/);
+  assert.match(main, /showMedal\(medal, best\)/);
+  assert.match(main, /clearMedal\(\)/);
+  assert.match(styles, /\.overlay-medal\.gold/);
+  assert.match(styles, /\.shard-streak\[hidden\]/);
+  assert.match(styles, /@keyframes shard-pop/);
+});
+
+test('the medal helpers use the overlay element that actually exists', async () => {
+  const main = await readFile(new URL('./main.js', import.meta.url), 'utf8');
+  // Regression guard: `gameOverlay` never existed, and because the reference sat inside a function
+  // the whole suite passed while every delegated click threw and the campaign switcher died.
+  assert.ok(!/gameOverlay/.test(main), 'main.js references gameOverlay, which is not the overlay element');
+  assert.match(main, /const overlay = document\.querySelector\('#game-overlay'\)/);
+  assert.match(main, /overlay\.classList\.toggle\('is-celebrating'/);
+});

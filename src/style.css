@@ -63,3 +63,69 @@
 .game-wrap.is-shaking{animation:screen-shake .22s ease-out}
 @keyframes screen-shake{0%,100%{transform:translate3d(0,0,0)}20%{transform:translate3d(-3px,1px,0)}40%{transform:translate3d(3px,-1px,0)}60%{transform:translate3d(-2px,-1px,0)}80%{transform:translate3d(2px,1px,0)}}
 @media(prefers-reduced-motion:reduce){.collectible-hud .hud-value.is-pop,.finish-chip.is-pop,.damage-vignette.is-active,.game-wrap.is-shaking{animation:none!important}}
+
+/* Results: the medal is the reward the progress store already understands. */
+.overlay-medal {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 auto 8px;
+  padding: 3px 10px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+}
+.overlay-medal[hidden] { display: none; }
+.overlay-medal-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.overlay-medal.bronze { color: #c98a4b; }
+.overlay-medal.silver { color: #dfe8f5; }
+.overlay-medal.gold { color: #ffd75e; }
+.game-overlay.is-celebrating .overlay-medal { animation: medal-pop .5s cubic-bezier(.2,1.5,.4,1) both; }
+@keyframes medal-pop {
+  0% { transform: scale(.6); opacity: 0; }
+  60% { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.overlay-best {
+  display: block;
+  margin: 0 0 6px;
+  color: var(--level-accent, #c8ff52);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  animation: best-pop .45s ease-out both;
+}
+.overlay-best[hidden] { display: none; }
+@keyframes best-pop {
+  from { transform: translateY(4px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+/* The shard streak makes the chime ladder visible: the sound climbs, this counts with it. */
+.shard-streak {
+  align-self: flex-end;
+  margin-left: 5px;
+  padding: 0 4px;
+  border-radius: 2px;
+  background: #ffd75e;
+  color: #1a1408;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: .3px;
+}
+.shard-streak[hidden] { display: none; }
+.collectible-hud.is-pop .hud-value { animation: shard-pop .18s ease-out both; }
+@keyframes shard-pop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.35); color: #ffd75e; }
+  100% { transform: scale(1); }
+}
+.level-card:active { transform: translateY(1px) scale(.995); }
+.campaign-tab:active { transform: translateY(1px); }
+@media (prefers-reduced-motion: reduce) {
+  .game-overlay.is-celebrating .overlay-medal,
+  .overlay-best,
+  .collectible-hud.is-pop .hud-value { animation: none; }
+}

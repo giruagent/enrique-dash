@@ -1,6 +1,6 @@
 # Enrique Dash
 
-**Current test version: 1.3.0** — a touch-first Three.js rhythm platformer with twenty core courses and twenty Wool Road courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
+**Current test version: 1.3.1** — a touch-first Three.js rhythm platformer with twenty core courses and twenty Wool Road courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
 
 ## Play locally
 
