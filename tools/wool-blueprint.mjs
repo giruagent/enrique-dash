@@ -43,4 +43,7 @@ export const woolBlueprint = [
   {
     id: 'wool-07-bobble-bridge', target: 0.72, phrase: [1, 2], rest: 2.0, portals: ['spring'], shards: 1,
   },
+  {
+    id: 'wool-08-spool-street', target: 0.74, phrase: [2, 2], rest: 2.0, portals: ['float'], shards: 1,
+  },
 ];

@@ -58,11 +58,18 @@ Run `npm run levels:compose:wool` to deterministically rebuild every Wool Road l
 - **Audio:** 120 BPM with the existing sixteen-step procedural motif.
 
 ### 07 — Bobble Bridge (100 units)
-- **Signature:** A spike run of 4 hazard groups over 4 open gaps, every landing clear.
+- **Signature:** A bunny opens the bridge, a kerb lifts the first span, and a pad into a spring portal hands you across the middle.
 - **Rhythm:** 1 + 2 + 1 + 1 + 2 + 2 input beats; target 0.72 inputs/s, measured 0.76; 4 open gaps and 1 kerb and 1 bounce pad.
-- **Design hook:** Bobble Bridge lays out 4 spike groups, 4 open gaps, 1 portal (spring), 1 crawler and 1 shard.
+- **Design hook:** Bobble Bridge spans four gaps with a kerb at 15, a pad at 38.5 and a spring portal at 49.3, then closes on spike, yarn spike and felt block behind a beetle at 89.1 and a five-shard arc.
 - **Layout:** Hazard groups at 34.59 [spike], 58.21 [yarn-spike], 73.67 [felt-block]; gaps at 26.88 (2.5), 48.08 (2.5), 65.96 (2.5), 81.41 (2.5); platforms: kerb at 15, width 4.5, height 0.45; bounce at 38.5, width 3.5, height 0.35; portals: spring at 49.29; enemies: beetle at 89.12, bunny at 10.08; shards: 8.91 (height 1.85), 17.25 (height 1.65), 24.99 (height 1.24, arc of 3), 26.67 (height 1.85), 28.28 (height 1.23). arches: none; pom-poms: 4
 - **Audio:** 122 BPM with the existing sixteen-step procedural motif.
+
+### 08 — Spool Street (104 units)
+- **Signature:** A spike group into an open gap.
+- **Rhythm:** 1 + 2 + 2 + 2 + 2 input beats; target 0.74 inputs/s, measured 0.74; 4 open gaps and 1 kerb and 1 bounce pad.
+- **Design hook:** Spool Street lays out 4 spike groups, 4 open gaps, 1 portal (float), 1 crawler and 1 shard.
+- **Layout:** Hazard groups at 34.99 [spike], 59.78 [yarn-spike], 73.51 [felt-block]; gaps at 10.2 (2.5), 51.99 (2.5), 77.37 (2.5), 85.21 (2.5); platforms: kerb at 40, width 4.5, height 0.45; bounce at 18, width 3.5, height 0.35; portals: float at 37.03; enemies: beetle at 93, bunny at 27.2; shards: 10.04 (height 1.85), 42.25 (height 1.65), 19.97 (height 1.21, arc of 3), 20.9 (height 1.3), 21.96 (height 1.24). arches: none; pom-poms: 4
+- **Audio:** 124 BPM with the existing sixteen-step procedural motif.
 
 ## Playtest checklist
 
