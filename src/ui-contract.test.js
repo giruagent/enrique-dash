@@ -121,3 +121,16 @@ test('long courses use safeCheckpointDistance and resume attempts from the check
   assert.match(main, /One more try — from the checkpoint\./);
   assert.match(main, /checkpointPassed/);
 });
+
+test('clearing a course advances instead of replaying the same one', async () => {
+  const main = await readFile(new URL('./main.js', import.meta.url), 'utf8');
+  // The old handler did `if (dead || completed) reset()`, so a tap after a clear replayed the
+  // course that had just been finished.
+  const jumpBody = main.match(/function jump\(\) \{[\s\S]*?\n\}/)?.[0] ?? '';
+  assert.match(jumpBody, /if \(completed\) \{\s*advanceAfterClear\(\);/, 'a clear must advance');
+  assert.doesNotMatch(jumpBody, /dead \|\| completed/, 'the cleared case must be handled before the loss case');
+  assert.match(main, /nextLevelButton\.addEventListener\('click', advanceAfterClear\)/);
+  const helper = main.match(/function advanceAfterClear\(\) \{[\s\S]*?\n\}/)?.[0] ?? '';
+  assert.match(helper, /selectedLevelIndex < levels\.length - 1/, 'it must move to the next course');
+  assert.match(helper, /selectLevel\(selectedLevelIndex \+ 1\)/, 'it must select that course');
+});

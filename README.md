@@ -1,6 +1,6 @@
 # Enrique Dash
 
-**Current test version: 0.9.0** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
+**Current test version: 0.9.1** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
 
 ## Play locally
 
@@ -48,6 +48,11 @@ See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the auto-playe
 - Added a mute toggle and start audio only following a user gesture.
 - Deferred loading Three.js and the 2.6 MB character atlas until the first play action, retaining a static preview and cube fallback.
 - Added Node's built-in test runner for level validation, collision/progress rules, and music theory helpers.
+
+### v0.9.1
+
+- Clearing a course and tapping the playfield used to replay the same course: the tap handler treated "dead" and "completed" the same way. A tap (or Space) after a clear now advances to the next course, the overlay names it, and only a loss restarts in place.
+- The next-course button and every other way of continuing share one function, so they cannot drift apart again.
 
 ### v0.9.0
 

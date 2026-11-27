@@ -1158,6 +1158,18 @@ function showOverlay(title, instructions, showNext = false) {
   nextLevelButton.hidden = !showNext;
 }
 
+// Shared by the next-course button, a tap on the playfield and the jump key, so every way of
+// continuing after a clear lands on the same course.
+function advanceAfterClear() {
+  if (selectedLevelIndex < levels.length - 1) {
+    selectLevel(selectedLevelIndex + 1);
+    void start();
+    return;
+  }
+  reset({ keepAttempt: false });
+  void start();
+}
+
 function selectLevel(index) {
   if (!Number.isInteger(index) || index < 0 || index >= levels.length) return;
   reset();
@@ -1254,7 +1266,13 @@ function consumeBufferedJump() {
 
 function jump() {
   if (graphicsUnavailable) return;
-  if (dead || completed) reset({ keepAttempt: true });
+  // A cleared course must never replay itself: the tap that used to restart it now moves the
+  // player forward, the same as the button. Only a loss restarts in place.
+  if (completed) {
+    advanceAfterClear();
+    return;
+  }
+  if (dead) reset({ keepAttempt: true });
   if (!sceneStarted || !running) {
     void start();
     return;
@@ -1289,7 +1307,11 @@ function finish() {
   recordRunEnd(true);
   const totalShards = level.collectibles.length;
   const shardSummary = totalShards ? ` You found ${collectedCount} of ${totalShards} shards.` : '';
-  showOverlay(`${level.name} cleared!`, `Course ${selectedLevelIndex + 1} of ${levels.length} complete.${shardSummary}`, selectedLevelIndex < levels.length - 1);
+  const nextCourse = levels[selectedLevelIndex + 1];
+  const continueHint = nextCourse
+    ? ` Tap or press Space for ${nextCourse.name}.`
+    : ' Tap or press Space to replay the finale.';
+  showOverlay(`${level.name} cleared!`, `Course ${selectedLevelIndex + 1} of ${levels.length} complete.${shardSummary}${continueHint}`, Boolean(nextCourse));
   message.textContent = totalShards ? `LEVEL COMPLETE · SHARDS ${collectedCount}/${totalShards}` : 'LEVEL COMPLETE';
   gameStatus.textContent = `${level.name} complete.`;
   syncPauseButton();
@@ -1522,12 +1544,7 @@ document.addEventListener('keydown', (event) => {
 });
 fullscreenButton.addEventListener('click', () => { void toggleFullscreen(); });
 musicButton.addEventListener('click', toggleMusic);
-nextLevelButton.addEventListener('click', () => {
-  if (selectedLevelIndex < levels.length - 1) {
-    selectLevel(selectedLevelIndex + 1);
-    void start();
-  }
-});
+nextLevelButton.addEventListener('click', advanceAfterClear);
 document.addEventListener('fullscreenchange', syncFullscreenUI);
 document.addEventListener('webkitfullscreenchange', syncFullscreenUI);
 gameWrap.addEventListener('fullscreenerror', () => {
