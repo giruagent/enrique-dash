@@ -86,11 +86,18 @@ Run `npm run levels:compose:wool` to deterministically rebuild every Wool Road l
 - **Audio:** 128 BPM with the existing sixteen-step procedural motif.
 
 ### 11 — Yarnstorm Ridge (116 units)
-- **Signature:** Two spike groups on one arc.
+- **Signature:** A pad chain over the ridge — pad, stitched island, pad — with a float bridging the wide hole and a moth on the last stretch.
 - **Rhythm:** 1 + 1 + 1 + 2 + 2 + 2 + 2 input beats; target 0.80 inputs/s, measured 0.83; 4 open gaps and 1 kerb, 1 island and 2 bounce pads.
-- **Design hook:** Yarnstorm Ridge lays out 6 spike groups, 4 open gaps, 1 portal (float), 1 drone and 1 shard.
+- **Design hook:** Yarnstorm Ridge chains two pads at 32 and 52.5 around an island in its 4.9-wide hole, adds a float at 45.8 and a kerb at 16.5, and fills the lane with five groups across four skins, a beetle at 10.6, a moth at 104.6 and a six-shard arc.
 - **Layout:** Hazard groups at 27.28 (double) [spike], 59.1 [yarn-spike], 60.1 (double) [felt-block], 76.28 [button-bomb], 84.39 [spike]; gaps at 44 (4.9), 68.21 (2.5), 88.46 (2.5), 96.57 (2.5); platforms: kerb at 16.5, width 4.5, height 0.45; island at 44, width 2.5, height 0.5; bounce at 32, width 3.5, height 0.35; bounce at 52.5, width 3.5, height 0.35; portals: float at 45.81; enemies: moth at 104.64, beetle at 10.56; shards: 9.26 (height 1.85), 18.75 (height 1.65), 45.25 (height 1.7), 34.03 (height 1.21, arc of 3), 35.05 (height 1.29), 36.08 (height 1.24). arches: finish; pom-poms: 4
 - **Audio:** 132 BPM with the existing sixteen-step procedural motif.
+
+### 12 — Tangled Thicket (120 units)
+- **Signature:** A spike group into an open gap.
+- **Rhythm:** 1 + 1 + 1 + 2 + 2 + 2 + 2 input beats; target 0.83 inputs/s, measured 0.82; 4 open gaps and 1 kerb, 1 shelf, 1 perch and 1 bounce pad.
+- **Design hook:** Tangled Thicket lays out 6 spike groups, 4 open gaps, 2 portals (spring and float), 1 drone and 1 shard.
+- **Layout:** Hazard groups at 59.88 [spike], 72.05 [yarn-spike], 84 [felt-block], 92.16 [button-bomb]; gaps at 27.59 (2.5), 63.85 (2.5), 75.79 (2.5), 100.36 (2.5); platforms: kerb at 49.5, width 4.5, height 0.45; shelf at 14.5, width 10, height 0.5; perch at 42.25, width 4.5, height 0.45; bounce at 35.5, width 3.5, height 0.35; portals: spring at 30.46, float at 65.24; enemies: moth at 108.52, beetle at 10.68, bunny at 44.5; shards: 9.38 (height 1.85), 51.75 (height 1.65), 23.95 (height 1.7), 38.2 (height 1.21, arc of 3), 39.23 (height 1.64), 40.27 (height 1.24). arches: finish; pom-poms: 4
+- **Audio:** 134 BPM with the existing sixteen-step procedural motif.
 
 ## Playtest checklist
 
