@@ -1,11 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getLevel, levelValidationError, levels, validateLevels } from './levels.js';
+import { woolLevels } from './levels-wool.js';
 import { finishGateDistance, jumpTuning, motionTuning, platformTuning, safeCheckpointDistance } from './game-logic.js';
 import { playLevel } from '../tools/auto-player.mjs';
 import { analyzeLevel } from '../tools/level-report.mjs';
 import { beatWindows, courseSpeedTimeline, jumpHeightAt, jumpReach } from '../tools/level-physics.mjs';
 import { blueprint } from '../tools/compose-levels.mjs';
+import { woolBlueprint } from '../tools/wool-blueprint.mjs';
 
 test('the valid course catalog imports without a validation failure', () => {
   assert.equal(levelValidationError, null);
@@ -389,4 +391,76 @@ test('no platform over a hole is taller than the step-up limit', () => {
       );
     }
   }
+});
+
+// The second campaign is independent: however many courses exist must validate
+// on their own, with the wool count rather than the core campaign's twenty.
+test('the wool campaign validates independently of the core catalogue', () => {
+  assert.ok(woolLevels.length >= 1, 'the wool campaign needs at least one course');
+  assert.equal(validateLevels(woolLevels, { expected: woolLevels.length }), true);
+  assert.equal(new Set(woolLevels.map((level) => level.id)).size, woolLevels.length);
+  assert.equal(new Set(woolLevels.map((level) => level.name)).size, woolLevels.length);
+  for (const level of woolLevels) {
+    assert.equal(level.campaign, 'wool', `${level.id} must belong to the wool campaign`);
+    assert.ok(level.palette, `${level.id} must carry its own palette`);
+    for (const key of ['sky', 'lane', 'accent', 'platform']) {
+      assert.equal(Number.isInteger(level.palette[key]), true, `${level.id} is missing palette.${key}`);
+    }
+    assert.equal(level.scenery, 'wool', `${level.id} must use the wool scenery`);
+  }
+});
+
+test('the auto-player finishes every wool course without a death', () => {
+  for (const level of woolLevels) {
+    const result = playLevel(level);
+    assert.equal(result.completed, true, `${level.id} was not completed`);
+    assert.equal(result.deaths, 0, `${level.id} recorded a death: ${result.events.find(({ type }) => type === 'death')?.reason}`);
+  }
+});
+
+test('every wool course holds the gap, hazard and fairness rules', () => {
+  woolLevels.forEach((level, index) => {
+    assert.ok(level.obstacles.length >= 3, `${level.id} needs at least three hazard groups`);
+    const metrics = analyzeLevel(level);
+    assert.deepEqual(metrics.deadBandViolations, [], `${level.id} has dead-band violations`);
+    assert.deepEqual(metrics.telegraphViolations, [], `${level.id} has short first-beat telegraphs`);
+    assert.ok(metrics.tightestMargin >= .35, `${level.id} has only ${metrics.tightestMargin?.toFixed(2)} units of margin`);
+    assert.ok(metrics.jumps >= .75 * metrics.beats, `${level.id} jumps too few beats`);
+    const target = woolBlueprint[index].target;
+    assert.ok(
+      Math.abs(metrics.inputsPerSecond / target - 1) <= .05,
+      `${level.id} measured ${metrics.inputsPerSecond.toFixed(3)} inputs/s against a ${target.toFixed(2)} target`,
+    );
+  });
+});
+
+test('Thimble Meadow is the gentle tier-1 opener the Wool Road brief asks for', () => {
+  const level = woolLevels.find(({ id }) => id === 'wool-thimble-meadow');
+  assert.ok(level, 'Thimble Meadow is missing');
+  assert.equal(level.name, 'Thimble Meadow');
+  assert.equal(level.zone, 'FIRST STITCHES');
+  assert.equal(level.length, 76);
+  assert.equal(level.speed, 7.8);
+  assert.equal(level.hazardStyle, 'spike');
+  assert.equal(level.environment, 'wool-meadow');
+  assert.equal(level.gaps.length, 3, 'the opener needs three open gaps');
+  assert.equal(level.platforms.length, 0, 'the opener needs no bridges or platforms');
+  assert.equal(level.portals.length, 0, 'the opener needs no portals');
+  assert.equal(level.enemies.length, 0, 'the opener needs no enemies');
+  assert.equal(level.collectibles.length, 1, 'the opener carries one shard');
+  assert.ok(level.obstacles.some(([, count]) => count === 1), 'the opener needs a single hazard group');
+  assert.ok(level.obstacles.some(([, count]) => count === 2), 'the opener needs a double hazard group');
+  for (const gap of level.gaps) {
+    assert.ok(
+      !level.platforms.some((platform) => platform.at <= gap.at && platform.at + platform.width >= gap.at + gap.width),
+      `gap at ${gap.at} must stay open`,
+    );
+  }
+  assert.equal(level.music.bpm, 108);
+  assert.deepEqual(level.music.scale, [0, 2, 4, 7, 9]);
+  assert.equal(level.music.motif.length, 16);
+  assert.equal(new Set(woolLevels.map(({ signature }) => signature)).size, woolLevels.length);
+  assert.ok(level.designHook);
+  const measured = analyzeLevel(level).inputsPerSecond;
+  assert.ok(Math.abs(measured / .62 - 1) <= .05, `Thimble Meadow measured ${measured.toFixed(3)} inputs/s`);
 });

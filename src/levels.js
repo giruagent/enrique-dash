@@ -255,8 +255,11 @@ const portalTypes = new Set(['spring', 'dash', 'float', 'shield', 'phase']);
 const enemyTypes = new Set(['crawler', 'drone']);
 const platformKinds = new Set(['kerb', 'shelf', 'island', 'hover', 'perch']);
 
-export function validateLevels(catalog) {
-  if (!Array.isArray(catalog) || catalog.length !== 20) throw new Error('The campaign must contain exactly twenty playable levels.');
+export function validateLevels(catalog, { expected = 20 } = {}) {
+  if (!Array.isArray(catalog) || catalog.length !== expected) {
+    const count = expected === 20 ? 'twenty' : String(expected);
+    throw new Error(`The campaign must contain exactly ${count} playable ${expected === 1 ? 'level' : 'levels'}.`);
+  }
   const ids = new Set();
   const names = new Set();
   const signatures = new Set();

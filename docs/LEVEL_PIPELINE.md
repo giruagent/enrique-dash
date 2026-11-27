@@ -48,13 +48,15 @@ A dash portal compresses following spacing because it increases reach while the 
 ## Run the tools
 
 ```sh
-node tools/auto-player.mjs                 # every catalogue level
+node tools/auto-player.mjs                 # every campaign
 node tools/auto-player.mjs neon-run        # one or more selected ids
-node tools/level-report.mjs                # aligned twenty-level report
+node tools/auto-player.mjs --campaign wool # one campaign
+node tools/level-report.mjs                # aligned twenty-level core report
 
 npm run levels:play
 npm run levels:report
-npm run levels:check                       # auto-player plus synthetic tool tests
+npm run levels:check                       # auto-player for both campaigns plus synthetic tool tests
+npm run levels:compose:wool                # rhythm + mix for the Wool Road file and plan
 ```
 
 The auto-player advances at a fixed **1/120 s**, applies portals when they reach the runner, and uses `findStepSurface`, `getTrackSupportHeight`, and `stepPlayerMotion` through the shared motion path. It chooses the latest safe reachable jump opportunity, never performs a second jump in the air, and uses the shared obstacle and collectible collision helpers. It exits non-zero if any selected level cannot be completed.
