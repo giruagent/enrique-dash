@@ -164,3 +164,13 @@ test('clearing a course advances instead of replaying the same one', async () =>
   assert.match(helper, /selectedLevelIndex < activeLevels\.length - 1/, 'it must move to the next course in the active campaign');
   assert.match(helper, /selectLevel\(selectedLevelIndex \+ 1\)/, 'it must select that course');
 });
+
+test('the page labels match the package version', async () => {
+  const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  const labels = [...html.matchAll(/v(\d+\.\d+\.\d+)/g)].map((match) => match[1]);
+  const footer = html.match(/VERSION (\d+\.\d+\.\d+)/)?.[1];
+  assert.ok(labels.length >= 2, 'expected the header and HUD version labels');
+  for (const label of [...labels, footer]) {
+    assert.equal(label, pkg.version, `index.html advertises ${label} but package.json is ${pkg.version}`);
+  }
+});
