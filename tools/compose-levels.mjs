@@ -682,8 +682,11 @@ export function buildCandidate(base, brief, index, totalBeats, variant, options 
     if (process.env.COMPOSE_DEBUG) console.log(base.id, variant, 'shard or completion rejection');
     return null;
   }
-  layout.signature = phraseCopy(layout);
-  layout.designHook = designCopy(layout);
+  // A hand-written signature is part of the course's identity: only fill one in when the data does
+  // not carry it yet, so recomposing one course can never rewrite the other nineteen.
+  const pendingSignature = !base.signature || /pending composition/.test(base.signature);
+  layout.signature = pendingSignature ? phraseCopy(layout) : base.signature;
+  layout.designHook = pendingSignature || !base.designHook ? designCopy(layout) : base.designHook;
   const result = playLevel(layout);
   const metrics = analyzeLevel(layout, result);
   return { level: layout, phrases, result, metrics };
