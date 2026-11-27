@@ -16,17 +16,17 @@ Run `npm run levels:compose:wool` to deterministically rebuild every Wool Road l
 ## Individual designs
 
 ### 01 — Thimble Meadow (76 units)
-- **Signature:** Three open gaps in the meadow, each one a single soft landing.
+- **Signature:** Three open gaps in the meadow, a yarn-and-felt hazard mix and one shard arc over the middle hole.
 - **Rhythm:** 1 + 2 + 1 + 2 input beats; target 0.62 inputs/s, measured 0.62; 3 open gaps and 1 bounce pad.
-- **Design hook:** Thimble Meadow lays out 3 spike groups, 3 gaps, 1 bounce pad and 1 shard.
-- **Layout:** Hazard groups at 9.36, 33.86, 65.36 (double); gaps at 26.52 (2.5), 50.69 (2.5), 58.02 (2.5); platforms: bounce at 15, width 3.5, height 0.35; portals: none; enemies: none; shards: 8.36 (height 1.85).
+- **Design hook:** Thimble Meadow lays out 3 hazard groups (spike, yarn spike and felt block), 3 gaps, 1 bounce pad, 4 shards in 1 arc and 1 thread arch.
+- **Layout:** Hazard groups at 9.36 [spike], 33.86 [yarn-spike], 65.36 (double) [felt-block]; gaps at 26.52 (2.5), 50.69 (2.5), 58.02 (2.5); platforms: bounce at 15, width 3.5, height 0.35; portals: none; enemies: none; shards: 8.36 (height 1.85), 49.14 (height 1.24, arc of 3), 50.7 (height 1.85), 52.19 (height 1.23). arches: finish; pom-poms: 4
 - **Audio:** 108 BPM with the existing sixteen-step procedural motif.
 
 ### 02 — Button Bush (82 units)
-- **Signature:** A plush pad under the first shard launches you at the wide gap; two open holes follow.
+- **Signature:** A plush pad launches you through a shard arc at the wide gap; a beetle waits on the last stitch.
 - **Rhythm:** 1 + 1 + 1 + 2 + 2 input beats; target 0.67 inputs/s, measured 0.67; 3 open gaps and 1 bounce pad.
-- **Design hook:** Button Bush lays out 4 spike groups, 3 gaps, 1 bounce pad and 1 shard.
-- **Layout:** Hazard groups at 9.48, 43.16, 57.84, 72.52; gaps at 26.86 (4), 50.44 (2.5), 65.12 (2.5); platforms: bounce at 20.5, width 3.5, height 0.35; portals: none; enemies: none; shards: 22.25 (height 1.7).
+- **Design hook:** Button Bush lays out 3 hazard groups (button bomb and spike), 3 gaps, 1 bounce pad, 1 beetle, 3 shards in 1 arc and 1 thread arch.
+- **Layout:** Hazard groups at 9.48 [button-bomb], 43.16 [spike], 57.84 [button-bomb]; gaps at 26.86 (4), 50.44 (2.5), 65.12 (2.5); platforms: bounce at 20.5, width 3.5, height 0.35; portals: none; enemies: beetle at 72.52; shards: 22.32 (height 1.21, arc of 3), 23.04 (height 1.31), 24.16 (height 1.24). arches: checkpoint; pom-poms: 5
 - **Audio:** 112 BPM with the existing sixteen-step procedural motif.
 
 ## Playtest checklist

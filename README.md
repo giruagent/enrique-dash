@@ -1,6 +1,6 @@
 # Enrique Dash
 
-**Current test version: 1.0.1** — a touch-first Three.js rhythm platformer with twenty core courses and the first two Wool Road courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
+**Current test version: 1.1.0** — a touch-first Three.js rhythm platformer with twenty core courses and the first two Wool Road courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
 
 ## Play locally
 
@@ -38,7 +38,7 @@ Tap/click the playfield, or press Space, Arrow Up, or W to jump; press P or the 
 
 Each level has its own speed, obstacle sequence, color palette, tempo, scale, chord progression, and lead motif. Level clears are saved locally in the browser; no account is needed.
 
-**Wool Road** (second campaign): W1-01 Thimble Meadow and W1-02 Button Bush — soft meadow courses with their own palette, sage accents and no grid.
+**Wool Road** (second campaign): W1-01 Thimble Meadow and W1-02 Button Bush — soft meadow courses with their own palette, sage accents and no grid. Wool Road now carries its own vocabulary: per-group hazard skins, beetle, bunny and moth silhouettes, shard arcs sampled from the real jump trace, and non-colliding thread arches and pom-poms.
 
 See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the auto-player, fair-spacing rules, and catalogue report.
 
@@ -50,6 +50,14 @@ See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the auto-playe
 - Added a mute toggle and start audio only following a user gesture.
 - Deferred loading Three.js and the 2.6 MB character atlas until the first play action, retaining a static preview and cube fallback.
 - Added Node's built-in test runner for level validation, collision/progress rules, and music theory helpers.
+
+### v1.1.0
+
+- Hazards can carry a per-group skin: `obstacles` entries accept `[at, count, style]`, and a group without one keeps `level.hazardStyle`. `beatWindows()`, `spawnObstacles()` and the auto-player resolve each group through `getHazardProfile(style)`, so a skin can never change a course's spacing maths. Four wool skins copy shipped collision boxes exactly: `yarn-spike` (spike), `felt-block` (pixel-block), `button-bomb` (vent) and `thread-arch` (circuit-beam).
+- Three enemy silhouettes reuse the two existing profiles: **beetle** and **bunny** on the .9 × .58 stompable ground body, and **moth** on the .72 × .68 flyer body at altitude 1.12. They differ only in geometry and a purely visual idle motion, bounded inside the profile box so a moth at full wing flap is cleared by the same jump as a drone.
+- Collectibles support an authored arc (`arc: 2–5`). The wool feature pass samples the shards from the auto-player's own `stepPlayerMotion` trace at even time steps, so every arc sits on a real jump arc and inside the apex band.
+- Added non-colliding scenery for wool courses: a felt **thread arch** over the lane at a checkpoint or the finish gate, and three to five warm-lit **pom-poms** at varied depths behind the lane. They are disposed with the scene, stay under the frame budget and skip their drift under `prefers-reduced-motion`.
+- Retrofitted both wool courses without touching their rhythm: **Thimble Meadow** now shows spike, yarn-spike and felt-block silhouettes, a three-shard arc over the second gap and a finish arch; **Button Bush** swaps a hazard group for a beetle, shows button-bomb and spike skins, puts a three-shard arc over its pad and gains a checkpoint arch. Speed, length, gaps, pads, palettes and input rates are unchanged.
 
 ### v1.0.1
 

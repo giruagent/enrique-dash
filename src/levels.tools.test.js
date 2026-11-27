@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { playLevel } from '../tools/auto-player.mjs';
 import { analyzeLevel } from '../tools/level-report.mjs';
-import { airTime, jumpFallTime, jumpReach, jumpRiseTime } from '../tools/level-physics.mjs';
+import { airTime, beatWindows, jumpApexHeight, jumpFallTime, jumpReach, jumpRiseTime } from '../tools/level-physics.mjs';
 import { jumpTuning, motionTuning } from './game-logic.js';
+import { woolLevels } from './levels-wool.js';
 
 function fixture(overrides = {}) {
   return {
@@ -118,4 +119,55 @@ test('a hazard that is only clearable with a bounce pad is completed with the pa
     withoutPad.events.find(({ type }) => type === 'death').reason,
     /hazard-0\.0 collision/,
   );
+});
+
+function shardArcs(level) {
+  const arcs = [];
+  for (let index = 0; index < level.collectibles.length; index++) {
+    const leader = level.collectibles[index];
+    if (!leader.arc) continue;
+    arcs.push(level.collectibles.slice(index, index + leader.arc));
+  }
+  return arcs;
+}
+
+test('every wool shard arc follows the auto-player trajectory inside the apex band', () => {
+  const apex = jumpApexHeight();
+  for (const level of woolLevels) {
+    const result = playLevel(level, { trace: true });
+    assert.equal(result.completed, true, `${level.id} must complete for its trace`);
+    const arcs = shardArcs(level);
+    assert.ok(arcs.length >= 1, `${level.id} needs at least one arc`);
+    for (const arc of arcs) {
+      assert.ok(arc.length >= 2 && arc.length <= 5, `${level.id} has an arc outside 2–5 shards`);
+      assert.equal(arc[0].arc, arc.length, `${level.id} arc leader declares the wrong size`);
+      for (const shard of arc) {
+        assert.ok(shard.height >= 1.2, `${level.id} arc shard hangs too low`);
+        assert.ok(shard.height <= apex + .05, `${level.id} arc shard is above the jump apex`);
+        const frame = result.samples.find((sample) => (
+          !sample.grounded
+          && Math.abs(sample.at - shard.at) <= .05
+          && Math.abs((sample.y - sample.supportY) - shard.height) <= .1
+        ));
+        assert.ok(frame, `${level.id} arc shard at ${shard.at} is not on the simulated arc`);
+      }
+    }
+  }
+});
+
+test('a moth at its maximum wing offset needs the same jump as a drone', () => {
+  const drone = fixture({ enemies: [{ at: 12, type: 'drone' }] });
+  const moth = fixture({ enemies: [{ at: 12, type: 'moth' }] });
+  const droneWindows = beatWindows(drone).filter(({ kind }) => kind === 'enemy');
+  const mothWindows = beatWindows(moth).filter(({ kind }) => kind === 'enemy');
+  assert.deepEqual(
+    mothWindows.map(({ clearance, start, end, requirement }) => ({ clearance, start, end, requirement })),
+    droneWindows.map(({ clearance, start, end, requirement }) => ({ clearance, start, end, requirement })),
+  );
+  const droneRun = playLevel(drone);
+  const mothRun = playLevel(moth);
+  assert.equal(mothRun.completed, true);
+  assert.equal(droneRun.completed, true);
+  assert.equal(mothRun.jumps, droneRun.jumps);
+  assert.equal(mothRun.tightestMargin, droneRun.tightestMargin);
 });

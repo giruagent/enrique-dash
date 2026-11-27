@@ -8,6 +8,24 @@ export const woolTiers = [
 ];
 
 export const woolBlueprint = [
-  { id: 'wool-thimble-meadow', target: .62, phrase: [1, 2], rest: 2.2, portals: [], shards: 1 },
-  { id: 'wool-02-button-bush', target: .67, phrase: [1, 2], rest: 2.2, portals: [], shards: 1, wideGap: { ordinal: 0, width: 4 }, padBeforeGap: 0, shardAbovePad: true },
+  {
+    id: 'wool-thimble-meadow', target: .62, phrase: [1, 2], rest: 2.2, portals: [], shards: 1,
+    vocabulary: {
+      skins: ['spike', 'yarn-spike', 'felt-block'],
+      arcs: [{ source: 'gap', ordinal: 1, count: 3 }],
+      arches: ['finish'],
+      pomPoms: 4,
+    },
+  },
+  {
+    id: 'wool-02-button-bush', target: .67, phrase: [1, 2], rest: 2.2, portals: [], shards: 1, wideGap: { ordinal: 0, width: 4 }, padBeforeGap: 0, shardAbovePad: true,
+    vocabulary: {
+      skins: ['button-bomb', 'spike', 'button-bomb'],
+      replaceGroup: { ordinal: 3, type: 'beetle' },
+      arcs: [{ source: 'pad', count: 3 }],
+      replaceShards: true,
+      arches: ['checkpoint'],
+      pomPoms: 5,
+    },
+  },
 ];

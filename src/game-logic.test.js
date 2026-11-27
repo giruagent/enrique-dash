@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { activeEffects, canConsumeJumpBuffer, checkpointTuning, courseMedal, effectCopy, emptyProgress, findStepSurface, finishGateDistance, getHazardProfile, getTrackSupportHeight, integrateVerticalMotion, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, mergeRunProgress, parseProgress, portalCopy, portalEffects, portalLabel, PROGRESS_VERSION, safeCheckpointDistance, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy } from './game-logic.js';
+import { activeEffects, canConsumeJumpBuffer, checkpointTuning, courseMedal, effectCopy, emptyProgress, enemyProfiles, enemyTuning, findStepSurface, finishGateDistance, getEnemyProfile, getHazardProfile, getObstacleProfile, getTrackSupportHeight, hazardStyleForGroup, integrateVerticalMotion, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeJumpRequest, mergeRunProgress, parseProgress, portalCopy, portalEffects, portalLabel, PROGRESS_VERSION, safeCheckpointDistance, shouldAcceptJumpInput, shouldApplyBufferedStartJump, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy } from './game-logic.js';
 import { levels } from './levels.js';
+import { woolLevels } from './levels-wool.js';
 import { beatWindows, jumpApexHeight } from '../tools/level-physics.mjs';
 
 function sourceFiles(directory) {
@@ -19,6 +20,92 @@ test('hazard profiles give each environment collision geometry and a safe fallba
   assert.equal(getHazardProfile('pixel-block').shape, 'block');
   assert.equal(getHazardProfile('unknown-hazard').shape, 'spike');
 });
+
+test('every wool hazard skin copies its base collision box exactly', () => {
+  const skins = {
+    'yarn-spike': 'spike',
+    'felt-block': 'pixel-block',
+    'button-bomb': 'vent',
+    'thread-arch': 'circuit-beam',
+  };
+  for (const [skin, base] of Object.entries(skins)) {
+    const skinProfile = getHazardProfile(skin);
+    const baseProfile = getHazardProfile(base);
+    assert.equal(skinProfile.width, baseProfile.width, `${skin} width drifted from ${base}`);
+    assert.equal(skinProfile.height, baseProfile.height, `${skin} height drifted from ${base}`);
+    assert.equal(skinProfile.clearanceHeight, baseProfile.clearanceHeight, `${skin} clearance drifted from ${base}`);
+    assert.equal(skinProfile.offsetY, baseProfile.offsetY, `${skin} offset drifted from ${base}`);
+    assert.notEqual(skinProfile.shape, baseProfile.shape, `${skin} needs its own silhouette`);
+  }
+  assert.equal(getHazardProfile('thread-arch').offsetY, 1.05);
+});
+
+test('a mixed-style course resolves each group style and keeps that group window identical', () => {
+  const mixed = woolLevels.find(({ id }) => id === 'wool-thimble-meadow');
+  const windows = beatWindows(mixed).filter(({ kind }) => kind === 'hazard');
+  mixed.obstacles.forEach((group, groupIndex) => {
+    const style = hazardStyleForGroup(mixed, group);
+    assert.ok(style, `hazard group ${groupIndex} did not resolve a style`);
+    const single = { ...mixed, obstacles: [[group[0], group[1], style]] };
+    const [window] = beatWindows(single).filter(({ kind }) => kind === 'hazard');
+    const resolved = windows.find(({ id }) => id === `hazard-${groupIndex}`);
+    assert.equal(resolved.type, style);
+    assert.equal(resolved.start, window.start);
+    assert.equal(resolved.end, window.end);
+    assert.equal(resolved.courseEnd, window.courseEnd);
+    assert.equal(resolved.clearance, window.clearance);
+  });
+  // A group with no third element falls back to the course style, not to a neighbour's skin.
+  const fallback = { ...mixed, hazardStyle: 'spike', obstacles: [[12, 1]] };
+  assert.equal(hazardStyleForGroup(fallback, fallback.obstacles[0]), 'spike');
+  assert.equal(getObstacleProfile(fallback, fallback.obstacles[0]).width, getHazardProfile('spike').width);
+
+  // Two skins that copy the same profile produce identical windows whether mixed or uniform.
+  const uniform = { ...mixed, obstacles: mixed.obstacles.map(([at, count]) => [at, count]) };
+  const yarn = { ...mixed, obstacles: mixed.obstacles.map(([at, count]) => [at, count, 'yarn-spike']) };
+  const project = (windows) => windows
+    .filter(({ kind }) => kind === 'hazard')
+    .map(({ id, start, end, clearance }) => ({ id, start, end, clearance }));
+  assert.deepEqual(project(beatWindows(uniform)), project(beatWindows(yarn)));
+});
+
+test('the three new enemy silhouettes reuse the two shipped collision profiles', () => {
+  for (const type of ['beetle', 'bunny']) {
+    assert.deepEqual(getEnemyProfile(type), getEnemyProfile('crawler'), `${type} must reuse the crawler profile`);
+    assert.equal(getEnemyProfile(type).stompable, true);
+    assert.equal(getEnemyProfile(type).width, .9);
+    assert.equal(getEnemyProfile(type).height, .58);
+  }
+  assert.deepEqual(getEnemyProfile('moth'), getEnemyProfile('drone'), 'moth must reuse the drone profile');
+  assert.equal(getEnemyProfile('moth').stompable, false);
+  assert.equal(getEnemyProfile('moth').width, .72);
+  assert.equal(getEnemyProfile('moth').height, .68);
+  assert.equal(getEnemyProfile('moth').altitude, 1.12);
+  assert.deepEqual(Object.keys(enemyProfiles).sort(), ['beetle', 'bunny', 'crawler', 'drone', 'moth']);
+});
+
+test('a moth at its maximum wing offset is cleared by exactly the drone jump', () => {
+  const base = {
+    speed: 8,
+    length: 40,
+    hazardStyle: 'spike',
+    obstacles: [],
+    gaps: [],
+    platforms: [],
+    portals: [],
+    collectibles: [],
+  };
+  const droneWindow = beatWindows({ ...base, enemies: [{ at: 12, type: 'drone' }] })[0];
+  const mothWindow = beatWindows({ ...base, enemies: [{ at: 12, type: 'moth' }] })[0];
+  assert.equal(mothWindow.clearance, droneWindow.clearance);
+  assert.equal(mothWindow.start, droneWindow.start);
+  assert.equal(mothWindow.end, droneWindow.end);
+  // The visual wing flap is bounded well inside the solver's flyer clearance.
+  const profile = getEnemyProfile('moth');
+  const visualTop = profile.altitude + profile.height / 2 + enemyTuning.mothWingOffset;
+  assert.ok(visualTop < mothWindow.clearance, `wing top ${visualTop} reaches the ${mothWindow.clearance} clearance`);
+});
+
 test('jump buffering and coyote time preserve a near-miss tap without allowing double jumps', () => {
   assert.ok(jumpTuning.initialVelocity > 8.3);
   assert.ok(jumpTuning.inputBufferSeconds >= .12);

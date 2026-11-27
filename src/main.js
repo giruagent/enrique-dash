@@ -3,7 +3,7 @@ import packageInfo from '../package.json';
 import { levelValidationError } from './levels.js';
 import { campaigns } from './campaigns.js';
 import { createLossCue, playOneShot, primeOneShot, stopOneShot } from './audio-cues.js';
-import { activeEffects, canConsumeJumpBuffer, courseMedal, effectCopy, emptyProgress, finishGateDistance, getHazardProfile, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeRunProgress, parseProgress, portalEffects, portalLabel, safeCheckpointDistance, shouldAcceptJumpInput, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy, stepPlayerMotion } from './game-logic.js';
+import { activeEffects, canConsumeJumpBuffer, courseMedal, effectCopy, emptyProgress, enemyTuning, finishGateDistance, getEnemyProfile, getObstacleProfile, isCollectibleContact, isGamePaused, isObstacleCollision, jumpTuning, levelProgressPercent, mergeRunProgress, parseProgress, portalEffects, portalLabel, safeCheckpointDistance, shouldAcceptJumpInput, shouldHandleGameplayKey, shouldSpawnCourseFeatures, shouldStompEnemy, stepPlayerMotion } from './game-logic.js';
 import { MusicEngine } from './music.js';
 import './style.css';
 
@@ -66,6 +66,10 @@ const enemies = [];
 const collectibles = [];
 const finishGates = [];
 const checkpointFlags = [];
+// Decorative scenery lives outside every collision list: none of these arrays is ever read by the
+// gameplay update. Arch groups scroll with the course; pom-poms are a still, warm-lit backdrop.
+const sceneryObjects = [];
+const pomPoms = [];
 let collectedCount = 0;
 const DEFAULT_RUN_MESSAGE = 'TAP / CLICK / SPACE TO JUMP · P TO PAUSE';
 const PORTAL_ANNOUNCEMENT_SECONDS = 1.6;
@@ -348,6 +352,8 @@ function update(dt) {
   moveFeatureGroup(collectibles, dt, speed, removeMeshFeature);
   moveFeatureGroup(finishGates, dt, speed, removeMeshFeature);
   moveFeatureGroup(checkpointFlags, dt, speed, removeMeshFeature);
+  moveFeatureGroup(sceneryObjects, dt, speed, removeMeshFeature);
+  updateScenery(dt);
   triggerPortals();
   updateCheckpoint();
   const result = stepPlayerMotion({
@@ -432,8 +438,18 @@ function moveFeatureGroup(group, dt, speed, removeFeature) {
       }
     }
     if (group === enemies) {
-      feature.mesh.rotation.y += dt * (feature.type === 'drone' ? 1.7 : .8);
-      if (feature.type === 'drone') feature.mesh.position.y = feature.baseY + Math.sin(simulationTime * 2.2 + feature.phase) * .16;
+      feature.mesh.rotation.y += dt * (feature.mesh.userData.rotationSpeed ?? 1);
+      if (feature.type === 'drone') feature.mesh.position.y = feature.baseY + Math.sin(simulationTime * 2.2 + feature.phase) * enemyTuning.droneBob;
+      if (!reducedMotion) {
+        // New silhouettes animate only their inner body/wings; the collision group never moves, so
+        // the auto-player's fixed profile stays exact. All offsets stay inside the profile box.
+        if (feature.body) feature.body.position.y = Math.sin(simulationTime * 2.4 + feature.phase) * enemyTuning.groundBob;
+        for (const [wingIndex, wing] of (feature.wings ?? []).entries()) {
+          const side = wingIndex === 0 ? -1 : 1;
+          wing.position.y = Math.sin(simulationTime * 7 + feature.phase) * enemyTuning.mothWingOffset * side;
+          wing.rotation.z = Math.sin(simulationTime * 7 + feature.phase) * .12 * side;
+        }
+      }
     }
     if (!reducedMotion && group === portals && feature.spin) feature.spin.rotation.z += dt * 1.2;
     if (!reducedMotion && group === collectibles) feature.mesh.rotation.y += dt * .6;
@@ -532,7 +548,7 @@ function handleEnemyCollisions() {
     const enemy = enemies[index];
     if (Math.abs(enemy.center - player.position.x) >= .8) continue;
     const playerHeight = player.position.y - player.userData.supportY;
-    if (enemy.type === 'crawler' && shouldStompEnemy(playerHeight, player.userData.vy)) {
+    if (getEnemyProfile(enemy.type).stompable && shouldStompEnemy(playerHeight, player.userData.vy)) {
       removeMeshFeature(enemy, index, enemies);
       message.textContent = 'ENEMY STOMPED';
       continue;
@@ -698,55 +714,120 @@ function updatePortalAnnouncement(dt) {
 }
 
 
+function hazardMaterial() {
+  const color = GAMEPLAY_COLORS.hazard;
+  return new THREE.MeshStandardMaterial({
+    color,
+    emissive: color,
+    emissiveIntensity: .9,
+    metalness: .2,
+    roughness: .34,
+    flatShading: true,
+  });
+}
+
+// Wool skins are silhouettes, not new physics: every profile below keeps the collision box of the
+// core profile it copies. The extra pieces are pure geometry, so the auto-player's model is exact.
+function createWoolHazard(profile) {
+  const material = hazardMaterial();
+  const stitchMaterial = new THREE.MeshBasicMaterial({ color: 0xFFF3E2 });
+  const group = new THREE.Group();
+  if (profile.shape === 'yarn-spike') {
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(profile.width * .52, profile.height, 7), material);
+    group.add(cone);
+    for (const [y, radius] of [[-.18, .3], [.08, .22]]) {
+      const wrap = new THREE.Mesh(new THREE.TorusGeometry(profile.width * radius, .035, 5, 14), stitchMaterial);
+      wrap.rotation.x = Math.PI / 2;
+      wrap.position.y = profile.height * y;
+      group.add(wrap);
+    }
+    return group;
+  }
+  if (profile.shape === 'felt-block') {
+    const block = new THREE.Mesh(new THREE.BoxGeometry(profile.width, profile.height, .72), material);
+    group.add(block);
+    for (const side of [-1, 1]) {
+      const stitch = new THREE.Mesh(new THREE.BoxGeometry(.045, profile.height * .62, .76), stitchMaterial);
+      stitch.position.x = side * profile.width * .26;
+      group.add(stitch);
+    }
+    const seam = new THREE.Mesh(new THREE.BoxGeometry(profile.width, .04, .76), stitchMaterial);
+    seam.position.y = profile.height * .18;
+    group.add(seam);
+    return group;
+  }
+  if (profile.shape === 'button-bomb') {
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(profile.width * .42, profile.width * .48, profile.height, 12), material);
+    group.add(body);
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(profile.width * .4, .045, 6, 16), stitchMaterial);
+    rim.rotation.x = Math.PI / 2;
+    rim.position.y = profile.height * .34;
+    group.add(rim);
+    for (let hole = 0; hole < 4; hole++) {
+      const button = new THREE.Mesh(new THREE.CylinderGeometry(.045, .045, .05, 8), stitchMaterial);
+      button.rotation.x = Math.PI / 2;
+      button.position.set(Math.cos(hole * Math.PI / 2) * profile.width * .2, 0, .36);
+      group.add(button);
+    }
+    return group;
+  }
+  // thread-arch: a taut felt thread suspended at the beam's collision height.
+  const thread = new THREE.Mesh(new THREE.CylinderGeometry(.07, .07, profile.width, 8), material);
+  thread.rotation.z = Math.PI / 2;
+  group.add(thread);
+  for (const side of [-1, 1]) {
+    const knot = new THREE.Mesh(new THREE.SphereGeometry(.1, 7, 6), stitchMaterial);
+    knot.position.x = side * profile.width * .5;
+    group.add(knot);
+  }
+  return group;
+}
+
 function spawnObstacles() {
-  const profile = getHazardProfile(level.hazardStyle);
-  for (const [distanceAlongTrack, count] of level.obstacles) {
+  for (const [distanceAlongTrack, count, style] of level.obstacles) {
+    const profile = getObstacleProfile(level, [distanceAlongTrack, count, style]);
     for (let index = 0; index < count; index++) {
-      let geometry;
-      switch (profile.shape) {
-        case 'cylinder':
-        case 'stump':
-        case 'pipe':
-          geometry = new THREE.CylinderGeometry(profile.width * .38, profile.width * .48, profile.height, 7);
-          break;
-        case 'panel':
-        case 'block':
-        case 'beam':
-        case 'banner':
-          geometry = new THREE.BoxGeometry(profile.width, profile.height, profile.shape === 'beam' ? .14 : .72);
-          break;
-        case 'debris':
-        case 'asteroid':
-          geometry = new THREE.DodecahedronGeometry(profile.width * .47, 0);
-          break;
-        case 'gear':
-        case 'corona':
-          geometry = new THREE.TorusGeometry(profile.width * .35, profile.width * .12, 6, 12);
-          break;
-        case 'shard':
-          geometry = new THREE.OctahedronGeometry(profile.width * .48, 0);
-          break;
-        case 'cane':
-          geometry = new THREE.CylinderGeometry(profile.width * .2, profile.width * .35, profile.height, 7);
-          break;
-        default:
-          geometry = new THREE.ConeGeometry(profile.width * .5, profile.height, profile.shape === 'coral' ? 5 : 4);
-          geometry.rotateY(Math.PI / 4);
+      let mesh;
+      if (['yarn-spike', 'felt-block', 'button-bomb', 'thread-arch'].includes(profile.shape)) {
+        mesh = createWoolHazard(profile);
+      } else {
+        let geometry;
+        switch (profile.shape) {
+          case 'cylinder':
+          case 'stump':
+          case 'pipe':
+            geometry = new THREE.CylinderGeometry(profile.width * .38, profile.width * .48, profile.height, 7);
+            break;
+          case 'panel':
+          case 'block':
+          case 'beam':
+          case 'banner':
+            geometry = new THREE.BoxGeometry(profile.width, profile.height, profile.shape === 'beam' ? .14 : .72);
+            break;
+          case 'debris':
+          case 'asteroid':
+            geometry = new THREE.DodecahedronGeometry(profile.width * .47, 0);
+            break;
+          case 'gear':
+          case 'corona':
+            geometry = new THREE.TorusGeometry(profile.width * .35, profile.width * .12, 6, 12);
+            break;
+          case 'shard':
+            geometry = new THREE.OctahedronGeometry(profile.width * .48, 0);
+            break;
+          case 'cane':
+            geometry = new THREE.CylinderGeometry(profile.width * .2, profile.width * .35, profile.height, 7);
+            break;
+          default:
+            geometry = new THREE.ConeGeometry(profile.width * .5, profile.height, profile.shape === 'coral' ? 5 : 4);
+            geometry.rotateY(Math.PI / 4);
+        }
+        mesh = new THREE.Mesh(geometry, hazardMaterial());
+        if (profile.shape === 'gear' || profile.shape === 'corona') mesh.rotation.x = Math.PI / 2;
+        if (profile.shape === 'shard') mesh.scale.y = 1.45;
       }
-      const color = GAMEPLAY_COLORS.hazard;
-      const material = new THREE.MeshStandardMaterial({
-        color,
-        emissive: color,
-        emissiveIntensity: .9,
-        metalness: .2,
-        roughness: .34,
-        flatShading: true,
-      });
       const center = distanceAlongTrack - 3 + index * 1.28;
-      const mesh = new THREE.Mesh(geometry, material);
       mesh.position.set(center, laneY + (profile.offsetY ?? profile.height / 2), 0);
-      if (profile.shape === 'gear' || profile.shape === 'corona') mesh.rotation.x = Math.PI / 2;
-      if (profile.shape === 'shard') mesh.scale.y = 1.45;
       scene.add(mesh);
       obstacles.push({ mesh, center, width: profile.width, clearanceHeight: profile.clearanceHeight });
     }
@@ -796,6 +877,76 @@ function createPortalLabelSprite(type, color) {
   const sprite = new THREE.Sprite(material);
   sprite.scale.set(3.6, 1.1, 1);
   return sprite;
+}
+
+function createEnemyObject(type) {
+  const color = GAMEPLAY_COLORS.hazard;
+  const material = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: .6, metalness: .18, roughness: .35, flatShading: true });
+  const group = new THREE.Group();
+  if (type === 'moth') {
+    const body = new THREE.Mesh(new THREE.CapsuleGeometry(.1, .3, 4, 8), material);
+    group.add(body);
+    const wings = [];
+    const wingMaterial = new THREE.MeshStandardMaterial({
+      color: 0xf6e6d8,
+      emissive: color,
+      emissiveIntensity: .22,
+      metalness: .05,
+      roughness: .8,
+      side: THREE.DoubleSide,
+      flatShading: true,
+    });
+    for (const side of [-1, 1]) {
+      const wing = new THREE.Mesh(new THREE.CircleGeometry(.32, 7), wingMaterial);
+      wing.rotation.y = Math.PI / 2;
+      wing.scale.set(1.15, .72, 1);
+      wing.position.x = side * .18;
+      group.add(wing);
+      wings.push(wing);
+    }
+    group.userData.wings = wings;
+    return group;
+  }
+  if (type === 'beetle') {
+    const body = new THREE.Group();
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(.42, 9, 6), material);
+    dome.scale.set(1.05, .68, .92);
+    body.add(dome);
+    const seam = new THREE.Mesh(new THREE.BoxGeometry(.035, .055, .78), new THREE.MeshBasicMaterial({ color: 0x1a1014 }));
+    seam.position.y = .26;
+    body.add(seam);
+    for (let leg = 0; leg < 6; leg++) {
+      const side = leg % 2 === 0 ? -1 : 1;
+      const row = Math.floor(leg / 2) - 1;
+      const limb = new THREE.Mesh(new THREE.BoxGeometry(.28, .045, .045), material);
+      limb.position.set(side * .36, -.24, row * .18);
+      limb.rotation.z = side * .35;
+      body.add(limb);
+    }
+    group.add(body);
+    group.userData.body = body;
+    return group;
+  }
+  if (type === 'bunny') {
+    const body = new THREE.Group();
+    const torso = new THREE.Mesh(new THREE.DodecahedronGeometry(.3, 0), material);
+    torso.scale.set(.84, .8, .8);
+    body.add(torso);
+    for (const side of [-1, 1]) {
+      const ear = new THREE.Mesh(new THREE.CapsuleGeometry(.055, .24, 3, 6), material);
+      ear.position.set(side * .12, .3, 0);
+      ear.rotation.z = side * .1;
+      body.add(ear);
+    }
+    group.add(body);
+    group.userData.body = body;
+    return group;
+  }
+  const mesh = type === 'drone'
+    ? new THREE.Mesh(new THREE.OctahedronGeometry(.43, 0), material)
+    : new THREE.Mesh(new THREE.DodecahedronGeometry(.42, 0), material);
+  group.add(mesh);
+  return group;
 }
 
 function spawnFinishGate() {
@@ -887,7 +1038,75 @@ function spawnCheckpointFlag(distanceAlongTrack) {
   checkpointFlags.push({ center: group.position.x, width: 2, height: 2.2, mesh: group });
 }
 
+function createThreadArch() {
+  const group = new THREE.Group();
+  const accent = level.palette?.accent ?? level.color;
+  const felt = new THREE.MeshStandardMaterial({ color: accent, emissive: accent, emissiveIntensity: .12, metalness: .05, roughness: .95 });
+  const trim = new THREE.MeshStandardMaterial({ color: level.palette?.platform ?? 0xd8ccc0, roughness: .9 });
+  const radius = 1.7;
+  for (const side of [-1, 1]) {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(.13, .16, 2.1, 8), felt);
+    post.position.set(side * radius, 1.05, 0);
+    group.add(post);
+  }
+  const arch = new THREE.Mesh(new THREE.TorusGeometry(radius, .15, 7, 22, Math.PI), felt);
+  arch.position.y = 2.1;
+  group.add(arch);
+  const thread = new THREE.Mesh(new THREE.TorusGeometry(radius - .12, .035, 5, 22, Math.PI), trim);
+  thread.position.y = 2.1;
+  group.add(thread);
+  return group;
+}
+
+// Decorative arches are spawned with the course and scroll with it, but they are never pushed to
+// obstacles, gaps, platforms, portals, enemies or collectibles, so no collision code can see them.
+function spawnSceneryObjects() {
+  checkpointDistance = safeCheckpointDistance(level);
+  for (const anchor of level.decor?.arches ?? []) {
+    const at = anchor === 'finish' ? finishGateDistance(level) : checkpointDistance;
+    if (!Number.isFinite(at)) continue;
+    const mesh = createThreadArch();
+    mesh.position.set(at - 3, laneY, -.2);
+    scene.add(mesh);
+    sceneryObjects.push({ center: at - 3, width: 3.6, mesh });
+  }
+}
+
+function spawnPomPoms() {
+  const count = level.decor?.pomPoms ?? 0;
+  const accent = new THREE.Color(level.palette?.accent ?? level.color);
+  const warm = new THREE.Color(0xffd9c2);
+  for (let index = 0; index < count; index++) {
+    const color = index % 2 === 0 ? accent : warm;
+    const mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(.62 + (index % 3) * .18, 10, 8),
+      new THREE.MeshStandardMaterial({
+        color,
+        emissive: color,
+        emissiveIntensity: .18,
+        roughness: .95,
+        metalness: 0,
+      }),
+    );
+    mesh.position.set(-14 + index * 11.5, laneY + 1.3 + (index % 2) * .7, -7.5 - (index % 4) * 1.35);
+    mesh.scale.set(1, .88, .55);
+    sceneryGroup.add(mesh);
+    pomPoms.push({ mesh, baseX: mesh.position.x, baseY: mesh.position.y, phase: index * 1.7 });
+  }
+}
+
+function updateScenery(dt) {
+  if (reducedMotion) return;
+  for (const pomPom of pomPoms) {
+    const span = 46;
+    const x = ((pomPom.baseX - distance * .12 + 18) % span + span) % span - 18;
+    pomPom.mesh.position.x = x;
+    pomPom.mesh.position.y = pomPom.baseY + Math.sin(simulationTime * 1.1 + pomPom.phase) * .045;
+  }
+}
+
 function spawnCourseFeatures() {
+  checkpointDistance = safeCheckpointDistance(level);
   for (const definition of level.gaps ?? []) {
     const center = definition.at - 3 + definition.width / 2;
     const hole = new THREE.Mesh(
@@ -1021,22 +1240,30 @@ function spawnCourseFeatures() {
 
   for (const definition of level.enemies ?? []) {
     const type = definition.type ?? 'crawler';
-    const width = type === 'drone' ? .72 : .9;
-    const height = type === 'drone' ? .68 : .58;
-    const color = GAMEPLAY_COLORS.hazard;
-    const geometry = type === 'drone' ? new THREE.OctahedronGeometry(.43, 0) : new THREE.DodecahedronGeometry(.42, 0);
-    const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: .6, metalness: .18, roughness: .35, flatShading: true }));
+    const profile = getEnemyProfile(type);
+    const mesh = createEnemyObject(type);
     const center = definition.at - 3;
     const perch = (level.platforms ?? []).find((platform) => (
       platform.kind === 'perch'
       && Math.abs(platform.at + platform.width / 2 - definition.at) < .01
     ));
-    const altitude = type === 'drone'
-      ? definition.height ?? 1.12
-      : (perch?.height ?? 0) + .29;
+    const altitude = profile.flyer
+      ? definition.height ?? profile.altitude
+      : (perch?.height ?? 0) + profile.height / 2;
     mesh.position.set(center, laneY + altitude, -.05);
+    mesh.userData.rotationSpeed = profile.flyer ? 1.7 : .8;
     scene.add(mesh);
-    enemies.push({ center, type, width, height, baseY: mesh.position.y, phase: center * .11, mesh });
+    enemies.push({
+      center,
+      type,
+      width: profile.width,
+      height: profile.height,
+      baseY: mesh.position.y,
+      phase: center * .11,
+      mesh,
+      body: mesh.userData.body ?? null,
+      wings: mesh.userData.wings ?? null,
+    });
   }
 
   for (const definition of level.collectibles ?? []) {
@@ -1060,7 +1287,7 @@ function spawnCourseFeatures() {
     collectibles.push({ center, height, mesh: group });
   }
   spawnFinishGate();
-  checkpointDistance = safeCheckpointDistance(level);
+  spawnSceneryObjects();
   if (checkpointDistance !== null) spawnCheckpointFlag(checkpointDistance);
   updateCollectibleHud();
 }
@@ -1088,7 +1315,7 @@ function resumeCourseFromCheckpoint() {
       if (feature.center <= player.position.x + 1e-6) drop(feature, index, group);
     }
   };
-  for (const group of [obstacles, gaps, platforms, portals, enemies, collectibles, finishGates, checkpointFlags]) {
+  for (const group of [obstacles, gaps, platforms, portals, enemies, collectibles, finishGates, checkpointFlags, sceneryObjects]) {
     shiftGroup(group);
   }
   distance = shift;
@@ -1108,6 +1335,7 @@ function resumeCourseFromCheckpoint() {
 
 function renderScenery() {
   if (!sceneryGroup) return;
+  pomPoms.length = 0;
   for (const part of [...sceneryGroup.children]) {
     sceneryGroup.remove(part);
     part.geometry?.dispose();
@@ -1206,6 +1434,7 @@ function renderScenery() {
   }
   accent.dispose();
   muted.dispose();
+  spawnPomPoms();
 }
 
 function updateTheme() {
@@ -1455,6 +1684,7 @@ function reset({ keepAttempt = false } = {}) {
   while (collectibles.length) removeMeshFeature(collectibles[collectibles.length - 1], collectibles.length - 1, collectibles);
   while (finishGates.length) removeMeshFeature(finishGates[finishGates.length - 1], finishGates.length - 1, finishGates);
   while (checkpointFlags.length) removeMeshFeature(checkpointFlags[checkpointFlags.length - 1], checkpointFlags.length - 1, checkpointFlags);
+  while (sceneryObjects.length) removeMeshFeature(sceneryObjects[sceneryObjects.length - 1], sceneryObjects.length - 1, sceneryObjects);
   collectedCount = 0;
   updateCollectibleHud();
   if (finishChip) finishChip.hidden = true;
@@ -1726,6 +1956,8 @@ if (import.meta.env.DEV) {
       collectibles: collectibles.length,
       finishGates: finishGates.length,
       checkpointFlags: checkpointFlags.length,
+      sceneryObjects: sceneryObjects.length,
+      pomPoms: pomPoms.length,
     },
     checkpoint: {
       distance: checkpointDistance,
@@ -1741,6 +1973,7 @@ if (import.meta.env.DEV) {
       collectibles: collectibles.map(({ center }) => center),
       finishGates: finishGates.map(({ center }) => center),
       checkpointFlags: checkpointFlags.map(({ center }) => center),
+      sceneryObjects: sceneryObjects.map(({ center }) => center),
     },
     playerX: player?.position.x ?? null,
     playerY: player?.position.y ?? null,
