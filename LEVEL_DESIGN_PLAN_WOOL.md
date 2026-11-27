@@ -65,11 +65,18 @@ Run `npm run levels:compose:wool` to deterministically rebuild every Wool Road l
 - **Audio:** 122 BPM with the existing sixteen-step procedural motif.
 
 ### 08 — Spool Street (104 units)
-- **Signature:** A spike group into an open gap.
+- **Signature:** A pad launches the opening block, a float picks up the drop, and a kerb carries the long straight past a bunny and a beetle.
 - **Rhythm:** 1 + 2 + 2 + 2 + 2 input beats; target 0.74 inputs/s, measured 0.74; 4 open gaps and 1 kerb and 1 bounce pad.
-- **Design hook:** Spool Street lays out 4 spike groups, 4 open gaps, 1 portal (float), 1 crawler and 1 shard.
+- **Design hook:** Spool Street chains a pad at 18 into a float at 37 and a kerb at 40, opens four gaps, and threads spike, yarn spike and felt block between a bunny at 27.2 and a beetle at 93 behind a five-shard arc.
 - **Layout:** Hazard groups at 34.99 [spike], 59.78 [yarn-spike], 73.51 [felt-block]; gaps at 10.2 (2.5), 51.99 (2.5), 77.37 (2.5), 85.21 (2.5); platforms: kerb at 40, width 4.5, height 0.45; bounce at 18, width 3.5, height 0.35; portals: float at 37.03; enemies: beetle at 93, bunny at 27.2; shards: 10.04 (height 1.85), 42.25 (height 1.65), 19.97 (height 1.21, arc of 3), 20.9 (height 1.3), 21.96 (height 1.24). arches: none; pom-poms: 4
 - **Audio:** 124 BPM with the existing sixteen-step procedural motif.
+
+### 09 — Cardigan Cove (108 units)
+- **Signature:** A spike run of 4 hazard groups over 4 open gaps, every landing clear.
+- **Rhythm:** 1 + 1 + 1 + 2 + 2 + 2 input beats; target 0.76 inputs/s, measured 0.75; 4 open gaps and 1 kerb, 1 island and 1 bounce pad.
+- **Design hook:** Cardigan Cove lays out 4 spike groups, 4 open gaps, 1 portal (dash), 1 crawler and 1 shard.
+- **Layout:** Hazard groups at 43.86 [spike], 65.26 [yarn-spike], 81.07 [felt-block]; gaps at 27.09 (4.9), 55.48 (2.5), 73.19 (2.5), 89 (2.5); platforms: kerb at 34.5, width 4.5, height 0.45; island at 27.09, width 2.5, height 0.5; bounce at 14.5, width 3.5, height 0.35; portals: dash at 45.25; enemies: beetle at 96.88, bunny at 10.32; shards: 9.15 (height 1.85), 36.75 (height 1.65), 28.34 (height 1.7), 16.48 (height 1.21, arc of 3), 17.42 (height 1.3), 18.49 (height 1.24). arches: none; pom-poms: 4
+- **Audio:** 126 BPM with the existing sixteen-step procedural motif.
 
 ## Playtest checklist
 
