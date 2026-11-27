@@ -327,6 +327,32 @@ function placeBouncePad(level, index, catalog, config) {
   return null;
 }
 
+// When every rest is already taken by a kerb, shelf, perch or island, the pad loses the race for
+// space even though it is the campaign's signature object. Converting a low platform in place keeps
+// the lane passable (a pad is .10 lower than a kerb) and is verified like any other placement —
+// including the half-reach clear-track rule, which is why the candidate list is rebuilt here instead
+// of trusting the platform's old position.
+function convertPlatformToPad(level, index, catalog, config) {
+  const width = 3.5;
+  const legal = candidatePlatformSpots(level, width / 2, (at) => .5 * jumpReach(speedAt(level, at)))
+    .map(({ at }) => at);
+  const candidates = level.platforms
+    .filter(({ kind }) => kind !== 'bounce')
+    .filter((platform) => legal.some((center) => center >= platform.at && center <= platform.at + platform.width))
+    .sort((a, b) => a.width - b.width);
+  for (const platform of candidates) {
+    const center = legal.find((spot) => spot >= platform.at && spot <= platform.at + platform.width);
+    const trial = clone(level);
+    trial.platforms = trial.platforms.map((entry) => (
+      entry.at === platform.at && entry.kind === platform.kind
+        ? { at: round(center - width / 2), width, height: .35, kind: 'bounce' }
+        : entry
+    ));
+    if (keep(catalog, trial, index, config)) return trial;
+  }
+  return null;
+}
+
 function placeBouncePads(level, index, catalog, config) {
   let next = level;
   const quota = bouncePadQuota(index, config);
@@ -337,6 +363,11 @@ function placeBouncePads(level, index, catalog, config) {
     // that do fit still obey the clear-track rule and the whole layout still faces every gate, so
     // stop here instead of aborting the composition.
     if (!placedLevel) {
+      const converted = pad === 0 ? convertPlatformToPad(next, index, catalog, config) : null;
+      if (converted) {
+        next = converted;
+        continue;
+      }
       if (process.env.COMPOSE_DEBUG) {
         console.log(`${next.id}: only ${pad} of ${quota} bounce pads fit a rest`);
       }
@@ -708,6 +739,7 @@ function applyWoolVocabulary(level, index, catalog, config) {
     ? vocabulary.arcs
     : Array.from({ length: quota.arcs[1] }, () => ({ count: 3 }));
   const usedTimes = new Set();
+  let arcPlaced = false;
   for (const spec of specs) {
     // A named source is a request, not a guarantee: a portal may already own that beat. Try the
     // gap first, then the pad, then any jump, and accept the first placement the simulation backs.
@@ -721,7 +753,26 @@ function applyWoolVocabulary(level, index, catalog, config) {
         config,
         usedTimes,
       );
-      if (placed) { next = placed; break; }
+      if (placed) { next = placed; arcPlaced = true; break; }
+    }
+  }
+  // A course whose scattered shards sit in the way of every arc would silently ship without one.
+  // An arc is the richer object and it is sampled from the trajectory before it is accepted, so
+  // trade the scattered shards for it rather than leaving the tier quota unmet.
+  if (!arcPlaced) {
+    for (const spec of specs) {
+      for (const source of (spec.source ? [spec.source] : ['gap', 'pad', 'jump'])) {
+        const placed = placeArc(
+          next,
+          { ...spec, source, replaceShards: true },
+          index,
+          catalog,
+          config,
+          usedTimes,
+        );
+        if (placed) { next = placed; arcPlaced = true; break; }
+      }
+      if (arcPlaced) break;
     }
   }
   if (process.env.COMPOSE_DEBUG) console.log(level.id, 'arcs after', JSON.stringify(next.collectibles));
@@ -775,7 +826,11 @@ function applyFeaturePass(catalog, base, index, config) {
 
   // 2. Rebuild the platform mix from the archetype plan. Every placement is verified as a whole.
   level.platforms = [];
-  for (const slot of desiredPlatforms(index)) {
+  // Wool courses keep one rest free for the plush pad: it is the campaign's signature object, and a
+  // pad that loses the race for space to a kerb is a worse course than one with one kerb fewer.
+  const slots = desiredPlatforms(index);
+  if (config.id === 'wool') slots.pop();
+  for (const slot of slots) {
     const before = level;
     let next = null;
     if (slot === 'kerb') {

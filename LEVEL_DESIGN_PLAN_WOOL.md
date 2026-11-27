@@ -45,59 +45,66 @@ Run `npm run levels:compose:wool` to deterministically rebuild every Wool Road l
 
 ### 05 — Loom Lake (92 units)
 - **Signature:** A stitched kerb lifts the near shore, a plush pad skips the lake's middle hole, and four silhouettes crowd the far bank.
-- **Rhythm:** 1 + 2 + 2 + 2 + 1 input beats; target 0.68 inputs/s, measured 0.71; 3 open gaps and 1 kerb and 1 bounce pad.
+- **Rhythm:** 1 + 2 + 2 + 2 + 1 input beats; target 0.68 inputs/s, measured 0.71; 3 open gaps and 1 bounce pad.
 - **Design hook:** Loom Lake lays four hazard groups across spike, yarn spike, felt block and spike, opens three gaps, raises a kerb at 15 and a pad at 40, adds one beetle and threads a five-shard arc over the second hole.
-- **Layout:** Hazard groups at 34.64 [spike], 59.45 [yarn-spike], 74.6 [felt-block], 82.16 [spike]; gaps at 27.06 (2.5), 51.86 (2.5), 67.02 (2.5); platforms: kerb at 15, width 4.5, height 0.45; bounce at 40, width 3.5, height 0.35; portals: none; enemies: bunny at 9.84; shards: 8.72 (height 1.85), 17.25 (height 1.65), 25.28 (height 1.24, arc of 3), 26.92 (height 1.85), 28.49 (height 1.23). arches: none; pom-poms: 3
+- **Layout:** Hazard groups at 34.64 [spike], 59.45 [yarn-spike], 74.6 [felt-block], 82.16 [spike]; gaps at 27.06 (2.5), 51.86 (2.5), 67.02 (2.5); platforms: bounce at 15.5, width 3.5, height 0.35; portals: none; enemies: bunny at 9.84; shards: 8.72 (height 1.85), 25.28 (height 1.24, arc of 3), 26.92 (height 1.85), 28.49 (height 1.23). arches: none; pom-poms: 3
 - **Audio:** 118 BPM with the existing sixteen-step procedural motif.
 
 ### 06 — Patchwork Square (96 units)
 - **Signature:** A pad pops you over the square's first hole, a float carries the second crossing, and a beetle and a bunny share the long middle stretch.
-- **Rhythm:** 2 + 2 + 2 + 2 input beats; target 0.70 inputs/s, measured 0.69; 4 open gaps and 1 kerb and 1 bounce pad.
+- **Rhythm:** 2 + 2 + 2 + 2 input beats; target 0.70 inputs/s, measured 0.69; 4 open gaps and 1 bounce pad.
 - **Design hook:** Patchwork Square threads four gaps around a pad at 24.5 and a kerb at 70, puts a float portal at 40.3, and fills the lane with two spike groups, a beetle at 34.6 and a bunny at 79.9 behind a five-shard arc.
-- **Layout:** Hazard groups at 17.61 (double) [spike], 62.92 (double) [yarn-spike]; gaps at 9.96 (2.5), 38.29 (2.5), 55.28 (2.5), 83.54 (2.5); platforms: kerb at 70, width 4.5, height 0.45; bounce at 24.5, width 3.5, height 0.35; portals: float at 40.33; enemies: beetle at 34.59, bunny at 79.91; shards: 9.8 (height 1.85), 72.25 (height 1.65), 26.42 (height 1.21, arc of 3), 27.32 (height 1.3), 28.36 (height 1.24). arches: none; pom-poms: 4
+- **Layout:** Hazard groups at 17.61 (double) [spike], 62.92 (double) [yarn-spike]; gaps at 9.96 (2.5), 38.29 (2.5), 55.28 (2.5), 83.54 (2.5); platforms: bounce at 70.5, width 3.5, height 0.35; portals: float at 40.33; enemies: beetle at 34.59, bunny at 79.91; shards: 9.8 (height 1.85), 72.42 (height 1.21, arc of 3), 73.32 (height 1.3), 74.35 (height 1.24). arches: none; pom-poms: 4
 - **Audio:** 120 BPM with the existing sixteen-step procedural motif.
 
 ### 07 — Bobble Bridge (100 units)
 - **Signature:** A bunny opens the bridge, a kerb lifts the first span, and a pad into a spring portal hands you across the middle.
-- **Rhythm:** 1 + 2 + 1 + 1 + 2 + 2 input beats; target 0.72 inputs/s, measured 0.76; 4 open gaps and 1 kerb and 1 bounce pad.
+- **Rhythm:** 1 + 2 + 1 + 1 + 2 + 2 input beats; target 0.72 inputs/s, measured 0.76; 4 open gaps and 1 bounce pad.
 - **Design hook:** Bobble Bridge spans four gaps with a kerb at 15, a pad at 38.5 and a spring portal at 49.3, then closes on spike, yarn spike and felt block behind a beetle at 89.1 and a five-shard arc.
-- **Layout:** Hazard groups at 34.59 [spike], 58.21 [yarn-spike], 73.67 [felt-block]; gaps at 26.88 (2.5), 48.08 (2.5), 65.96 (2.5), 81.41 (2.5); platforms: kerb at 15, width 4.5, height 0.45; bounce at 38.5, width 3.5, height 0.35; portals: spring at 49.29; enemies: beetle at 89.12, bunny at 10.08; shards: 8.91 (height 1.85), 17.25 (height 1.65), 24.99 (height 1.24, arc of 3), 26.67 (height 1.85), 28.28 (height 1.23). arches: none; pom-poms: 4
+- **Layout:** Hazard groups at 34.59 [spike], 58.21 [yarn-spike], 73.67 [felt-block]; gaps at 26.88 (2.5), 48.08 (2.5), 65.96 (2.5), 81.41 (2.5); platforms: bounce at 15.5, width 3.5, height 0.35; portals: spring at 49.29; enemies: beetle at 89.12, bunny at 10.08; shards: 8.91 (height 1.85), 24.99 (height 1.24, arc of 3), 26.67 (height 1.85), 28.28 (height 1.23). arches: none; pom-poms: 4
 - **Audio:** 122 BPM with the existing sixteen-step procedural motif.
 
 ### 08 — Spool Street (104 units)
 - **Signature:** A pad launches the opening block, a float picks up the drop, and a kerb carries the long straight past a bunny and a beetle.
-- **Rhythm:** 1 + 2 + 2 + 2 + 2 input beats; target 0.74 inputs/s, measured 0.74; 4 open gaps and 1 kerb and 1 bounce pad.
+- **Rhythm:** 1 + 2 + 2 + 2 + 2 input beats; target 0.74 inputs/s, measured 0.74; 4 open gaps and 1 bounce pad.
 - **Design hook:** Spool Street chains a pad at 18 into a float at 37 and a kerb at 40, opens four gaps, and threads spike, yarn spike and felt block between a bunny at 27.2 and a beetle at 93 behind a five-shard arc.
-- **Layout:** Hazard groups at 34.99 [spike], 59.78 [yarn-spike], 73.51 [felt-block]; gaps at 10.2 (2.5), 51.99 (2.5), 77.37 (2.5), 85.21 (2.5); platforms: kerb at 40, width 4.5, height 0.45; bounce at 18, width 3.5, height 0.35; portals: float at 37.03; enemies: beetle at 93, bunny at 27.2; shards: 10.04 (height 1.85), 42.25 (height 1.65), 19.97 (height 1.21, arc of 3), 20.9 (height 1.3), 21.96 (height 1.24). arches: none; pom-poms: 4
+- **Layout:** Hazard groups at 34.99 [spike], 59.78 [yarn-spike], 73.51 [felt-block]; gaps at 10.2 (2.5), 51.99 (2.5), 77.37 (2.5), 85.21 (2.5); platforms: bounce at 18, width 3.5, height 0.35; portals: float at 37.03; enemies: beetle at 93, bunny at 27.2; shards: 10.04 (height 1.85), 19.97 (height 1.21, arc of 3), 20.9 (height 1.3), 21.96 (height 1.24). arches: none; pom-poms: 4
 - **Audio:** 124 BPM with the existing sixteen-step procedural motif.
 
 ### 09 — Cardigan Cove (108 units)
 - **Signature:** A pad and a stitched island break the wide cove crossing, a kerb lifts the middle, and a dash portal flattens the back straight.
-- **Rhythm:** 1 + 1 + 1 + 2 + 2 + 2 input beats; target 0.76 inputs/s, measured 0.75; 4 open gaps and 1 kerb, 1 island and 1 bounce pad.
+- **Rhythm:** 1 + 1 + 1 + 2 + 2 + 2 input beats; target 0.76 inputs/s, measured 0.75; 4 open gaps and 1 kerb and 1 bounce pad.
 - **Design hook:** Cardigan Cove opens with a pad at 14.5 and an island inside its 4.9-wide gap at 27.1, adds a kerb at 34.5 and a dash portal at 45.3, and closes on three skins, a bunny at 10.3, a beetle at 96.9 and a six-shard arc.
-- **Layout:** Hazard groups at 43.86 [spike], 65.26 [yarn-spike], 81.07 [felt-block]; gaps at 27.09 (4.9), 55.48 (2.5), 73.19 (2.5), 89 (2.5); platforms: kerb at 34.5, width 4.5, height 0.45; island at 27.09, width 2.5, height 0.5; bounce at 14.5, width 3.5, height 0.35; portals: dash at 45.25; enemies: beetle at 96.88, bunny at 10.32; shards: 9.15 (height 1.85), 36.75 (height 1.65), 28.34 (height 1.7), 16.48 (height 1.21, arc of 3), 17.42 (height 1.3), 18.49 (height 1.24). arches: none; pom-poms: 4
+- **Layout:** Hazard groups at 43.86 [spike], 65.26 [yarn-spike], 81.07 [felt-block]; gaps at 27.09 (2.5), 55.48 (2.5), 73.19 (2.5), 89 (2.5); platforms: kerb at 34.5, width 4.5, height 0.45; bounce at 15.5, width 3.5, height 0.35; portals: dash at 45.25; enemies: beetle at 96.88, bunny at 10.32; shards: 9.15 (height 1.85), 36.75 (height 1.65), 25.08 (height 1.24, arc of 3), 26.8 (height 1.85), 28.45 (height 1.23). arches: none; pom-poms: 4
 - **Audio:** 126 BPM with the existing sixteen-step procedural motif.
 
 ### 10 — Tassel Terrace (112 units)
 - **Signature:** A float, a pad and a spring hand you along the terrace, and the widest gap is stitched with an island under the spring landing.
-- **Rhythm:** 2 + 2 + 2 + 2 + 2 input beats; target 0.78 inputs/s, measured 0.78; 4 open gaps and 1 kerb, 1 island and 1 bounce pad.
+- **Rhythm:** 2 + 2 + 2 + 2 + 2 input beats; target 0.78 inputs/s, measured 0.78; 4 open gaps and 1 kerb and 1 bounce pad.
 - **Design hook:** Tassel Terrace runs a float at 21.3, a pad at 26 and a spring at 66.4 over four gaps, stitches the 4.9-wide hole with an island at 64.3, and closes on four hazard skins, a bunny, a beetle and a six-shard arc.
-- **Layout:** Hazard groups at 43.35 [spike], 60.32 [yarn-spike], 76.7 [felt-block], 84.68 [spike]; gaps at 10.44 (2.5), 35.38 (2.5), 64.27 (4.9), 92.79 (2.5); platforms: kerb at 49.5, width 4.5, height 0.45; island at 64.27, width 2.5, height 0.5; bounce at 26, width 3.5, height 0.35; portals: float at 21.3, spring at 66.38; enemies: beetle at 100.76, bunny at 18.41; shards: 10.23 (height 1.85), 51.75 (height 1.65), 65.52 (height 1.7), 27.55 (height 1.23, arc of 3), 28.2 (height 1.61), 28.78 (height 1.87). arches: none; pom-poms: 4
+- **Layout:** Hazard groups at 43.35 [spike], 60.32 [yarn-spike], 76.7 [felt-block], 84.68 [spike]; gaps at 10.44 (2.5), 35.38 (2.5), 64.27 (2.5), 92.79 (2.5); platforms: kerb at 49.5, width 4.5, height 0.45; bounce at 26, width 3.5, height 0.35; portals: float at 21.3, spring at 66.38; enemies: beetle at 100.76, bunny at 18.41; shards: 10.23 (height 1.85), 51.75 (height 1.65), 27.55 (height 1.23, arc of 3), 28.2 (height 1.61), 28.78 (height 1.87). arches: none; pom-poms: 4
 - **Audio:** 128 BPM with the existing sixteen-step procedural motif.
 
 ### 11 — Yarnstorm Ridge (116 units)
 - **Signature:** A pad chain over the ridge — pad, stitched island, pad — with a float bridging the wide hole and a moth on the last stretch.
-- **Rhythm:** 1 + 1 + 1 + 2 + 2 + 2 + 2 input beats; target 0.80 inputs/s, measured 0.83; 4 open gaps and 1 kerb, 1 island and 2 bounce pads.
+- **Rhythm:** 1 + 1 + 1 + 2 + 2 + 2 + 2 input beats; target 0.80 inputs/s, measured 0.83; 4 open gaps and 1 kerb and 2 bounce pads.
 - **Design hook:** Yarnstorm Ridge chains two pads at 32 and 52.5 around an island in its 4.9-wide hole, adds a float at 45.8 and a kerb at 16.5, and fills the lane with five groups across four skins, a beetle at 10.6, a moth at 104.6 and a six-shard arc.
-- **Layout:** Hazard groups at 27.28 (double) [spike], 59.1 [yarn-spike], 60.1 (double) [felt-block], 76.28 [button-bomb], 84.39 [spike]; gaps at 44 (4.9), 68.21 (2.5), 88.46 (2.5), 96.57 (2.5); platforms: kerb at 16.5, width 4.5, height 0.45; island at 44, width 2.5, height 0.5; bounce at 32, width 3.5, height 0.35; bounce at 52.5, width 3.5, height 0.35; portals: float at 45.81; enemies: moth at 104.64, beetle at 10.56; shards: 9.26 (height 1.85), 18.75 (height 1.65), 45.25 (height 1.7), 34.03 (height 1.21, arc of 3), 35.05 (height 1.29), 36.08 (height 1.24). arches: finish; pom-poms: 4
+- **Layout:** Hazard groups at 27.28 (double) [spike], 59.1 [yarn-spike], 60.1 (double) [felt-block], 76.28 [button-bomb], 84.39 [spike]; gaps at 44 (2.5), 68.21 (2.5), 88.46 (2.5), 96.57 (2.5); platforms: kerb at 16.5, width 4.5, height 0.45; bounce at 33.5, width 3.5, height 0.35; bounce at 52.5, width 3.5, height 0.35; portals: float at 45.81; enemies: moth at 104.64, beetle at 10.56; shards: 9.26 (height 1.85), 18.75 (height 1.65), 41.8 (height 1.24, arc of 3), 43.56 (height 1.85), 45.25 (height 1.23), 35.49 (height 1.21, arc of 3), 36.52 (height 1.29), 37.55 (height 1.24). arches: finish; pom-poms: 4
 - **Audio:** 132 BPM with the existing sixteen-step procedural motif.
 
 ### 12 — Tangled Thicket (120 units)
-- **Signature:** A spike group into an open gap.
-- **Rhythm:** 1 + 1 + 1 + 2 + 2 + 2 + 2 input beats; target 0.83 inputs/s, measured 0.82; 4 open gaps and 1 kerb, 1 shelf, 1 perch and 1 bounce pad.
-- **Design hook:** Tangled Thicket lays out 6 spike groups, 4 open gaps, 2 portals (spring and float), 1 drone and 1 shard.
-- **Layout:** Hazard groups at 59.88 [spike], 72.05 [yarn-spike], 84 [felt-block], 92.16 [button-bomb]; gaps at 27.59 (2.5), 63.85 (2.5), 75.79 (2.5), 100.36 (2.5); platforms: kerb at 49.5, width 4.5, height 0.45; shelf at 14.5, width 10, height 0.5; perch at 42.25, width 4.5, height 0.45; bounce at 35.5, width 3.5, height 0.35; portals: spring at 30.46, float at 65.24; enemies: moth at 108.52, beetle at 10.68, bunny at 44.5; shards: 9.38 (height 1.85), 51.75 (height 1.65), 23.95 (height 1.7), 38.2 (height 1.21, arc of 3), 39.23 (height 1.64), 40.27 (height 1.24). arches: finish; pom-poms: 4
+- **Signature:** Four platforms stack the thicket — a shelf, a pad, a perch and a kerb — while a spring and a float split the lane around three wool enemies.
+- **Rhythm:** 1 + 1 + 1 + 2 + 2 + 2 + 2 input beats; target 0.83 inputs/s, measured 0.82; 4 open gaps and 1 kerb, 1 shelf and 1 bounce pad.
+- **Design hook:** Tangled Thicket stacks a 10-wide shelf at 14.5, a pad at 35.5, a perch at 42.3 and a kerb at 49.5, splits four gaps with a spring at 30.5 and a float at 65.2, and puts a beetle, a bunny and a moth against four hazard skins and a six-shard arc.
+- **Layout:** Hazard groups at 44.5 [spike], 59.88 [yarn-spike], 72.05 [felt-block], 84 [button-bomb], 92.16 [spike]; gaps at 27.59 (2.5), 63.85 (2.5), 75.79 (2.5), 100.36 (2.5); platforms: kerb at 49.5, width 4.5, height 0.45; shelf at 14.5, width 10, height 0.5; bounce at 35.5, width 3.5, height 0.35; portals: spring at 30.46, float at 65.24; enemies: moth at 108.52, beetle at 10.68; shards: 9.38 (height 1.85), 51.75 (height 1.65), 23.95 (height 1.7), 38.2 (height 1.21, arc of 3), 39.23 (height 1.64), 40.27 (height 1.24). arches: finish; pom-poms: 4
 - **Audio:** 134 BPM with the existing sixteen-step procedural motif.
+
+### 13 — Kite String (124 units)
+- **Signature:** An island threads the opening hole, a dash portal snaps the middle, and a float drops you onto a perch held by a bunny.
+- **Rhythm:** 1 + 1 + 1 + 2 + 2 + 2 + 2 input beats; target 0.86 inputs/s, measured 0.83; 5 open gaps and 1 kerb and 1 island.
+- **Design hook:** Kite String stitches its 4.9-wide opening with an island at 10.8, runs a kerb at 18, a dash at 34.4, a perch at 63 and a float at 70, and closes on three hazard skins with a beetle, a bunny and a moth.
+- **Layout:** Hazard groups at 44.1 (double) [spike], 66.45 [yarn-spike], 83.18 [felt-block], 91.66 [button-bomb]; gaps at 10.8 (4.9), 56.22 (2.5), 74.93 (2.5), 95.67 (2.5), 104.15 (2.5); platforms: kerb at 18, width 4.5, height 0.45; island at 10.8, width 2.5, height 0.5; portals: dash at 34.44, float at 70.01; enemies: moth at 112.4, beetle at 27.45; shards: 12 (height 1.21, arc of 3), 13.27 (height 1.33), 14.55 (height 1.23). arches: finish; pom-poms: 4
+- **Audio:** 136 BPM with the existing sixteen-step procedural motif.
 
 ## Playtest checklist
 
