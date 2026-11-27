@@ -301,23 +301,27 @@ test('platform archetypes follow the tier mix', () => {
   });
 });
 
-test('every island sits inside a gap with at least 1.6 units of hole on each side', () => {
+test('an island bridges its gap from the near edge and leaves a jumpable hole after it', () => {
+  // Flush placement is the point: a grounded runner steps up onto the island at the hole's edge.
+  // Put the platform in the middle of the hole and the runner is already falling when it arrives,
+  // which is exactly the bug that made course 11 impossible.
   for (const level of levels) {
     for (const platform of level.platforms.filter(({ kind }) => kind === 'island')) {
       const gap = level.gaps.find(({ at, width }) => (
-        platform.at >= at && platform.at + platform.width <= at + width
+        platform.at >= at - 1e-6 && platform.at + platform.width <= at + width + 1e-6
       ));
       assert.ok(gap, `${level.id} island is not inside a gap`);
-      assert.ok(platform.at - gap.at >= 1.6 - 1e-9, `${level.id} island leaves less than 1.6 units before it`);
       assert.ok(
-        gap.at + gap.width - (platform.at + platform.width) >= 1.6 - 1e-9,
-        `${level.id} island leaves less than 1.6 units after it`,
+        platform.at - gap.at <= 1e-6,
+        `${level.id} island starts ${(platform.at - gap.at).toFixed(2)} units into the hole instead of flush`,
       );
-      assert.equal(platform.height, .9, `${level.id} island should be .9 high`);
-      assert.equal(platform.width, 2.5, `${level.id} island should use the six-sided prism width`);
+      const holeAfter = gap.at + gap.width - (platform.at + platform.width);
+      assert.ok(holeAfter >= 2.4 - 1e-6, `${level.id} island leaves only ${holeAfter.toFixed(2)} units of hole after it`);
+      assert.ok(platform.height <= platformTuning.maxStepHeight, `${level.id} island is taller than the step-up`);
     }
   }
 });
+
 
 test('every perch carries a crawler standing at the platform centre', () => {
   for (const level of levels) {
@@ -370,4 +374,19 @@ test('hover platforms only appear from course 15 on and use the short bob height
       assert.equal(hover.height, .45, `${level.id} hover should bob around the kerb height`);
     }
   });
+});
+
+test('no platform over a hole is taller than the step-up limit', () => {
+  // An island over a gap must be walkable: if it is taller than the step-up, the runner can neither
+  // stand on it nor cross, which made course 11 impossible to get through.
+  for (const level of levels) {
+    for (const platform of level.platforms) {
+      const overGap = level.gaps.some((gap) => platform.at < gap.at + gap.width && platform.at + platform.width > gap.at);
+      if (!overGap) continue;
+      assert.ok(
+        platform.height <= platformTuning.maxStepHeight,
+        `${level.id} has a ${platform.height}-high ${platform.kind} over a gap (step-up is ${platformTuning.maxStepHeight})`,
+      );
+    }
+  }
 });

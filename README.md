@@ -1,6 +1,6 @@
 # Enrique Dash
 
-**Current test version: 0.9.1** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
+**Current test version: 0.9.2** — a touch-first Three.js rhythm platformer with twenty selectable courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
 
 ## Play locally
 
@@ -48,6 +48,11 @@ See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the auto-playe
 - Added a mute toggle and start audio only following a user gesture.
 - Deferred loading Three.js and the 2.6 MB character atlas until the first play action, retaining a static preview and cube fallback.
 - Added Node's built-in test runner for level validation, collision/progress rules, and music theory helpers.
+
+### v0.9.2
+
+- Islands over a gap are now flush with the hole's near edge and never taller than the step-up: course 11 had one floating in the middle of the hole at 0.9, so the runner could neither stand on it nor cross and fell in.
+- Two invariants guard the class: no platform over a hole may exceed the step-up limit, and an island must start flush with the gap and leave a jumpable hole after it.
 
 ### v0.9.1
 
