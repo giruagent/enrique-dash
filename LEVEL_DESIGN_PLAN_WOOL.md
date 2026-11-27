@@ -79,11 +79,18 @@ Run `npm run levels:compose:wool` to deterministically rebuild every Wool Road l
 - **Audio:** 126 BPM with the existing sixteen-step procedural motif.
 
 ### 10 — Tassel Terrace (112 units)
-- **Signature:** A spike group into an open gap.
+- **Signature:** A float, a pad and a spring hand you along the terrace, and the widest gap is stitched with an island under the spring landing.
 - **Rhythm:** 2 + 2 + 2 + 2 + 2 input beats; target 0.78 inputs/s, measured 0.78; 4 open gaps and 1 kerb, 1 island and 1 bounce pad.
-- **Design hook:** Tassel Terrace lays out 5 spike groups, 4 open gaps, 2 portals (float and spring), 1 crawler and 1 shard.
+- **Design hook:** Tassel Terrace runs a float at 21.3, a pad at 26 and a spring at 66.4 over four gaps, stitches the 4.9-wide hole with an island at 64.3, and closes on four hazard skins, a bunny, a beetle and a six-shard arc.
 - **Layout:** Hazard groups at 43.35 [spike], 60.32 [yarn-spike], 76.7 [felt-block], 84.68 [spike]; gaps at 10.44 (2.5), 35.38 (2.5), 64.27 (4.9), 92.79 (2.5); platforms: kerb at 49.5, width 4.5, height 0.45; island at 64.27, width 2.5, height 0.5; bounce at 26, width 3.5, height 0.35; portals: float at 21.3, spring at 66.38; enemies: beetle at 100.76, bunny at 18.41; shards: 10.23 (height 1.85), 51.75 (height 1.65), 65.52 (height 1.7), 27.55 (height 1.23, arc of 3), 28.2 (height 1.61), 28.78 (height 1.87). arches: none; pom-poms: 4
 - **Audio:** 128 BPM with the existing sixteen-step procedural motif.
+
+### 11 — Yarnstorm Ridge (116 units)
+- **Signature:** Two spike groups on one arc.
+- **Rhythm:** 1 + 1 + 1 + 2 + 2 + 2 + 2 input beats; target 0.80 inputs/s, measured 0.83; 4 open gaps and 1 kerb, 1 island and 2 bounce pads.
+- **Design hook:** Yarnstorm Ridge lays out 6 spike groups, 4 open gaps, 1 portal (float), 1 drone and 1 shard.
+- **Layout:** Hazard groups at 27.28 (double) [spike], 59.1 [yarn-spike], 60.1 (double) [felt-block], 76.28 [button-bomb], 84.39 [spike]; gaps at 44 (4.9), 68.21 (2.5), 88.46 (2.5), 96.57 (2.5); platforms: kerb at 16.5, width 4.5, height 0.45; island at 44, width 2.5, height 0.5; bounce at 32, width 3.5, height 0.35; bounce at 52.5, width 3.5, height 0.35; portals: float at 45.81; enemies: moth at 104.64, beetle at 10.56; shards: 9.26 (height 1.85), 18.75 (height 1.65), 45.25 (height 1.7), 34.03 (height 1.21, arc of 3), 35.05 (height 1.29), 36.08 (height 1.24). arches: finish; pom-poms: 4
+- **Audio:** 132 BPM with the existing sixteen-step procedural motif.
 
 ## Playtest checklist
 
