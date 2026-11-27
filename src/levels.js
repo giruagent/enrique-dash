@@ -277,7 +277,11 @@ export function validateLevels(catalog, { expected = 20 } = {}) {
     if (level.speed < 6 || level.speed > 11 || level.length < 40 || level.length > 150) throw new Error(`${level.name} has invalid speed or course length.`);
     if (!Number.isInteger(level.music?.bpm) || level.music.bpm < 80 || level.music.bpm > 160) throw new Error(`${level.name} has invalid music tempo.`);
     if (!Array.isArray(level.music.scale) || level.music.scale.length < 5 || level.music.motif?.length !== 16) throw new Error(`${level.name} has incomplete music data.`);
-    if (!Array.isArray(level.obstacles) || level.obstacles.length < 3) throw new Error(`${level.name} needs at least three hazard groups.`);
+    // A hazard beat is an obstacle group or an enemy: a course that trades one group for two
+    // enemies is just as dense, and the auto-player still has to clear every beat.
+    if (!Array.isArray(level.obstacles) || level.obstacles.length + (level.enemies?.length ?? 0) < 3) {
+      throw new Error(`${level.name} needs at least three hazard beats.`);
+    }
     let previousEnd = 0;
     for (const group of level.obstacles) {
       if (!Array.isArray(group) || group.length < 2 || group.length > 3) throw new Error(`${level.name} contains an invalid obstacle group.`);

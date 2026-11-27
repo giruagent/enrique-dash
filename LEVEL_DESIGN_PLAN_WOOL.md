@@ -33,22 +33,29 @@ Run `npm run levels:compose:wool` to deterministically rebuild every Wool Road l
 - **Signature:** A beetle waits on the first stitch, a plush pad throws you through a shard arc, then three gaps pull the dell apart.
 - **Rhythm:** 2 + 1 + 1 + 1 + 2 input beats; target 0.64 inputs/s, measured 0.65; 3 open gaps and 1 bounce pad.
 - **Design hook:** Darning Dell mixes three hazard skins (spike, yarn spike, felt block), opens three gaps, adds one pad before the middle rest, one beetle and a four-shard arc over the first hole.
-- **Layout:** Hazard groups at 30.83 [spike], 61.56 [yarn-spike], 76.4 [felt-block]; gaps at 13.23 (2.5), 48.43 (2.5), 68.94 (2.5); platforms: bounce at 21.5, width 3.5, height 0.35; portals: none; enemies: beetle at 9.6; shards: 8.48 (height 1.85), 12.33 (height 1.24, arc of 3), 13.93 (height 1.85), 15.47 (height 1.23). arches: none; pom-poms: 3
+- **Layout:** Hazard groups at 30.83 [spike], 61.56 [yarn-spike], 76.4 [felt-block]; gaps at 13.23 (2.5), 48.43 (2.5), 68.94 (2.5); platforms: bounce at 21.5, width 3.5, height 0.35; portals: none; enemies: bunny at 9.6; shards: 8.48 (height 1.85), 12.33 (height 1.24, arc of 3), 13.93 (height 1.85), 15.47 (height 1.23). arches: none; pom-poms: 3
 - **Audio:** 112 BPM with the existing sixteen-step procedural motif.
 
 ### 04 — Pillow Pines (89 units)
 - **Signature:** A plush pad springs you over the middle stitch while three gaps open between pine-shadow hazards.
 - **Rhythm:** 1 + 1 + 1 + 2 + 2 input beats; target 0.66 inputs/s, measured 0.64; 3 open gaps and 1 bounce pad.
 - **Design hook:** Pillow Pines mixes spike, yarn spike and felt block over four hazard groups, opens three gaps, and threads one pad before the middle hole with a four-shard arc over the first.
-- **Layout:** Hazard groups at 45.36 [spike], 64.29 [yarn-spike], 79.28 [felt-block]; gaps at 27.54 (2.5), 56.77 (2.5), 71.76 (2.5); platforms: bounce at 36, width 3.5, height 0.35; portals: none; enemies: beetle at 9.72; shards: 8.6 (height 1.85), 25.85 (height 1.24, arc of 3), 27.47 (height 1.85), 29.02 (height 1.23). arches: none; pom-poms: 3
+- **Layout:** Hazard groups at 45.36 [spike], 64.29 [yarn-spike], 79.28 [felt-block]; gaps at 27.54 (2.5), 56.77 (2.5), 71.76 (2.5); platforms: bounce at 36, width 3.5, height 0.35; portals: none; enemies: bunny at 9.72; shards: 8.6 (height 1.85), 25.85 (height 1.24, arc of 3), 27.47 (height 1.85), 29.02 (height 1.23). arches: none; pom-poms: 3
 - **Audio:** 116 BPM with the existing sixteen-step procedural motif.
 
 ### 05 — Loom Lake (92 units)
-- **Signature:** A spike run of 5 hazard groups over 3 open gaps, every landing clear.
+- **Signature:** A stitched kerb lifts the near shore, a plush pad skips the lake's middle hole, and four silhouettes crowd the far bank.
 - **Rhythm:** 1 + 2 + 2 + 2 + 1 input beats; target 0.68 inputs/s, measured 0.71; 3 open gaps and 1 kerb and 1 bounce pad.
-- **Design hook:** Loom Lake lays out 5 spike groups, 3 open gaps and 1 shard.
-- **Layout:** Hazard groups at 34.64 [spike], 59.45 [yarn-spike], 74.6 [felt-block], 82.16 [spike]; gaps at 27.06 (2.5), 51.86 (2.5), 67.02 (2.5); platforms: kerb at 15, width 4.5, height 0.45; bounce at 40, width 3.5, height 0.35; portals: none; enemies: beetle at 9.84; shards: 8.72 (height 1.85), 17.25 (height 1.65), 25.28 (height 1.24, arc of 3), 26.92 (height 1.85), 28.49 (height 1.23). arches: none; pom-poms: 3
+- **Design hook:** Loom Lake lays four hazard groups across spike, yarn spike, felt block and spike, opens three gaps, raises a kerb at 15 and a pad at 40, adds one beetle and threads a five-shard arc over the second hole.
+- **Layout:** Hazard groups at 34.64 [spike], 59.45 [yarn-spike], 74.6 [felt-block], 82.16 [spike]; gaps at 27.06 (2.5), 51.86 (2.5), 67.02 (2.5); platforms: kerb at 15, width 4.5, height 0.45; bounce at 40, width 3.5, height 0.35; portals: none; enemies: bunny at 9.84; shards: 8.72 (height 1.85), 17.25 (height 1.65), 25.28 (height 1.24, arc of 3), 26.92 (height 1.85), 28.49 (height 1.23). arches: none; pom-poms: 3
 - **Audio:** 118 BPM with the existing sixteen-step procedural motif.
+
+### 06 — Patchwork Square (96 units)
+- **Signature:** A float portal lifts you over the square's second hole, a kerb stitches the seam before the last gap, and a beetle guards the first crossing.
+- **Rhythm:** 2 + 2 + 2 + 2 input beats; target 0.70 inputs/s, measured 0.69; 4 open gaps and 1 kerb and 1 bounce pad.
+- **Design hook:** Patchwork Square strings four gaps between a pad at 17.5 and a kerb at 54, threads a float portal at 32, and mixes spike, yarn spike and felt block behind one beetle and a five-shard arc.
+- **Layout:** Hazard groups at 17.61 (double) [spike], 62.92 (double) [yarn-spike]; gaps at 9.96 (2.5), 38.29 (2.5), 55.28 (2.5), 83.54 (2.5); platforms: kerb at 70, width 4.5, height 0.45; bounce at 24.5, width 3.5, height 0.35; portals: float at 40.33; enemies: beetle at 34.59, bunny at 79.91; shards: 9.8 (height 1.85), 72.25 (height 1.65), 26.42 (height 1.21, arc of 3), 27.32 (height 1.3), 28.36 (height 1.24). arches: none; pom-poms: 4
+- **Audio:** 120 BPM with the existing sixteen-step procedural motif.
 
 ## Playtest checklist
 

@@ -420,7 +420,8 @@ test('the auto-player finishes every wool course without a death', () => {
 
 test('every wool course holds the gap, hazard and fairness rules', () => {
   woolLevels.forEach((level, index) => {
-    assert.ok(level.obstacles.length >= 3, `${level.id} needs at least three hazard groups`);
+    assert.ok(level.obstacles.length + level.enemies.length >= 3,
+      `${level.id} needs at least three hazard beats`);
     const metrics = analyzeLevel(level);
     assert.deepEqual(metrics.deadBandViolations, [], `${level.id} has dead-band violations`);
     assert.deepEqual(metrics.telegraphViolations, [], `${level.id} has short first-beat telegraphs`);
@@ -614,10 +615,18 @@ test('wool courses mix skins, and the tier vocabulary grows from tier 2 on', () 
     for (const arc of arcs) {
       assert.ok(arc.length >= 2 && arc.length <= 5, `${level.id} has an arc outside 2–5 shards`);
     }
+    const silhouettes = new Set([...styles, ...enemyTypes]);
+    for (const type of enemyTypes) {
+      assert.ok(['beetle', 'moth', 'bunny'].includes(type), `${level.id} still shows a core silhouette: ${type}`);
+    }
     if (tier >= 2) {
-      assert.ok(styles.length >= 3, `${level.id} needs three hazard skins from tier 2`);
-      assert.ok(enemyTypes.length >= 2, `${level.id} needs two enemy skins from tier 2`);
+      // A beat can be an obstacle group or an enemy, so richness is measured on the silhouettes a
+      // course actually shows, not on a fixed count of either.
+      assert.ok(silhouettes.size >= 4, `${level.id} needs four distinct silhouettes from tier 2, has ${silhouettes.size}`);
       assert.ok(arcs.length >= 1, `${level.id} needs a shard arc from tier 2`);
+    }
+    if (tier >= 3) {
+      assert.ok(silhouettes.size >= 5, `${level.id} needs five distinct silhouettes from tier 3, has ${silhouettes.size}`);
     }
   });
 });
