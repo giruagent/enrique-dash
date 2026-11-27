@@ -9,7 +9,7 @@ Distances are measured in course units. The runner stays at world `x = -3`; a fe
 - **Obstacle groups** contain one or two hazards. The second hazard is **1.28 units** after the first. Collision clearance comes from the level's hazard profile.
 - **Gaps** are authored with an `at` position and a width, currently **2.5–7 units** in the catalogue. Open gaps remove ground support. An island gap is wider so the platform can sit inside it with at least **1.6 units** of hole on each side.
 - **Platforms** are raised surfaces. A grounded runner can step onto a rise of at most **0.6 units**. A platform covering a gap forms a **bridge** and can be crossed without jumping.
-- **Platform archetypes** give the mix a readable shape: `kerb` (.45 high, 4–5 wide, on plain track), `shelf` (.50 high, 9–11 wide with half a jump reach of clear track at each end), `island` (.90 high, 2.5–3 wide, a six-sided prism inside a gap), `hover` (.45 high, bobbing ±.10, courses 15–20 only), and `perch` (a kerb with a crawler standing at the platform centre). Every non-bridge platform except the perch carries a shard.
+- **Platform archetypes** give the mix a readable shape: `kerb` (.45 high, 4–5 wide, on plain track), `shelf` (.50 high, 9–11 wide with half a jump reach of clear track at each end), `island` (.90 high, 2.5–3 wide, a six-sided prism inside a gap), `hover` (.45 high, bobbing ±.10, courses 15–20 only), `perch` (a kerb with a crawler standing at the platform centre), and `bounce` (a wool-only plush pad, .35 high and 3–4 wide, in a rest with half a jump reach of clear track on each side). Every non-bridge platform except the perch and the bounce pad carries a shard; a pad's reward is the launch.
 - **Portals** have five effects: **spring** launches at 10.8 units/s, **dash** multiplies speed by 1.24 for 2.2 s, **float** multiplies gravity by 0.58 for 2.8 s, **shield** supplies one hit charge, and **phase** lasts 2.4 s.
 - **Crawlers** are ground enemies and can be stomped; **drones** occupy an authored height and are not stompable.
 - **Collectible shards** are optional pickups with horizontal and vertical contact tests. They do not make a course easier to finish.
@@ -30,6 +30,8 @@ gap reach   = jump reach at the applicable speed
 ```
 
 At speed 8.2, for example, one normal jump spans about **5.56 course units** (down from 7.34 before the asymmetric jump). Dash multiplies horizontal reach by **1.24** while active. Float changes simulated vertical motion for its actual duration rather than being folded into the base reach constant.
+
+A bounce pad relaunches at `motionTuning.bounceVelocity = 8.4` units/s from its .35 cushion: an apex of about **1.31 units** above the pad and roughly **0.59 s** of extra air. The step clamps that launch under `jumpTuning.initialVelocity`, fires only while support is resolved, and reports `bounced: true`; the unchanged fall and landing logic decides when the next contact occurs. The auto-player inherits the launch because it calls the same `stepPlayerMotion`.
 
 `tools/level-physics.mjs` exports `airTime()`, `jumpReach(speed)`, `gapReach(speed)`, and `beatWindows(level)`. Beat windows describe the course-distance intervals in which a runner must be airborne (hazards, open gaps, and enemies) or supported by a bridge. Hazard groups retain their 1.28-unit internal spacing and collision extents.
 

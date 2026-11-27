@@ -533,6 +533,7 @@ export function buildCandidate(base, brief, index, totalBeats, variant, options 
   const portalFractions = new Map();
   const baseReach = jumpReach(base.speed);
   let globalIndex = 0;
+  let gapOrdinal = 0;
 
   for (let phraseIndex = 0; phraseIndex < phrases.length; phraseIndex++) {
     for (let withinPhrase = 0; withinPhrase < phrases[phraseIndex]; withinPhrase++) {
@@ -600,7 +601,12 @@ export function buildCandidate(base, brief, index, totalBeats, variant, options 
           : ((globalIndex + variant) % (tier >= 3 ? 3 : 4) === 1));
       // Keep enough supported landing track for a following combo beat. A
       // wider gap can make the runner land inside that beat's collision window.
-      const width = 2.5;
+      // A brief may widen one ordinal gap (the wool wide-gap signature); the
+      // surrounding spacing is still solved against that real width below.
+      const isGap = kinds[globalIndex] === 'gap';
+      const wide = isGap && brief.wideGap && brief.wideGap.ordinal === gapOrdinal;
+      if (isGap) gapOrdinal++;
+      const width = wide ? brief.wideGap.width : 2.5;
       beats.push({
         at,
         kind: kinds[globalIndex],
@@ -790,11 +796,22 @@ export function rewriteLevels(source, composed, label = 'src/levels.js') {
 function featureLine(level) {
   const hazards = level.obstacles.map(([at, count]) => `${at}${count === 2 ? ' (double)' : ''}`).join(', ');
   const gaps = level.gaps.map(({ at, width }) => `${at} (${width})`).join(', ') || 'none';
-  const bridges = level.platforms.map(({ at, width, height, kind }) => `${kind} at ${at}, width ${width}, height ${height}`).join('; ') || 'none';
+  const platforms = level.platforms.map(({ at, width, height, kind }) => `${kind} at ${at}, width ${width}, height ${height}`).join('; ') || 'none';
   const portals = level.portals.map(({ at, type }) => `${type} at ${at}`).join(', ') || 'none';
   const enemies = level.enemies.map(({ at, type }) => `${type} at ${at}`).join(', ') || 'none';
   const shards = level.collectibles.map(({ at, height }) => `${at} (height ${height})`).join(', ') || 'none';
-  return `- **Layout:** Hazard groups at ${hazards}; gaps at ${gaps}; bridges: ${bridges}; portals: ${portals}; enemies: ${enemies}; shards: ${shards}.`;
+  return `- **Layout:** Hazard groups at ${hazards}; gaps at ${gaps}; platforms: ${platforms}; portals: ${portals}; enemies: ${enemies}; shards: ${shards}.`;
+}
+
+function platformCountPhrases(level) {
+  const counts = {};
+  for (const platform of level.platforms) {
+    const kind = platform.kind ?? 'bridge';
+    counts[kind] = (counts[kind] ?? 0) + 1;
+  }
+  return Object.entries(counts).map(([kind, count]) => (
+    plural(count, kind === 'bounce' ? 'bounce pad' : kind)
+  ));
 }
 
 export function renderDesignPlan(composed, checklist, options = {}) {
@@ -821,10 +838,12 @@ export function renderDesignPlan(composed, checklist, options = {}) {
   }
   output.push('## Individual designs', '');
   composed.forEach(({ level, phrases, metrics }, index) => {
+    const platforms = platformCountPhrases(level);
+    const platformPhrase = platforms.length ? ` and ${listPhrase(platforms)}` : '';
     output.push(
       `### ${String(index + 1).padStart(2, '0')} — ${level.name} (${level.length} units)`,
       `- **Signature:** ${level.signature}`,
-      `- **Rhythm:** ${phrases.join(' + ')} input beats; target ${blueprintList[index].target.toFixed(2)} inputs/s, measured ${metrics.inputsPerSecond.toFixed(2)}; ${plural(level.gaps.length - bridgedGapCount(level), 'open gap')} and ${plural(level.platforms.length, 'bridge')}.`,
+      `- **Rhythm:** ${phrases.join(' + ')} input beats; target ${blueprintList[index].target.toFixed(2)} inputs/s, measured ${metrics.inputsPerSecond.toFixed(2)}; ${plural(level.gaps.length - bridgedGapCount(level), 'open gap')}${platformPhrase}.`,
       `- **Design hook:** ${level.designHook}`,
       featureLine(level),
       `- **Audio:** ${level.music.bpm} BPM with the existing sixteen-step procedural motif.`,

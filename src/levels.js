@@ -253,7 +253,7 @@ export const levels = [
 
 const portalTypes = new Set(['spring', 'dash', 'float', 'shield', 'phase']);
 const enemyTypes = new Set(['crawler', 'drone']);
-const platformKinds = new Set(['kerb', 'shelf', 'island', 'hover', 'perch']);
+const platformKinds = new Set(['kerb', 'shelf', 'island', 'hover', 'perch', 'bounce']);
 
 export function validateLevels(catalog, { expected = 20 } = {}) {
   if (!Array.isArray(catalog) || catalog.length !== expected) {

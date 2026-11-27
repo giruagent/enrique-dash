@@ -1,6 +1,6 @@
 # Enrique Dash
 
-**Current test version: 1.0.0** — a touch-first Three.js rhythm platformer with twenty core courses and the first Wool Road course. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
+**Current test version: 1.0.1** — a touch-first Three.js rhythm platformer with twenty core courses and the first two Wool Road courses. This is a test build: course data and mechanics are in place, while end-to-end playtesting of every course and physical iPad/iPhone validation remain in progress. The exact package version is visible in the page header, footer, and game HUD, including fullscreen.
 
 ## Play locally
 
@@ -38,7 +38,7 @@ Tap/click the playfield, or press Space, Arrow Up, or W to jump; press P or the 
 
 Each level has its own speed, obstacle sequence, color palette, tempo, scale, chord progression, and lead motif. Level clears are saved locally in the browser; no account is needed.
 
-**Wool Road** (second campaign): W1-01 Thimble Meadow — a soft, open first course with its own meadow palette and no grid.
+**Wool Road** (second campaign): W1-01 Thimble Meadow and W1-02 Button Bush — soft meadow courses with their own palette, sage accents and no grid.
 
 See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the auto-player, fair-spacing rules, and catalogue report.
 
@@ -50,6 +50,13 @@ See [the level verification pipeline](docs/LEVEL_PIPELINE.md) for the auto-playe
 - Added a mute toggle and start audio only following a user gesture.
 - Deferred loading Three.js and the 2.6 MB character atlas until the first play action, retaining a static preview and cube fallback.
 - Added Node's built-in test runner for level validation, collision/progress rules, and music theory helpers.
+
+### v1.0.1
+
+- Added the **plush bounce pad**, a new platform kind. A pad launches a grounded runner at 8.4 units/s (about 1.31 units above the cushion, 0.59 s of extra air) through the shared `stepPlayerMotion`, so the game and the auto-player use exactly the same physics. The launch is idempotent per contact, never fires while airborne, and is clamped under the normal jump velocity. Core courses contain no pads.
+- Added **W1-02 Button Bush**, the second Wool Road course: 82 units at speed 7.9, a sage meadow palette, 112 BPM pentatonic-major music, four spike groups and three gaps with a wide first gap crossed after the pad, no portals or enemies, and one shard hanging above the pad. The pad and the wide gap are produced by the wool pipeline; every placement is replayed through the auto-player.
+- Bounce pads are wool-only and tier-gated (one pad in tiers 1–2, two in tiers 3–4), always in a rest with half a jump reach of clear track on both sides, and never carry a shard.
+- The pad reads as a stitched cushion: a squat 14-segment accent cylinder, a darker rim torus and a cream stitch line. It squashes to 0.82 of its height for 120 ms on launch, presentation only, and stays still under `prefers-reduced-motion`.
 
 ### v1.0.0
 

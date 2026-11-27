@@ -9,4 +9,5 @@ export const woolTiers = [
 
 export const woolBlueprint = [
   { id: 'wool-thimble-meadow', target: .62, phrase: [1, 2], rest: 2.2, portals: [], shards: 1 },
+  { id: 'wool-02-button-bush', target: .67, phrase: [1, 2], rest: 2.2, portals: [], shards: 1, wideGap: { ordinal: 0, width: 4 }, padBeforeGap: 0, shardAbovePad: true },
 ];

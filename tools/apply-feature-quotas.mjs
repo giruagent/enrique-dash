@@ -40,6 +40,10 @@ const COPY = {
     signature: 'Three open gaps in the meadow, each one a single soft landing.',
     designHook: 'Thimble Meadow lays out 3 spike groups, 3 open gaps and 1 shard.',
   },
+  'wool-02-button-bush': {
+    signature: 'A plush pad under the first shard launches you at the wide gap; two open holes follow.',
+    designHook: 'Button Bush lays out 4 spike groups, 3 gaps, 1 bounce pad and 1 shard.',
+  },
   'neon-run': {
     signature: 'Three open gaps on a clean straight, each one a single jump.',
     designHook: 'Three spike groups and three holes, spaced so you can land and look before the next.',
@@ -284,6 +288,58 @@ function placeHover(level, index, catalog, config) {
   return placePlainPlatform(level, index, catalog, config, 'hover', 4.5, .45);
 }
 
+// A plush bounce pad is a wool-only accent. It belongs in a rest: half a jump reach of clear track
+// on each side, never over a gap, hazard, enemy, portal or shard, and never with a shard of its own
+// (the launch is the reward). Every candidate is replayed through the auto-player before it is kept.
+function bouncePadQuota(index, config) {
+  if (config.id !== 'wool') return 0;
+  return config.tierFor(index) <= 2 ? 1 : 2;
+}
+
+function placeBouncePad(level, index, catalog, config) {
+  const brief = config.blueprint[index];
+  const anchorGap = Number.isInteger(brief?.padBeforeGap) ? level.gaps[brief.padBeforeGap] : null;
+  for (const width of [3.5, 4, 3]) {
+    const halfWidth = width / 2;
+    const spots = candidatePlatformSpots(
+      level,
+      halfWidth,
+      (at) => .5 * jumpReach(speedAt(level, at)),
+    );
+    // A wool brief may anchor the pad in the rest just before one named gap. Keep the half-reach
+    // clear track on both sides and take the latest legal spot, so the runner meets the pad and
+    // then the gap on the same approach.
+    const candidates = anchorGap
+      ? spots.filter(({ at }) => at < anchorGap.at)
+        .sort((a, b) => b.at - a.at || b.score - a.score)
+      : spots;
+    for (const spot of candidates.slice(0, 120)) {
+      const trial = clone(level);
+      trial.platforms.push({
+        at: round(spot.at - halfWidth),
+        width,
+        height: .35,
+        kind: 'bounce',
+      });
+      if (keep(catalog, trial, index, config)) return trial;
+    }
+  }
+  return null;
+}
+
+function placeBouncePads(level, index, catalog, config) {
+  let next = level;
+  const quota = bouncePadQuota(index, config);
+  for (let pad = 0; pad < quota; pad++) {
+    const placedLevel = placeBouncePad(next, index, catalog, config);
+    if (!placedLevel) {
+      throw new Error(`${next.id}: could not place bounce pad ${pad + 1} of ${quota} in a rest`);
+    }
+    next = placedLevel;
+  }
+  return next;
+}
+
 // An island bridges the near half of a gap: the platform starts flush with the hole's edge, so a
 // grounded runner steps up onto it instead of falling in, and only the far part of the hole is left
 // to jump. Putting the platform in the middle of the hole (the first version) meant the runner was
@@ -494,6 +550,19 @@ function applyFeaturePass(catalog, base, index, config) {
     throw new Error(`${level.id}: could not re-place its apex shards after the feature pass`);
   }
 
+  // 4. Bounce pads are wool-only and added last, so they never carry a shard and cannot disturb
+  //    the platform/shards placement above. Each one is verified by the same whole-course replay.
+  level = placeBouncePads(level, index, catalog, config);
+
+  // A course may ask for its authored shard to hang above the pad (the launch is still the pad's
+  // reward; no shard is created for a pad). Only the wool course that names it does this.
+  if (config.id === 'wool' && config.blueprint[index]?.shardAbovePad && level.collectibles.length > 0) {
+    const pad = level.platforms.find(({ kind }) => kind === 'bounce');
+    if (pad) {
+      level.collectibles[0] = { at: round(pad.at + pad.width / 2), height: 1.7 };
+    }
+  }
+
   const copy = COPY[level.id];
   if (copy) {
     level.signature = copy.signature;
@@ -525,7 +594,9 @@ function designHookFor(level) {
   const parts = [plural(level.obstacles.length, `${style} group`)];
   if (level.gaps.length) parts.push(plural(level.gaps.length, 'gap'));
   const counts = archetypeCounts(level);
-  const platforms = Object.entries(counts).map(([kind, count]) => plural(count, kind));
+  const platforms = Object.entries(counts).map(([kind, count]) => (
+    plural(count, kind === 'bounce' ? 'bounce pad' : kind)
+  ));
   if (platforms.length) parts.push(listPhrase(platforms));
   if (level.portals.length) {
     const types = [...new Set(level.portals.map(({ type }) => type))];

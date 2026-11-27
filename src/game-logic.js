@@ -158,6 +158,10 @@ export const motionTuning = Object.freeze({
   groundSnapTolerance: .05,
   groundLostThreshold: .05,
   landingTolerance: platformTuning.landingTolerance,
+  // A plush pad relaunches instead of holding: 8.4 ** 2 / (2 * 27) ~= 1.31 units above the
+  // cushion, about 0.59 s of extra air. The step clamps it under the normal jump so a pad can
+  // never out-jump the runner's own jump.
+  bounceVelocity: 8.4,
 });
 
 // Asymmetric gravity: a brisk rise, then a faster fall. The multiplier is chosen
@@ -196,6 +200,20 @@ export function getTrackSupportHeight(playerX, playerY, baseHeight, gaps, platfo
   if (supportHeight !== null) return supportHeight;
   const hole = gaps.find(({ center, width }) => Math.abs(playerX - center) <= width / 2);
   return hole ? null : baseHeight;
+}
+
+// The surface the runner is actually standing on is a bounce pad. Checking against the resolved
+// support height (rather than "any pad under the feet") keeps a pad under a higher platform from
+// launching a runner who is standing on that higher platform.
+function bounceSurfaceAt(playerX, supportHeight, baseHeight, platforms) {
+  if (supportHeight === null) return null;
+  for (const platform of platforms) {
+    if (platform.kind !== 'bounce') continue;
+    if (Math.abs(playerX - platform.center) > platform.width / 2) continue;
+    const surface = baseHeight + (platform.currentHeight ?? platform.height);
+    if (Math.abs(surface - supportHeight) <= motionTuning.landingTolerance) return surface;
+  }
+  return null;
 }
 
 export const portalEffects = Object.freeze({
@@ -312,7 +330,7 @@ export function integrateVerticalMotion(position, velocity, gravity, deltaSecond
  * @param {{ baseHeight:number, gaps:Array, platforms:Array }} course
  * @param {{ gravityMultiplier?:number }} [options]
  * @returns {{ y:number, velocityY:number, grounded:boolean, coyoteTimer:number,
- *             supportY:number, steppedUp:boolean, landed:boolean, fell:boolean }}
+ *             supportY:number, steppedUp:boolean, landed:boolean, fell:boolean, bounced:boolean }}
  */
 export function stepPlayerMotion(player, dt, course, options = {}) {
   let { y, velocityY, grounded, coyoteTimer } = player;
@@ -356,6 +374,18 @@ export function stepPlayerMotion(player, dt, course, options = {}) {
   }
   if (supportHeight === null) grounded = false;
 
+  // A bounce pad relaunches from the cushion instead of holding the runner. This lives in the one
+  // shared motion step, so the game and the auto-player inherit exactly the same physics. It fires
+  // only while support is resolved, which makes a contact idempotent: the very same frame leaves the
+  // runner airborne, and the unchanged fall/landing logic decides when the next contact happens.
+  let bounced = false;
+  if (grounded && bounceSurfaceAt(player.x, supportHeight, baseHeight, platforms) !== null) {
+    velocityY = Math.min(motionTuning.bounceVelocity, jumpTuning.initialVelocity);
+    grounded = false;
+    coyoteTimer = 0;
+    bounced = true;
+  }
+
   return {
     y,
     velocityY,
@@ -365,6 +395,7 @@ export function stepPlayerMotion(player, dt, course, options = {}) {
     steppedUp,
     landed,
     fell: y < baseHeight - motionTuning.fallLimit,
+    bounced,
   };
 }
 

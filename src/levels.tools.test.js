@@ -94,3 +94,28 @@ test('moving a second beat closer reduces tightestMargin and the metrics agree',
   assert.equal(farMetrics.deadBandViolations.length, 1);
   assert.equal(closeMetrics.deadBandViolations.length, 0);
 });
+
+// The bounce is a real physics change, not a solver special case: the pad delays the gap jump
+// enough that its landing arc carries over the hazard. Remove the pad and the same run lands just
+// before the hazard, too close to jump again.
+test('a hazard that is only clearable with a bounce pad is completed with the pad and fails without it', () => {
+  const shared = {
+    gaps: [{ at: 8, width: 2.5 }],
+    obstacles: [[11.3, 1]],
+  };
+  const plain = fixture(shared);
+  const padded = fixture({
+    ...shared,
+    platforms: [{ at: 3, width: 3.5, height: .35, kind: 'bounce' }],
+  });
+  const withPad = playLevel(padded);
+  const withoutPad = playLevel(plain);
+  assert.equal(withPad.completed, true);
+  assert.equal(withPad.deaths, 0);
+  assert.equal(withoutPad.completed, false);
+  assert.equal(withoutPad.deaths, 1);
+  assert.match(
+    withoutPad.events.find(({ type }) => type === 'death').reason,
+    /hazard-0\.0 collision/,
+  );
+});
