@@ -73,4 +73,7 @@ export const woolBlueprint = [
   {
     id: 'wool-17-needle-nook', target: 0.98, phrase: [3, 2], rest: 1.75, portals: ['spring', 'float'], shards: 1,
   },
+  {
+    id: 'wool-18-dust-bunny-run', target: 1.0, phrase: [3, 2], rest: 1.75, portals: ['float', 'spring'], shards: 1,
+  },
 ];

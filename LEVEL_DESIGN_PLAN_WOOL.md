@@ -128,11 +128,18 @@ Run `npm run levels:compose:wool` to deterministically rebuild every Wool Road l
 - **Audio:** 144 BPM with the existing sixteen-step procedural motif.
 
 ### 17 — Needle Nook (140 units)
-- **Signature:** Two spike groups on one arc.
+- **Signature:** Two hovers frame the needle alley, a spring at 50 and a float at 96 thread it, and eight hazard groups close in on the last stretch.
 - **Rhythm:** 2 + 2 + 2 + 3 + 3 + 3 input beats; target 0.98 inputs/s, measured 1.01; 4 open gaps and 2 hovers.
-- **Design hook:** Needle Nook lays out 10 spike groups, 4 open gaps, 2 portals (spring and float), 1 drone and 1 shard.
+- **Design hook:** Needle Nook sets two hovers at 25.5 and 85.5 around a spring at 50.3 and a float at 95.8, opens four gaps, and lines eight hazard groups across four skins with a beetle, a bunny, a moth and two shard arcs.
 - **Layout:** Hazard groups at 19.9 (double) [spike], 66.26 [yarn-spike], 83.54 [felt-block], 92.15 [button-bomb], 109.44 [spike], 110.44 [yarn-spike], 120.1 [felt-block], 128.72 [button-bomb]; gaps at 36.35 (2.5), 57.64 (2.5), 74.92 (2.5), 100.82 (2.5); platforms: hover at 25.5, width 4.5, height 0.45; hover at 85.5, width 4.5, height 0.45; portals: spring at 50.29, float at 95.79; enemies: moth at 119.1, beetle at 11.28, bunny at 44.96; shards: 9.92 (height 1.85), 27.75 (height 1.65), 87.75 (height 1.65), 33.92 (height 1.24, arc of 3), 35.8 (height 1.85), 37.6 (height 1.23), 58.12 (height 1.24, arc of 3), 60 (height 1.85), 61.8 (height 1.23). arches: checkpoint, finish; pom-poms: 5
 - **Audio:** 146 BPM with the existing sixteen-step procedural motif.
+
+### 18 — Dust Bunny Run (144 units)
+- **Signature:** Two spike groups on one arc.
+- **Rhythm:** 2 + 2 + 2 + 3 + 3 + 3 input beats; target 1.00 inputs/s, measured 0.99; 4 open gaps and 2 hovers and 1 bounce pad.
+- **Design hook:** Dust Bunny Run lays out 10 spike groups, 4 open gaps, 2 portals (float and spring), 1 drone and 1 shard.
+- **Layout:** Hazard groups at 12.4 (double) [spike], 51.37 [yarn-spike], 68.84 [felt-block], 77.55 [button-bomb], 97.72 [spike], 106.43 [yarn-spike], 123.89 [felt-block], 132.6 [button-bomb]; gaps at 25.2 (2.5), 42.67 (2.5), 60.13 (2.5), 89.01 (2.5); platforms: hover at 16, width 4.5, height 0.45; hover at 126, width 4.5, height 0.45; bounce at 82.5, width 3, height 0.35; portals: float at 34.96, spring at 78.92; enemies: moth at 115.18, beetle at 11.4, bunny at 33.91; shards: 23.51 (height 1.24, arc of 3), 25.41 (height 1.85), 27.23 (height 1.23). arches: checkpoint, finish; pom-poms: 5
+- **Audio:** 148 BPM with the existing sixteen-step procedural motif.
 
 ## Playtest checklist
 
