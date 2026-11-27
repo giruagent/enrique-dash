@@ -34,4 +34,7 @@ export const woolBlueprint = [
   {
     id: 'wool-04-pillow-pines', target: 0.66, phrase: [1, 2], rest: 2.2, portals: [], shards: 1,
   },
+  {
+    id: 'wool-05-loom-lake', target: 0.68, phrase: [1, 2], rest: 2.1, portals: [], shards: 1,
+  },
 ];
