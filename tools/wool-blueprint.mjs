@@ -52,4 +52,7 @@ export const woolBlueprint = [
   {
     id: 'wool-10-tassel-terrace', target: 0.78, phrase: [2, 2], rest: 1.95, portals: ['float', 'spring'], shards: 1,
   },
+  {
+    id: 'wool-11-yarnstorm-ridge', target: 0.8, phrase: [2, 1], rest: 1.9, portals: ['float'], shards: 1,
+  },
 ];
