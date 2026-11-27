@@ -29,6 +29,13 @@ Run `npm run levels:compose:wool` to deterministically rebuild every Wool Road l
 - **Layout:** Hazard groups at 9.48 [button-bomb], 43.16 [spike], 57.84 [button-bomb]; gaps at 26.86 (4), 50.44 (2.5), 65.12 (2.5); platforms: bounce at 20.5, width 3.5, height 0.35; portals: none; enemies: beetle at 72.52; shards: 22.32 (height 1.21, arc of 3), 23.04 (height 1.31), 24.16 (height 1.24). arches: checkpoint; pom-poms: 5
 - **Audio:** 112 BPM with the existing sixteen-step procedural motif.
 
+### 03 — Darning Dell (86 units)
+- **Signature:** A spike group into an open gap.
+- **Rhythm:** 2 + 1 + 1 + 1 + 2 input beats; target 0.64 inputs/s, measured 0.65; 3 open gaps and 1 bounce pad.
+- **Design hook:** Darning Dell lays out 4 spike groups, 3 open gaps and 1 shard.
+- **Layout:** Hazard groups at 30.83 [spike], 61.56 [yarn-spike], 76.4 [felt-block]; gaps at 13.23 (2.5), 48.43 (2.5), 68.94 (2.5); platforms: bounce at 21.5, width 3.5, height 0.35; portals: none; enemies: beetle at 9.6; shards: 8.48 (height 1.85), 12.33 (height 1.24, arc of 3), 13.93 (height 1.85), 15.47 (height 1.23). arches: none; pom-poms: 3
+- **Audio:** 112 BPM with the existing sixteen-step procedural motif.
+
 ## Playtest checklist
 
 1. Confirm a single jump can clear each authored gap from its marked approach and that the destination has a clean landing window.

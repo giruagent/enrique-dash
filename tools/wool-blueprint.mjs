@@ -28,4 +28,7 @@ export const woolBlueprint = [
       pomPoms: 5,
     },
   },
+  {
+    id: 'wool-03-darning-dell', target: 0.64, phrase: [1, 2], rest: 2.2, portals: [], shards: 1,
+  },
 ];
