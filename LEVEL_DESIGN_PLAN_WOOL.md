@@ -30,11 +30,18 @@ Run `npm run levels:compose:wool` to deterministically rebuild every Wool Road l
 - **Audio:** 112 BPM with the existing sixteen-step procedural motif.
 
 ### 03 — Darning Dell (86 units)
-- **Signature:** A spike group into an open gap.
+- **Signature:** A beetle waits on the first stitch, a plush pad throws you through a shard arc, then three gaps pull the dell apart.
 - **Rhythm:** 2 + 1 + 1 + 1 + 2 input beats; target 0.64 inputs/s, measured 0.65; 3 open gaps and 1 bounce pad.
-- **Design hook:** Darning Dell lays out 4 spike groups, 3 open gaps and 1 shard.
+- **Design hook:** Darning Dell mixes three hazard skins (spike, yarn spike, felt block), opens three gaps, adds one pad before the middle rest, one beetle and a four-shard arc over the first hole.
 - **Layout:** Hazard groups at 30.83 [spike], 61.56 [yarn-spike], 76.4 [felt-block]; gaps at 13.23 (2.5), 48.43 (2.5), 68.94 (2.5); platforms: bounce at 21.5, width 3.5, height 0.35; portals: none; enemies: beetle at 9.6; shards: 8.48 (height 1.85), 12.33 (height 1.24, arc of 3), 13.93 (height 1.85), 15.47 (height 1.23). arches: none; pom-poms: 3
 - **Audio:** 112 BPM with the existing sixteen-step procedural motif.
+
+### 04 — Pillow Pines (89 units)
+- **Signature:** A spike run of 4 hazard groups over 3 open gaps, every landing clear.
+- **Rhythm:** 1 + 1 + 1 + 2 + 2 input beats; target 0.66 inputs/s, measured 0.64; 3 open gaps and 1 bounce pad.
+- **Design hook:** Pillow Pines lays out 4 spike groups, 3 open gaps and 1 shard.
+- **Layout:** Hazard groups at 45.36 [spike], 64.29 [yarn-spike], 79.28 [felt-block]; gaps at 27.54 (2.5), 56.77 (2.5), 71.76 (2.5); platforms: bounce at 36, width 3.5, height 0.35; portals: none; enemies: beetle at 9.72; shards: 8.6 (height 1.85), 25.85 (height 1.24, arc of 3), 27.47 (height 1.85), 29.02 (height 1.23). arches: none; pom-poms: 3
+- **Audio:** 116 BPM with the existing sixteen-step procedural motif.
 
 ## Playtest checklist
 
