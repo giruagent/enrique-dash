@@ -334,4 +334,23 @@ export const woolLevels = [
       decor: { arches: ['checkpoint', 'finish'], pomPoms: 5 },
       music: { bpm: 148, root: 59, scale: pentatonicMajor, progression: [0, 2, 4, 3], motif: motif(null, 4, null, 2, null, 3, 2, 0, null, 0, null, 2, 4, null, 2, 3) },
     },
+
+  {
+      ...emptyCourse, id: 'wool-19-spoolworks', name: "Spoolworks", zone: 'THE ATTIC',
+      campaign: 'wool',
+      color: 0x8fc7d8, background: 0xf6eadf, floor: 0x4a3b36,
+      speed: 9.55, length: 147,
+      environment: 'wool-spoolworks', scenery: 'wool',
+      palette: { sky: 0xF6EADF, lane: 0x4A3B36, accent: 0x8FC7D8, platform: 0xD8CCC0 },
+    signature: 'A dash at 52 into an island-stitched hole, a hover at 25.5 and a float at 102: every tool in the workshop appears once.', designHook: 'Spoolworks runs a hover at 25.5, a dash at 51.9 and a float at 102.1 around a stitched 4.9-wide hole at 61.3, and lines eight hazard groups across four skins with a beetle, a bunny, a moth and a shard arc.',
+      hazardStyle: 'spike',
+      obstacles: [[20.21, 2, 'spike'], [72.11, 1, 'yarn-spike'], [89.67, 1, 'felt-block'], [98.42, 1, 'button-bomb'], [115.98, 1, 'spike'], [116.98, 1, 'yarn-spike'], [126.79, 1, 'felt-block'], [135.54, 1, 'button-bomb']],
+      gaps: [{ at: 36.45, width: 2.5 }, { at: 61.26, width: 4.9 }, { at: 80.92, width: 2.5 }, { at: 107.23, width: 2.5 }],
+      platforms: [{ at: 61.26, width: 2.5, height: 0.5, kind: 'island' }, { at: 25.5, width: 4.5, height: 0.45, kind: 'hover' }],
+      portals: [{ at: 51.94, type: 'dash' }, { at: 102.12, type: 'float' }],
+      enemies: [{ at: 125.79, type: 'moth', height: 1.05 }, { at: 11.46, type: 'beetle' }, { at: 45.2, type: 'bunny' }],
+      collectibles: [{ at: 10.08, height: 1.85 }, { at: 62.51, height: 1.7 }, { at: 27.75, height: 1.65 }, { at: 33.98, height: 1.24, arc: 3 }, { at: 35.89, height: 1.85 }, { at: 37.72, height: 1.23 }],
+      decor: { arches: ['checkpoint', 'finish'], pomPoms: 5 },
+      music: { bpm: 150, root: 61, scale: pentatonicMajor, progression: [0, 3, 2, 4], motif: motif(0, null, 2, 4, null, 2, 3, null, 4, null, 2, null, 3, 2, 0, null) },
+    },
 ];
