@@ -315,4 +315,23 @@ export const woolLevels = [
       decor: { arches: ['checkpoint', 'finish'], pomPoms: 5 },
       music: { bpm: 146, root: 62, scale: pentatonicMajor, progression: [0, 3, 4, 2], motif: motif(3, null, 4, null, 2, null, 3, 2, 0, null, 0, null, 2, 4, null, 2) },
     },
+
+  {
+      ...emptyCourse, id: 'wool-18-dust-bunny-run', name: "Dust Bunny Run", zone: 'THE ATTIC',
+      campaign: 'wool',
+      color: 0xb98ba8, background: 0xf6eadf, floor: 0x4a3b36,
+      speed: 9.5, length: 144,
+      environment: 'wool-dust-bunny-run', scenery: 'wool',
+      palette: { sky: 0xF6EADF, lane: 0x4A3B36, accent: 0xB98BA8, platform: 0xD8CCC0 },
+    signature: 'A hover at each end, a pad at 82.5 and a float into a spring in the middle, with a bunny waiting at 33.9.', designHook: 'Dust Bunny Run brackets the run with hovers at 16 and 126, puts a pad at 82.5 before a float at 35 and a spring at 78.9, and lines eight hazard groups across four skins with a beetle, a bunny, a moth and a shard arc.',
+      hazardStyle: 'spike',
+      obstacles: [[12.4, 2, 'spike'], [51.37, 1, 'yarn-spike'], [68.84, 1, 'felt-block'], [77.55, 1, 'button-bomb'], [97.72, 1, 'spike'], [106.43, 1, 'yarn-spike'], [123.89, 1, 'felt-block'], [132.6, 1, 'button-bomb']],
+      gaps: [{ at: 25.2, width: 2.5 }, { at: 42.67, width: 2.5 }, { at: 60.13, width: 2.5 }, { at: 89.01, width: 2.5 }],
+      platforms: [{ at: 16, width: 4.5, height: 0.45, kind: 'hover' }, { at: 126, width: 4.5, height: 0.45, kind: 'hover' }, { at: 82.5, width: 3, height: 0.35, kind: 'bounce' }],
+      portals: [{ at: 34.96, type: 'float' }, { at: 78.92, type: 'spring' }],
+      enemies: [{ at: 115.18, type: 'moth', height: 1.05 }, { at: 11.4, type: 'beetle' }, { at: 33.91, type: 'bunny' }],
+      collectibles: [{ at: 23.51, height: 1.24, arc: 3 }, { at: 25.41, height: 1.85 }, { at: 27.23, height: 1.23 }],
+      decor: { arches: ['checkpoint', 'finish'], pomPoms: 5 },
+      music: { bpm: 148, root: 59, scale: pentatonicMajor, progression: [0, 2, 4, 3], motif: motif(null, 4, null, 2, null, 3, 2, 0, null, 0, null, 2, 4, null, 2, 3) },
+    },
 ];
