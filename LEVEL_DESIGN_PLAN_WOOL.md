@@ -114,11 +114,18 @@ Run `npm run levels:compose:wool` to deterministically rebuild every Wool Road l
 - **Audio:** 138 BPM with the existing sixteen-step procedural motif.
 
 ### 15 — Frayed Frontier (132 units)
-- **Signature:** A spike group into an open gap.
+- **Signature:** A hover chain and two pads fray the frontier — 24, 29.5, 51, 79 — with a float and a spring splitting five gaps.
 - **Rhythm:** 2 + 2 + 3 + 3 + 3 input beats; target 0.94 inputs/s, measured 0.91; 5 open gaps and 2 hovers and 2 bounce pads.
-- **Design hook:** Frayed Frontier lays out 7 spike groups, 5 open gaps, 2 portals (float and spring), 1 drone and 1 shard.
+- **Design hook:** Frayed Frontier stacks two hovers at 24 and 51, two pads at 29.5 and 79, a float at 22.3 and a spring at 75.6 over five gaps, with five hazard skins, a beetle, a moth and two shard arcs.
 - **Layout:** Hazard groups at 19.47 [spike], 44.47 (double) [yarn-spike], 61.03 [felt-block], 73.4 (double) [button-bomb], 94.79 [spike], 107.63 [yarn-spike]; gaps at 36.03 (2.5), 64.97 (2.5), 86.36 (2.5), 99.05 (2.5), 111.73 (2.5); platforms: hover at 51, width 4.5, height 0.45; hover at 24, width 4.5, height 0.45; bounce at 79, width 3, height 0.35; bounce at 29.5, width 3, height 0.35; portals: float at 22.29, spring at 75.61; enemies: moth at 120.16, beetle at 11.04; shards: 9.69 (height 1.85), 53.25 (height 1.65), 26.25 (height 1.65), 31.89 (height 1.22, arc of 3), 32.2 (height 1.45), 32.43 (height 1.61), 64.78 (height 1.24, arc of 3), 66.62 (height 1.85), 68.39 (height 1.23). arches: finish; pom-poms: 4
 - **Audio:** 140 BPM with the existing sixteen-step procedural motif.
+
+### 16 — Button Barrel (136 units)
+- **Signature:** Two spike groups on one arc.
+- **Rhythm:** 2 + 2 + 2 + 2 + 3 + 3 input beats; target 0.96 inputs/s, measured 0.99; 4 open gaps and 1 island and 1 hover.
+- **Design hook:** Button Barrel lays out 9 spike groups, 4 open gaps, 2 portals (float and dash), 1 drone and 1 shard.
+- **Layout:** Hazard groups at 12.16 (double) [spike], 49.07 [yarn-spike], 66.16 (double) [felt-block], 87.37 [button-bomb], 97.94 (double) [spike], 115.04 [yarn-spike], 123.56 (double) [felt-block]; gaps at 23.44 (2.5), 40.54 (2.5), 57.64 (2.5), 76.8 (4.9); platforms: island at 76.8, width 2.5, height 0.5; hover at 90, width 4.5, height 0.45; portals: float at 33, dash at 67.44; enemies: moth at 106.51, beetle at 11.16, bunny at 31.97; shards: 21.08 (height 1.24, arc of 3), 22.94 (height 1.85), 24.72 (height 1.23). arches: checkpoint, finish; pom-poms: 5
+- **Audio:** 144 BPM with the existing sixteen-step procedural motif.
 
 ## Playtest checklist
 

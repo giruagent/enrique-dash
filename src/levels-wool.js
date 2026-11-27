@@ -277,4 +277,23 @@ export const woolLevels = [
       decor: { arches: ['finish'], pomPoms: 4 },
       music: { bpm: 140, root: 63, scale: pentatonicMajor, progression: [0, 3, 2, 4], motif: motif(null, 2, 3, null, 4, null, 2, null, 3, 2, 0, null, 0, null, 2, 4) },
     },
+
+  {
+      ...emptyCourse, id: 'wool-16-button-barrel', name: "Button Barrel", zone: 'THE ATTIC',
+      campaign: 'wool',
+      color: 0xf2c46d, background: 0xf6eadf, floor: 0x4a3b36,
+      speed: 9.3, length: 136,
+      environment: 'wool-button-barrel', scenery: 'wool',
+      palette: { sky: 0xF6EADF, lane: 0x4A3B36, accent: 0xF2C46D, platform: 0xD8CCC0 },
+    signature: 'A float carries the first barrel, a dash the second, and an island stitches the widest hole under a hover.', designHook: 'Button Barrel runs seven hazard groups across four skins, splits four gaps with a float at 33 and a dash at 67.4, stitches its 4.9-wide hole at 76.8, and keeps a hover at 90, a beetle, a bunny and a moth plus a shard arc.',
+      hazardStyle: 'spike',
+      obstacles: [[12.16, 2, 'spike'], [49.07, 1, 'yarn-spike'], [66.16, 2, 'felt-block'], [87.37, 1, 'button-bomb'], [97.94, 2, 'spike'], [115.04, 1, 'yarn-spike'], [123.56, 2, 'felt-block']],
+      gaps: [{ at: 23.44, width: 2.5 }, { at: 40.54, width: 2.5 }, { at: 57.64, width: 2.5 }, { at: 76.8, width: 4.9 }],
+      platforms: [{ at: 76.8, width: 2.5, height: 0.5, kind: 'island' }, { at: 90, width: 4.5, height: 0.45, kind: 'hover' }],
+      portals: [{ at: 33, type: 'float' }, { at: 67.44, type: 'dash' }],
+      enemies: [{ at: 106.51, type: 'moth', height: 1.05 }, { at: 11.16, type: 'beetle' }, { at: 31.97, type: 'bunny' }],
+      collectibles: [{ at: 21.08, height: 1.24, arc: 3 }, { at: 22.94, height: 1.85 }, { at: 24.72, height: 1.23 }],
+      decor: { arches: ['checkpoint', 'finish'], pomPoms: 5 },
+      music: { bpm: 144, root: 60, scale: pentatonicMajor, progression: [0, 2, 3, 4], motif: motif(2, 3, null, 4, null, 2, null, 3, 2, 0, null, 0, null, 2, 4, null) },
+    },
 ];

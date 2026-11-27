@@ -67,4 +67,7 @@ export const woolBlueprint = [
   {
     id: 'wool-15-frayed-frontier', target: 0.94, phrase: [3, 2], rest: 1.8, portals: ['float', 'spring'], shards: 1,
   },
+  {
+    id: 'wool-16-button-barrel', target: 0.96, phrase: [3, 2], rest: 1.8, portals: ['float', 'dash'], shards: 1,
+  },
 ];
